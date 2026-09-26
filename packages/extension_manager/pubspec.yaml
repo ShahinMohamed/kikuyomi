@@ -38,4 +38,8 @@ dependencies:
   archive: ^4.0.0
 
 dev_dependencies:
+  # Ed25519, for the tool that builds a publishable repository (§3.8, ADR-0018). A dev dependency
+  # because signing is something a repository's operator does, not something the app ever does —
+  # the app only verifies. Gohilla, Apache-2.0, pure Dart.
+  cryptography: ^2.7.0
   test: ^1.25.0
