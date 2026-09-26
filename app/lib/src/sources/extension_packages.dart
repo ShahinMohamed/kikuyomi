@@ -22,6 +22,10 @@ import 'package:kikuyomi_extension_manager/kikuyomi_extension_manager.dart';
 ///
 /// Each name is a folder under `assets/extensions/`. Adding one means listing it here and in
 /// `pubspec.yaml`'s assets.
+// Only LibriVox. `assets/extensions/` holds the extensions this project publishes, and the app
+// bundles the one that makes it useful before the listener has added a repository; the rest ship
+// through the repository, which is what having one is for. An extension bundled in the app cannot be
+// updated without shipping a new app.
 const bundledExtensionNames = ['librivox'];
 
 /// An extension the app has read and can run.

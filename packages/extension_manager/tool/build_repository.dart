@@ -133,12 +133,22 @@ Future<Map<String, Object?>?> _package(
     return null;
   }
 
-  // Everything directly inside the folder, flat, which is what §3.3 says a package is.
+  // Everything directly inside the folder, flat, which is what §3.3 says a package is. Sorted, and
+  // stamped with a fixed time, so that the same sources always produce the same bytes: a zip
+  // stamped with the moment it was built hashes differently every run, and the app reads a changed
+  // hash as a new version. Rebuilding would have offered every listener an update to the code they
+  // already had.
   final archive = Archive();
-  await for (final entry in folder.list(followLinks: false)) {
-    if (entry is! File) continue;
-    final bytes = await entry.readAsBytes();
-    archive.addFile(ArchiveFile.bytes(_lastSegment(entry.path), bytes));
+  final contents = <File>[
+    await for (final entry in folder.list(followLinks: false))
+      if (entry is File) entry,
+  ]..sort((a, b) => a.path.compareTo(b.path));
+  for (final entry in contents) {
+    final file = ArchiveFile.bytes(
+      _lastSegment(entry.path),
+      await entry.readAsBytes(),
+    )..lastModTime = _fixedTime;
+    archive.addFile(file);
   }
   final zipped = ZipEncoder().encode(archive);
 
@@ -182,6 +192,11 @@ Future<SimpleKeyPair> _signingKey(File file) async {
   stdout.writeln('Generated a signing key at ${file.path}. Do not commit it.');
   return keyPair;
 }
+
+/// The time every file in a package is stamped with.
+///
+/// Any constant would do; what matters is that it is one. See where it is used.
+final _fixedTime = DateTime.utc(2020).millisecondsSinceEpoch ~/ 1000;
 
 Map<String, String> _options(List<String> arguments) {
   final options = <String, String>{};
