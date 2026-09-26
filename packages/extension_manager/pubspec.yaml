@@ -33,6 +33,9 @@ dependencies:
   # §3.7's source id: the first 8 bytes of SHA-256 over the extension, source, language and version.
   # Dart team, BSD-3-Clause, pure Dart.
   crypto: ^3.0.6
+  # A repository serves each extension as one zip (§3.2). Pure Dart, so it needs nothing of Android,
+  # Windows or iOS and works the same on all three. Brendan Duncan, MIT.
+  archive: ^4.0.0
 
 dev_dependencies:
   test: ^1.25.0

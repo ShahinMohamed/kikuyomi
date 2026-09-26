@@ -20,6 +20,7 @@ import 'package:kikuyomi_networking/kikuyomi_networking.dart';
 
 import 'index.dart';
 import 'location.dart';
+import 'package_zip.dart';
 
 /// What a refresh came back with.
 final class RepositoryFetch {
@@ -69,6 +70,31 @@ final class RepositoryFetcher {
       index: RepositoryIndex.parse(_bodyOf(response, 'index.json')),
       // A repository that stopped sending one is not an error; it means asking again next time.
       etag: response.headers['etag'],
+    );
+  }
+
+  /// Downloads the package at [where] and checks it is the one the index named (§3.8).
+  ///
+  /// The hash is what catches a truncated or corrupted download, and it is all it catches: it proves
+  /// the bytes are the ones the index listed and nothing about who wrote the index. Verifying that
+  /// is what the signature is for, and nothing does it yet (ADR-0018).
+  ///
+  /// Throws [RepositoryException] when it could not be fetched, and [PackageRefused] when what
+  /// arrived is not what was listed.
+  Future<ZipExtensionFiles> downloadPackage(
+    PackageLocation where, {
+    required String description,
+  }) async {
+    final response = await _send(Uri.parse(where.url));
+    if (response.status != 200) {
+      throw RepositoryException(
+        '${where.url} answered ${response.status} for the package',
+      );
+    }
+    return ZipExtensionFiles.verified(
+      response.body,
+      expected: where,
+      description: description,
     );
   }
 

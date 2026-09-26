@@ -147,6 +147,16 @@ final class RepositoryLibrary {
     return index;
   }
 
+  /// Downloads [entry]'s package and checks it is the one the listing named.
+  ///
+  /// Stops short of installing it, which is `ExtensionLibrary`'s: the package is a package whatever
+  /// door it came through, and there should be one path that unpacks, checks and records one.
+  Future<ZipExtensionFiles> fetchPackage(RepositoryEntry entry) =>
+      _fetcher.downloadPackage(
+        entry.package,
+        description: '${entry.manifest.name} ${entry.manifest.version}',
+      );
+
   /// Forgets [repository]. Extensions installed from it stay installed (§3.9); what is lost is
   /// updates.
   Future<void> remove(RepositoryRow repository) async {
