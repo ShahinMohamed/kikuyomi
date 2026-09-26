@@ -2,6 +2,38 @@
   "formatVersion": 1,
   "extensions": [
     {
+      "id": "org.kikuyomi.internetarchive",
+      "name": "Internet Archive",
+      "version": "1.0.0",
+      "versionCode": 1,
+      "apiVersion": "1.0",
+      "minAppVersion": "1.0.0",
+      "author": "Kikuyomi",
+      "contentRating": "everyone",
+      "domains": [
+        "archive.org",
+        "*.archive.org"
+      ],
+      "capabilities": [
+        "filters"
+      ],
+      "sources": [
+        {
+          "key": "internetarchive",
+          "name": "Internet Archive",
+          "lang": "multi",
+          "versionId": 1
+        }
+      ],
+      "package": {
+        "url": "https://raw.githubusercontent.com/kikuyomiapp/kikuyomi/HEAD/repository/packages/org.kikuyomi.internetarchive-1.zip",
+        "sha256": "e03db3d499fbd07fc77ffcbdde7a1f7db9757af6f691b1994606f2233758c7fe",
+        "size": 9269
+      },
+      "signature": "phNDOyD6xPlHRIHUT3AlaiUHCJN/S9+Nyz89HMVI+wHMgdL4BBsvcfi/MJPfO5a428HkQR8jrQkz0KhmF2wGDA==",
+      "revoked": false
+    },
+    {
       "id": "org.kikuyomi.librivox",
       "name": "LibriVox",
       "version": "1.0.0",
@@ -29,10 +61,10 @@
       ],
       "package": {
         "url": "https://raw.githubusercontent.com/kikuyomiapp/kikuyomi/HEAD/repository/packages/org.kikuyomi.librivox-1.zip",
-        "sha256": "b5ef180a255b9307eb1a74baa7e6f8c818a02ccbc0604b7d0ced8878b18a1151",
+        "sha256": "b300b61422498d252cf06a60d9b0ecfce8685b44c36e3b4a7b72542442ea6168",
         "size": 10638
       },
-      "signature": "9JdDEK3NSP1CZPoVSWNLl449Dh4lkzthqIj8vmA6mdyUw7x3SwfNNPzsJKe/L0Unim0I8EFCnIks7MvEVDIlDA==",
+      "signature": "/RL2JlsH8simTiuHplLcV7cTPqXietxNPKARlbYkn/M5M3aXZVYEEjBwPY7X+Pt9OdetFsAhYH8HMTWP2U8pCg==",
       "revoked": false
     }
   ]
