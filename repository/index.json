@@ -66,6 +66,37 @@
       },
       "signature": "/RL2JlsH8simTiuHplLcV7cTPqXietxNPKARlbYkn/M5M3aXZVYEEjBwPY7X+Pt9OdetFsAhYH8HMTWP2U8pCg==",
       "revoked": false
+    },
+    {
+      "id": "org.kikuyomi.storynory",
+      "name": "Storynory",
+      "version": "1.0.0",
+      "versionCode": 1,
+      "apiVersion": "1.0",
+      "minAppVersion": "1.0.0",
+      "author": "Kikuyomi",
+      "contentRating": "everyone",
+      "domains": [
+        "storynory.com",
+        "*.storynory.com",
+        "*.libsyn.com"
+      ],
+      "capabilities": [],
+      "sources": [
+        {
+          "key": "storynory",
+          "name": "Storynory",
+          "lang": "en",
+          "versionId": 1
+        }
+      ],
+      "package": {
+        "url": "https://raw.githubusercontent.com/kikuyomiapp/kikuyomi/HEAD/repository/packages/org.kikuyomi.storynory-1.zip",
+        "sha256": "2bf538f64ac2764bf6485abf97a9c78f4efef4a521fd56cdfc1405f2265ccb22",
+        "size": 5421
+      },
+      "signature": "4YPgaWPj8Ftr2MmeJl3XkMuIN3mYsMuGTIX1x/xnpGZ4pon6hQccu11OvjNb5kwM0c8pJ2asDtCWKG/vvhy6AA==",
+      "revoked": false
     }
   ]
 }
