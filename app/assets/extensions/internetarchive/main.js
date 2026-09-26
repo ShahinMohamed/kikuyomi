@@ -133,26 +133,62 @@ function msFromLength(value) {
   return Math.round(seconds * 1000);
 }
 
+/** The named entities an Archive description actually uses, plus the five any document may. */
+var ENTITIES = {
+  amp: '&', lt: '<', gt: '>', quot: '"', apos: "'",
+  nbsp: ' ', hellip: '\u2026', mdash: '\u2014', ndash: '\u2013',
+  lsquo: '\u2018', rsquo: '\u2019', ldquo: '\u201c', rdquo: '\u201d',
+  laquo: '\u00ab', raquo: '\u00bb', deg: '\u00b0', middot: '\u00b7',
+  eacute: '\u00e9', egrave: '\u00e8', agrave: '\u00e0', ccedil: '\u00e7',
+  uuml: '\u00fc', ouml: '\u00f6', auml: '\u00e4', szlig: '\u00df',
+  ntilde: '\u00f1', copy: '\u00a9', reg: '\u00ae', trade: '\u2122'
+};
+
+function decodeEntities(text) {
+  return text.replace(/&(#x?[0-9a-fA-F]+|[a-zA-Z]+);/g, function (whole, body) {
+    if (body.charAt(0) === '#') {
+      var hex = body.charAt(1) === 'x' || body.charAt(1) === 'X';
+      var code = parseInt(hex ? body.slice(2) : body.slice(1), hex ? 16 : 10);
+      if (!isFinite(code) || code <= 0 || code > 0x10ffff) return whole;
+      try {
+        return String.fromCodePoint(code);
+      } catch (error) {
+        return whole;
+      }
+    }
+    var named = ENTITIES[body.toLowerCase()];
+    return named === undefined ? whole : named;
+  });
+}
+
 /**
  * A description as plain text.
  *
- * The Archive's descriptions are HTML as often as not, and the app shows this as text. Parsed
- * rather than stripped with a pattern, because `html.parse` is the bridge that already knows what a
- * document is — and a description with an unclosed tag is common enough that guessing would show
- * half of one.
+ * The Archive's descriptions are HTML as often as not, and the app shows this as text.
+ *
+ * Stripped here rather than parsed, for one blunt reason: `kikuyomi.html.parse` returns a promise,
+ * and a description is read inside `getBookDetails` where awaiting one more round trip to the host
+ * for every book is not worth it. Reading it synchronously would give back a promise and quietly
+ * show the markup. The LibriVox extension does the same, and this follows it.
  */
 function plainText(value) {
-  var text = textOf(value);
-  if (!text) return undefined;
-  if (text.indexOf('<') < 0) return text;
-  try {
-    var document = kikuyomi.html.parse(text);
-    var read = textOf(document.text());
-    return read || undefined;
-  } catch (error) {
-    kikuyomi.log.warn('could not read a description as HTML: ' + error);
-    return text;
+  var html = textOf(value);
+  if (!html) return undefined;
+  var text = html
+    .replace(/\r\n?/g, '\n')
+    .replace(/<\s*br\s*\/?\s*>/gi, '\n')
+    .replace(/<\s*\/\s*(p|div|li|tr|h[1-6]|blockquote)\s*>/gi, '\n')
+    .replace(/<[^>]*>/g, '');
+  text = decodeEntities(text);
+  // Every control character but the newlines just introduced becomes a space.
+  text = text.replace(/[\u0000-\u0009\u000b-\u001f\u007f]/g, ' ');
+  var lines = text.split('\n');
+  for (var i = 0; i < lines.length; i++) {
+    lines[i] = lines[i].replace(/\s+/g, ' ').trim();
   }
+  text = lines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+  if (text.length > 20000) text = text.slice(0, 20000).trim();
+  return text || undefined;
 }
 
 /**

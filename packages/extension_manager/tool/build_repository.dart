@@ -77,6 +77,24 @@ Future<void> main(List<String> arguments) async {
   }
   entries.sort((a, b) => (a['id']! as String).compareTo(b['id']! as String));
 
+  // Anything left from a previous build that this index does not name. The index only ever lists
+  // current versions, so a package it does not name is one nothing can install — and left alone the
+  // folder would keep every version ever built for ever.
+  final named = {
+    for (final entry in entries)
+      ((entry['package']! as Map<String, Object?>)['url']! as String)
+          .split('/')
+          .last,
+  };
+  await for (final file in packages.list(followLinks: false)) {
+    if (file is File && !named.contains(_lastSegment(file.path))) {
+      await file.delete();
+      stdout.writeln(
+        'Removed ${_lastSegment(file.path)}, which nothing lists any more.',
+      );
+    }
+  }
+
   await File('${out.path}/repo.json').writeAsString(
     _pretty({
       'formatVersion': repositoryFormatVersion,
