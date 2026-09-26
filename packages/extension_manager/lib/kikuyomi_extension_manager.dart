@@ -15,4 +15,5 @@ export 'src/manifest.dart';
 export 'src/package.dart';
 export 'src/repository/fetch.dart';
 export 'src/repository/index.dart';
+export 'src/repository/package_zip.dart';
 export 'src/repository/location.dart';

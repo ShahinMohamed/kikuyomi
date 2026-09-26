@@ -280,20 +280,45 @@ final class ExtensionLibrary {
   }
 
   /// Reads the package [files] hold and takes it in, replacing any version of it already installed.
+  /// Installs the package a repository served, recording where it came from (§3.8, §3.9).
+  ///
+  /// Hashes are checked here, unlike a folder install: a package is assembled as one piece, so its
+  /// manifest's `files` map proves the manifest and the code were published together. That is worth
+  /// something for a package and worth nothing for a folder somebody is editing.
+  ///
+  /// It is still recorded `untrusted`. The hash proves the package is internally consistent and the
+  /// index's own hash proves the bytes are the ones listed; neither says who wrote the listing, and
+  /// nothing verifies the signature yet (ADR-0018). Marking it trusted would be the app asserting
+  /// something it has not checked.
+  Future<ExtensionSummary> installFromRepository(
+    ExtensionFiles files, {
+    required String repositoryUrl,
+    required String repositoryName,
+  }) => _install(
+    files,
+    handle: repositoryUrl,
+    name: repositoryName,
+    origin: ExtensionOrigin.repository,
+    checkHashes: true,
+  );
+
   Future<ExtensionSummary> _install(
     ExtensionFiles files, {
     required String handle,
     required String name,
+    ExtensionOrigin origin = ExtensionOrigin.folder,
+    bool checkHashes = false,
   }) async {
     final LoadedExtension read;
     try {
       read = LoadedExtension(
-        // Hashes are not checked. A manifest's `files` map proves that the manifest and the code were
-        // published together; in a folder an author is working in, it proves only which version of
-        // main.js they last took a hash of. The install is marked `untrusted` instead, and the
-        // Extensions screen says so, rather than refusing the one install an author makes most.
-        package: await readExtensionPackage(files, checkHashes: false),
-        origin: ExtensionOrigin.folder,
+        // A folder's hashes are not checked. A manifest's `files` map proves that the manifest and
+        // the code were published together; in a folder an author is working in, it proves only which
+        // version of main.js they last took a hash of. The install is marked `untrusted` instead, and
+        // the Extensions screen says so, rather than refusing the one install an author makes most.
+        // A package from a repository is a different case and is checked.
+        package: await readExtensionPackage(files, checkHashes: checkHashes),
+        origin: origin,
         status: ExtensionStatus.untrusted,
         originHandle: handle,
         originName: name,

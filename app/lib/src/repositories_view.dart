@@ -9,19 +9,23 @@ import 'package:kikuyomi_extension_manager/kikuyomi_extension_manager.dart';
 /// short, and seeing two repositories' offerings side by side is how a listener works out which one
 /// to take an extension from.
 ///
-/// **Installing is not offered, because it is not built.** Each entry shows the permissions summary
-/// §3.8 asks for — the domains it would contact, its content rating, its version — and the screen
-/// says plainly that taking one is still to come. A button that did nothing would be worse.
+/// Each entry shows the permissions summary §3.8 asks for before anything is taken — the domains it
+/// would contact, its content rating, its version — beside the button that takes it. An extension
+/// already installed says so, and one the repository has a newer version of offers the update, so
+/// the same row answers "have I got this" and "is there a newer one".
 class RepositoriesView extends StatelessWidget {
   const RepositoriesView({
     super.key,
     required this.repositories,
     required this.listings,
     required this.busyWith,
+    required this.installed,
+    required this.installing,
     required this.onAdd,
     required this.onBrowse,
     required this.onRefresh,
     required this.onRemove,
+    required this.onInstall,
   });
 
   /// Every repository the listener has added, in the order they added them.
@@ -33,10 +37,20 @@ class RepositoriesView extends StatelessWidget {
   /// The repository being worked on, or null. Adding uses -1, which is no row's id.
   final int? busyWith;
 
+  /// The version code of every extension already installed, by id, so a row can say whether it has
+  /// this one and whether the repository has a newer one.
+  final Map<String, int> installed;
+
+  /// The ids being installed right now.
+  final Set<String> installing;
+
   final VoidCallback onAdd;
   final ValueChanged<RepositoryRow> onBrowse;
   final ValueChanged<RepositoryRow> onRefresh;
   final ValueChanged<RepositoryRow> onRemove;
+
+  /// Takes an extension from the repository it is listed in.
+  final void Function(RepositoryRow, RepositoryEntry) onInstall;
 
   @override
   Widget build(BuildContext context) {
@@ -48,9 +62,12 @@ class RepositoriesView extends StatelessWidget {
         repository: repositories[index],
         listing: listings[repositories[index].id],
         busy: busyWith == repositories[index].id,
+        installed: installed,
+        installing: installing,
         onBrowse: onBrowse,
         onRefresh: onRefresh,
         onRemove: onRemove,
+        onInstall: onInstall,
       ),
     );
   }
@@ -102,21 +119,26 @@ class _RepositoryTile extends StatelessWidget {
     required this.repository,
     required this.listing,
     required this.busy,
+    required this.installed,
+    required this.installing,
     required this.onBrowse,
     required this.onRefresh,
     required this.onRemove,
+    required this.onInstall,
   });
 
   final RepositoryRow repository;
   final RepositoryIndex? listing;
   final bool busy;
+  final Map<String, int> installed;
+  final Set<String> installing;
   final ValueChanged<RepositoryRow> onBrowse;
   final ValueChanged<RepositoryRow> onRefresh;
   final ValueChanged<RepositoryRow> onRemove;
+  final void Function(RepositoryRow, RepositoryEntry) onInstall;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final offered = listing?.offered ?? const <RepositoryEntry>[];
     return ExpansionTile(
       title: Text(
@@ -128,7 +150,7 @@ class _RepositoryTile extends StatelessWidget {
         repository.url,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: theme.textTheme.bodySmall,
+        style: Theme.of(context).textTheme.bodySmall,
       ),
       // Asked for the first time it is opened rather than at start: a listener with a dozen
       // repositories should not pay for all of them to answer a question about one.
@@ -158,23 +180,16 @@ class _RepositoryTile extends StatelessWidget {
       children: [
         if (listing == null)
           const ListTile(dense: true, title: Text('Reading what it offers…'))
-        else ...[
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Text(
-              // Said once, at the top, rather than as a dead button on every row.
-              'Installing from a repository is not built yet. This is what it '
-              'offers.',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.outline,
-              ),
+        else if (offered.isEmpty)
+          const ListTile(dense: true, title: Text('It offers nothing yet.'))
+        else
+          for (final entry in offered)
+            _OfferTile(
+              entry: entry,
+              installedVersion: installed[entry.id],
+              installing: installing.contains(entry.id),
+              onInstall: () => onInstall(repository, entry),
             ),
-          ),
-          if (offered.isEmpty)
-            const ListTile(dense: true, title: Text('It offers nothing yet.'))
-          else
-            for (final entry in offered) _OfferTile(entry: entry),
-        ],
       ],
     );
   }
@@ -182,9 +197,28 @@ class _RepositoryTile extends StatelessWidget {
 
 /// One extension on offer, with the permissions summary §3.8 shows before anything is taken.
 class _OfferTile extends StatelessWidget {
-  const _OfferTile({required this.entry});
+  const _OfferTile({
+    required this.entry,
+    required this.installedVersion,
+    required this.installing,
+    required this.onInstall,
+  });
 
   final RepositoryEntry entry;
+
+  /// What is installed for this extension already, or null for one that is not.
+  final int? installedVersion;
+
+  final bool installing;
+  final VoidCallback onInstall;
+
+  /// Whether the repository is offering something newer than what is installed.
+  ///
+  /// §3.3 orders versions by `versionCode`, whatever the version string says, so this is the number
+  /// that decides it.
+  bool get _isUpdate =>
+      installedVersion != null &&
+      entry.manifest.versionCode > installedVersion!;
 
   @override
   Widget build(BuildContext context) {
@@ -217,6 +251,19 @@ class _OfferTile extends StatelessWidget {
           ),
         ],
       ),
+      trailing: installing
+          ? const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : installedVersion == null
+          ? TextButton(onPressed: onInstall, child: const Text('Install'))
+          : _isUpdate
+          ? TextButton(onPressed: onInstall, child: const Text('Update'))
+          // Nothing to do, said rather than left blank: "have I got this" is the question the row is
+          // being read to answer.
+          : Text('Installed', style: theme.textTheme.labelSmall),
     );
   }
 }

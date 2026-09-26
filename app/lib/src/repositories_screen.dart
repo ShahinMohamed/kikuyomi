@@ -6,6 +6,7 @@ import 'package:kikuyomi_extension_manager/kikuyomi_extension_manager.dart';
 import 'providers.dart';
 import 'repositories_view.dart';
 import 'snack_bars.dart';
+import 'sources/extension_library.dart';
 import 'sources/repository_library.dart';
 
 /// Repositories: the addresses extensions can be taken from (§3.8).
@@ -34,9 +35,20 @@ class _RepositoriesScreenState extends ConsumerState<RepositoriesScreen> {
   /// is fetched rather than stored (see `RepositoryLibrary`).
   final _listings = <int, RepositoryIndex>{};
 
+  /// The extensions being installed right now, by id. Its own state rather than [_busyWith], so
+  /// taking one extension does not grey out the repository it came from.
+  final _installing = <String>{};
+
   @override
   Widget build(BuildContext context) {
     final repositories = ref.watch(repositoriesProvider);
+    // So a row can say whether this extension is already here, and whether the repository has
+    // something newer than what is.
+    final installed = <String, int>{
+      for (final extension
+          in ref.watch(extensionsProvider).value ?? const <ExtensionSummary>[])
+        extension.row.id: extension.row.versionCode,
+    };
     return Scaffold(
       appBar: AppBar(title: const Text('Repositories')),
       floatingActionButton: FloatingActionButton.extended(
@@ -49,10 +61,13 @@ class _RepositoriesScreenState extends ConsumerState<RepositoriesScreen> {
           repositories: rows,
           listings: _listings,
           busyWith: _busyWith,
+          installed: installed,
+          installing: _installing,
           onAdd: _add,
           onBrowse: _browse,
           onRefresh: _refresh,
           onRemove: _remove,
+          onInstall: _install,
         ),
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(
@@ -166,6 +181,39 @@ class _RepositoriesScreenState extends ConsumerState<RepositoriesScreen> {
           ),
         ) ??
         false;
+  }
+
+  /// Takes [entry] from [repository]: downloads it, checks it is what was listed, installs it.
+  ///
+  /// Its own busy state, so a long download does not lock the repository it came from, and its own
+  /// error handling, because what can go wrong here — a package that is not the one listed, an
+  /// extension this build cannot run — is a different set of sentences from a fetch failing.
+  Future<void> _install(RepositoryRow repository, RepositoryEntry entry) async {
+    if (_installing.contains(entry.id)) return;
+    setState(() => _installing.add(entry.id));
+    final services = ref.read(servicesProvider);
+    try {
+      final files = await services.repositories.fetchPackage(entry);
+      final installed = await services.extensions.installFromRepository(
+        files,
+        repositoryUrl: repository.url,
+        repositoryName: repository.name,
+      );
+      _tell(
+        'Installed ${installed.name} ${installed.row.version}. Unverified: '
+        'nothing has checked who published it.',
+      );
+    } on PackageRefused catch (error) {
+      _tell(error.message);
+    } on ExtensionInstallException catch (error) {
+      _tell(error.message);
+    } on RepositoryException catch (error) {
+      _tell(error.message);
+    } catch (error) {
+      _tell('$error');
+    } finally {
+      if (mounted) setState(() => _installing.remove(entry.id));
+    }
   }
 
   Future<void> _browse(RepositoryRow repository) =>

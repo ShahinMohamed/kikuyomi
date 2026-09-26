@@ -62,12 +62,14 @@ void main() {
   late List<RepositoryRow> browsed;
   late List<RepositoryRow> refreshed;
   late List<RepositoryRow> removed;
+  late List<RepositoryEntry> installs;
   late int addTaps;
 
   setUp(() {
     browsed = [];
     refreshed = [];
     removed = [];
+    installs = [];
     addTaps = 0;
   });
 
@@ -76,6 +78,8 @@ void main() {
     List<RepositoryRow> repositories = const [],
     Map<int, RepositoryIndex> listings = const {},
     int? busyWith,
+    Map<String, int> installed = const {},
+    Set<String> installing = const {},
   }) => tester.pumpWidget(
     MaterialApp(
       home: Scaffold(
@@ -83,10 +87,13 @@ void main() {
           repositories: repositories,
           listings: listings,
           busyWith: busyWith,
+          installed: installed,
+          installing: installing,
           onAdd: () => addTaps++,
           onBrowse: browsed.add,
           onRefresh: refreshed.add,
           onRemove: removed.add,
+          onInstall: (_, entry) => installs.add(entry),
         ),
       ),
     ),
@@ -225,8 +232,7 @@ void main() {
       expect(find.textContaining('offers nothing'), findsOneWidget);
     });
 
-    testWidgets('does not offer to install, and says why', (tester) async {
-      // The refusal this screen is built around: installing is not built, so nothing pretends it is.
+    testWidgets('offers to install one that is not here', (tester) async {
       await pumpView(
         tester,
         repositories: [repository()],
@@ -234,9 +240,57 @@ void main() {
       );
       await open(tester);
 
-      expect(find.textContaining('not built yet'), findsOneWidget);
-      expect(find.widgetWithText(FilledButton, 'Install'), findsNothing);
-      expect(find.widgetWithText(OutlinedButton, 'Install'), findsNothing);
+      await tester.tap(find.text('Install'));
+      await tester.pumpAndSettle();
+
+      expect(installs.single.id, 'org.example.librivox');
+    });
+
+    testWidgets('says so for one already here at the same version', (
+      tester,
+    ) async {
+      // "Have I got this" is the question the row is being read to answer, so it is answered rather
+      // than left blank.
+      await pumpView(
+        tester,
+        repositories: [repository()],
+        listings: {1: listing()},
+        installed: {'org.example.librivox': 14},
+      );
+      await open(tester);
+
+      expect(find.text('Installed'), findsOneWidget);
+      expect(find.text('Install'), findsNothing);
+    });
+
+    testWidgets('offers the update when the repository has a newer one', (
+      tester,
+    ) async {
+      // §3.3 orders versions by their code, whatever the version string says.
+      await pumpView(
+        tester,
+        repositories: [repository()],
+        listings: {1: listing()},
+        installed: {'org.example.librivox': 13},
+      );
+      await open(tester);
+
+      expect(find.text('Update'), findsOneWidget);
+    });
+
+    testWidgets('shows a spinner on the one being installed', (tester) async {
+      await pumpView(
+        tester,
+        repositories: [repository()],
+        listings: {1: listing()},
+        installing: {'org.example.librivox'},
+      );
+      await tester.tap(find.text('Kikuyomi official'));
+      // Pumped rather than settled: the spinner turns for ever, so there is nothing to settle to.
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.text('Install'), findsNothing);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
   });
 }
