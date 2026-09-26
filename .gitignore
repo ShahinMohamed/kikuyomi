@@ -17,3 +17,7 @@ build/
 # Misc
 *.log
 .DS_Store
+
+# The repository signing key (ADR-0018). Private: whoever has it can sign packages as this
+# repository, so it stays on the machine that builds the repository and never in the history.
+repository-signing-key.txt
