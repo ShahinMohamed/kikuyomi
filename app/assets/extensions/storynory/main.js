@@ -180,6 +180,7 @@ async function feed() {
 function read(xml) {
   var channel = xml.split('<item')[0];
   var cover = tagAttr(channel, 'itunes:image', 'href');
+  var genres = categoriesOf(channel);
   var author = tagText(channel, 'itunes:author') || 'Storynory';
   var language = textOf(tagText(channel, 'language')) || undefined;
 
@@ -205,12 +206,31 @@ function read(xml) {
       durationMs: msFromDuration(tagText(item, 'itunes:duration')),
       publishedDate: yearOf(tagText(item, 'pubDate')),
       author: author,
+      genres: genres,
       language: language,
       url: url
     });
   }
   if (!stories.length) throw sourceError('Parse', 'storynory.com listed no stories');
   return stories;
+}
+
+/**
+ * The feed's own categories, as genres.
+ *
+ * On the channel rather than on an item: this feed categorises itself once and its stories not at
+ * all, which is the ordinary shape of a podcast feed. Every story therefore carries the same two,
+ * which is honest — they are all children's stories — and better than sending none at all.
+ */
+function categoriesOf(channel) {
+  var genres = [];
+  var pattern = /<itunes:category[^>]*text="([^"]*)"/g;
+  var match;
+  while ((match = pattern.exec(channel)) !== null) {
+    var name = decodeEntities(match[1]).trim();
+    if (name && genres.indexOf(name) < 0) genres.push(name);
+  }
+  return genres;
 }
 
 function summaryOf(story) {
@@ -282,6 +302,10 @@ var storynory = {
       key: story.key,
       title: story.title,
       authors: [story.author],
+      // Required by the contract, and empty because the feed names no reader. Storynory's stories
+      // are read by people whose names the feed does not carry, so nothing is claimed for them.
+      narrators: [],
+      genres: story.genres,
       description: story.description,
       coverUrl: story.coverUrl,
       language: story.language,
