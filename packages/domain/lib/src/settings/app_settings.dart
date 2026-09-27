@@ -108,6 +108,18 @@ abstract final class AppSettings {
     decode: _decodeFlag,
   );
 
+  /// The extensions shipped with the app that it has already installed once, by folder name.
+  ///
+  /// [shippedExtensionsSeeded] says whether seeding has happened; this says what it covered, so an
+  /// extension shipped by a later version is installed on the next start, while one the listener
+  /// removed stays removed. Not set on an install seeded before this existed, which covered the
+  /// first four.
+  static const shippedExtensionsOffered = Setting<List<String>>(
+    'extensions.shippedOffered',
+    encode: _encodeNames,
+    decode: _decodeNames,
+  );
+
   /// Whether chapters listened to before listened state was recorded (§4.5) have been recorded from
   /// the positions saved in them. Not set until that has been done, which happens once: after it,
   /// a chapter the listener marks not listened stays so, wherever its position is.
@@ -144,6 +156,7 @@ abstract final class AppSettings {
     backupSetup,
     librarySort,
     shippedExtensionsSeeded,
+    shippedExtensionsOffered,
     pinnedSources,
     recentSources,
     listenedBackfilled,
@@ -188,6 +201,13 @@ BackupSetup? _decodeSetup(String stored) =>
 String _encodeSort(LibrarySort sort) => sort.name;
 
 String _encodeNumber(double value) => '$value';
+
+String _encodeNames(List<String> names) => names.join(',');
+
+List<String> _decodeNames(String stored) => [
+  for (final name in stored.split(','))
+    if (name.trim().isNotEmpty) name.trim(),
+];
 
 /// A text scale, or null for anything that is not one a reader could have chosen.
 double? _decodeScale(String stored) => switch (double.tryParse(stored)) {

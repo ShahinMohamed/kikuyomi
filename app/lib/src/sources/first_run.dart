@@ -47,6 +47,16 @@ const shippedExtensionNames = [
   'internetarchive',
   'storynory',
   'podcasts',
+  'standardebooks',
+];
+
+/// What an install seeded before [AppSettings.shippedExtensionsOffered] was recorded had been
+/// offered: the four the app first shipped.
+const _offeredBeforeRecording = [
+  'librivox',
+  'internetarchive',
+  'storynory',
+  'podcasts',
 ];
 
 /// Adds the official repository and installs what it publishes, once.
@@ -68,6 +78,12 @@ Future<void> seedOfficialRepository({
 }) async {
   final seededBefore =
       settings.read(AppSettings.shippedExtensionsSeeded) ?? false;
+  // Offered once is offered: an extension the listener removed is never put back, and one shipped
+  // since the last start is installed now.
+  final offered = {
+    ...settings.read(AppSettings.shippedExtensionsOffered) ??
+        (seededBefore ? _offeredBeforeRecording : const <String>[]),
+  };
 
   final RepositoryInfo info;
   try {
@@ -102,14 +118,17 @@ Future<void> seedOfficialRepository({
       final package = await readExtensionPackage(files, checkHashes: true);
       final row = installed[package.manifest.id];
       final wanted = row == null
-          ? !seededBefore
+          ? !offered.contains(name)
           : row.origin == ExtensionOrigin.bundled;
-      if (!wanted) continue;
-      await extensions.installFromRepository(
-        files,
-        repositoryUrl: officialRepositoryUrl,
-        repositoryName: info.name,
-      );
+      if (wanted) {
+        await extensions.installFromRepository(
+          files,
+          repositoryUrl: officialRepositoryUrl,
+          repositoryName: info.name,
+        );
+      }
+      // Only once it is in, or was already: one that failed to install is tried again next start.
+      offered.add(name);
     } catch (error) {
       console.report(name, error);
     }
@@ -118,4 +137,5 @@ Future<void> seedOfficialRepository({
   if (!seededBefore) {
     await settings.write(AppSettings.shippedExtensionsSeeded, true);
   }
+  await settings.write(AppSettings.shippedExtensionsOffered, [...offered]);
 }

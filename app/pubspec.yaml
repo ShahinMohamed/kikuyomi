@@ -117,6 +117,7 @@ flutter:
     - assets/extensions/internetarchive/
     - assets/extensions/storynory/
     - assets/extensions/podcasts/
+    - assets/extensions/standardebooks/
     # The repository's own `repo.json`, so its key is pinned from the asset rather than written into
     # the code twice.
     - assets/repository/

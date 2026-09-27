@@ -82,6 +82,8 @@ flutter:
     - assets/internetarchive/fixtures/
     - assets/storynory/
     - assets/storynory/fixtures/
+    - assets/standardebooks/
+    - assets/standardebooks/fixtures/
     - assets/podcasts/
     - assets/podcasts/fixtures/
 

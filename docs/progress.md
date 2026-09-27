@@ -225,4 +225,16 @@ changes, and the list is a sliver that builds a row as it comes into view.
 ## Asked for, not in the roadmap
 
 - [ ] A theme picker in settings, which would make the accent colour a choice rather than a decision
-- [ ] An ebook reader alongside the audiobook player, as Aniyomi does manga and anime. The largest single item on any of these lists: `source_api` would need a content kind, the progress model does not carry over from audio, and the reader itself is a screen with no equivalent here
+- [x] An ebook reader alongside the audiobook player, as Aniyomi does manga and anime (ADR-0019,
+      ADR-0020). Done in five slices:
+  - [x] SourceAPI 1.1: a source's kind, `getChapterContent`, and HTML or text decoded into a closed
+        set of blocks, never rendered
+  - [x] Schema version 5: `book.kind` and `reading_state`, a chapter and a fraction through it;
+        backups carry both (format version 3)
+  - [x] Local EPUBs: read, titled from their own table of contents, and refused when locked with
+        DRM, naming the lock
+  - [x] A Read tab beside Listen, with Continue Reading, and the reader: scrolled, text size, a
+        chapter list, place saved and restored, chapters finished by reading to the end
+  - [x] Browse split into audio and ebook sources and extensions; Standard Ebooks as the first
+        source of books to read, shipped and run on the real engine by the probe
+  - [ ] Not yet: paged layout, themes and fonts for reading, and reading chapters offline

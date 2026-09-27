@@ -159,6 +159,36 @@
       "revoked": false
     },
     {
+      "id": "org.kikuyomi.standardebooks",
+      "name": "Standard Ebooks",
+      "version": "1.0.0",
+      "versionCode": 1,
+      "apiVersion": "1.1",
+      "minAppVersion": "1.0.0",
+      "author": "Kikuyomi",
+      "contentRating": "everyone",
+      "domains": [
+        "standardebooks.org"
+      ],
+      "capabilities": [],
+      "sources": [
+        {
+          "key": "standardebooks",
+          "name": "Standard Ebooks",
+          "lang": "en",
+          "versionId": 1,
+          "kind": "text"
+        }
+      ],
+      "package": {
+        "url": "https://raw.githubusercontent.com/kikuyomiapp/kikuyomi/HEAD/repository/packages/org.kikuyomi.standardebooks-1.zip",
+        "sha256": "5a2722667aced8672e950e719cea362b9dd43aca9216babe003881536acb5b6c",
+        "size": 8858
+      },
+      "signature": "KV/L8WLxWGi12TjOa6hBKzf5OA4ydZY3LzR3KxGY92NBl+9Bpemz3mM3Em4F+unkrqdCpkrsaXKUS4tkyuoNDg==",
+      "revoked": false
+    },
+    {
       "id": "org.kikuyomi.storynory",
       "name": "Storynory",
       "version": "1.0.3",

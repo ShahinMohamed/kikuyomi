@@ -26,9 +26,14 @@ class SourcesView extends StatelessWidget {
     this.pinned = const [],
     this.recent = const [],
     this.onTogglePin,
+    this.emptyMessage =
+        'No sources yet. Extensions you install will appear here.',
   });
 
   final List<SourceDescription> sources;
+
+  /// Said in place of the list when there are no sources.
+  final String emptyMessage;
 
   /// The installed extensions by id, so a source can draw the icon of the one it came from. A
   /// source whose extension is not here falls back to a glyph.
@@ -48,13 +53,10 @@ class SourcesView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (sources.isEmpty) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(24),
-          child: Text(
-            'No sources yet. Extensions you install will appear here.',
-            textAlign: TextAlign.center,
-          ),
+          padding: const EdgeInsets.all(24),
+          child: Text(emptyMessage, textAlign: TextAlign.center),
         ),
       );
     }

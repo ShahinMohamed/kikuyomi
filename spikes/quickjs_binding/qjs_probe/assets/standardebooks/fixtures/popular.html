@@ -1,0 +1,797 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en-US">
+<head prefix="twitter: https://twitter.com/ schema: http://schema.org/">	<meta charset="utf-8"/>
+	<title>Browse Standard Ebooks - Standard Ebooks: Free and liberated ebooks, carefully produced for the true book lover</title>
+			<meta content="Page 1 of the Standard Ebooks free ebook library" name="description"/>
+		<meta content="width=device-width, initial-scale=1" name="viewport"/>
+	<link rel="preload" as="font" href="/fonts/crimson-pro.woff2" type="font/woff2" crossorigin="anonymous"/> 	<link rel="preload" as="font" href="/fonts/league-spartan-bold.woff2" type="font/woff2" crossorigin="anonymous"/>
+	<link rel="preload" as="font" href="/fonts/fork-awesome-subset.woff2" type="font/woff2" crossorigin="anonymous"/>
+	<link rel="preload" as="font" href="/fonts/crimson-pro-italic.woff2" type="font/woff2" crossorigin="anonymous"/> 			<link href="/css/core.css?version=1787262562" media="screen" rel="stylesheet" type="text/css"/>
+					<link href="/css/dark.css?version=1782779829" media="screen and (prefers-color-scheme: dark)" rel="stylesheet" type="text/css"/>
+								<link rel="canonical" href="https://standardebooks.org/ebooks?per-page=48&amp;sort=popularity" />
+		<link href="/images/favicons/apple-touch-icon.png" rel="apple-touch-icon" sizes="180x180"/>
+	<link href="/images/favicons/favicon-64x64.png" rel="icon" sizes="64x64" type="image/png"/>
+	<link href="/images/favicons/favicon-32x32.png" rel="icon" sizes="32x32" type="image/png"/>
+	<link href="/images/favicons/favicon-16x16.svg" rel="icon" sizes="16x16" type="image/svg+xml"/>
+	<link href="/manifest.json" rel="manifest"/>
+		<link rel="alternate" type="application/atom+xml" title="Standard Ebooks - New Releases" href="https://standardebooks.org/feeds/atom/new-releases"/>
+	<link rel="alternate" type="application/atom+xml;profile=opds-catalog;kind=acquisition" title="Standard Ebooks - New Releases" href="https://standardebooks.org/feeds/opds/new-releases"/>
+	<link rel="alternate" type="application/atom+xml" title="Standard Ebooks - Blog" href="https://standardebooks.org/feeds/atom/blog"/>
+	<link rel="search" href="https://standardebooks.org/opensearch" type="application/opensearchdescription+xml" title="Standard Ebooks"/>			<meta content="#394451" name="theme-color"/>
+		<meta content="Browse Standard Ebooks" property="og:title"/>
+		<meta content="website" property="og:type"/>
+		<meta content="https://standardebooks.org/ebooks" property="og:url"/>
+		<meta content="https://standardebooks.org/images/logo.png" property="og:image"/>
+		<meta content="summary_large_image" name="twitter:card"/>
+		<meta content="@standardebooks" name="twitter:site"/>
+		<meta content="@standardebooks" name="twitter:creator"/>
+		<meta content="@standardebooks@mastodon.social" name="fediverse:creator"/>
+		</head>
+<body>
+	<header>
+				<a href="/">Standard Ebooks</a>
+				<a href="/honeypot" hidden="hidden" class="honeypot" rel="nofollow">Following this link will ban your IP for 24 hours</a>
+		<nav>
+			<ul>
+				<li>
+					<a aria-current="page" href="/ebooks">Ebooks</a>
+				</li>
+				<li>
+					<a href="/about">About</a>
+				</li>
+				<li>
+					<a href="/newsletter">Newsletter</a>
+				</li>
+				<li>
+					<a href="/blog">Blog</a>
+				</li>
+				<li>
+					<a href="/contribute">Get Involved</a>
+				</li>
+				<li>
+					<a href="/donate">Donate</a>
+				</li>
+			</ul>
+		</nav>
+	</header>
+<main class="ebooks">
+	<h1>Browse Ebooks</h1>
+	<nav class="ebooks-navigation">
+		<ul>
+			<li><a href="/collections">Browse by collection</a></li>
+			<li><a href="/authors">Browse by author</a></li>
+		</ul>
+	</nav>
+	
+	
+	<form action="/ebooks" method="GET" rel="search" role="search">
+	<label class="tags">Subjects
+		<select  multiple="multiple" name="tags[]">
+			<option value="all">All</option>
+							<option value="adventure">Adventure</option>
+							<option value="autobiography">Autobiography</option>
+							<option value="biography">Biography</option>
+							<option value="childrens">Children’s</option>
+							<option value="comedy">Comedy</option>
+							<option value="drama">Drama</option>
+							<option value="fantasy">Fantasy</option>
+							<option value="fiction">Fiction</option>
+							<option value="horror">Horror</option>
+							<option value="memoir">Memoir</option>
+							<option value="mystery">Mystery</option>
+							<option value="nonfiction">Nonfiction</option>
+							<option value="philosophy">Philosophy</option>
+							<option value="poetry">Poetry</option>
+							<option value="satire">Satire</option>
+							<option value="science-fiction">Science Fiction</option>
+							<option value="shorts">Shorts</option>
+							<option value="spirituality">Spirituality</option>
+							<option value="travel">Travel</option>
+					</select>
+	</label>
+	<label>Keywords
+		<input type="search" name="query" value=""/>
+	</label>
+	<label class="sort">
+		<span>Sort</span>
+		<select name="sort">
+							<option value="default">S.E. release date (new → old)</option>
+						<option value="author-alpha">Author name (a → z)</option>
+			<option value="reading-ease">Reading ease (easy → hard)</option>
+			<option value="length">Length (short → long)</option>
+			<option value="popularity" selected="selected">Popularity (most → least)</option>
+		</select>
+	</label>
+	<label class="view">
+		<span>View</span>
+		<select name="view">
+			<option value="grid" selected="selected">Grid</option>
+			<option value="list">List</option>
+		</select>
+	</label>
+	<label class="per-page">
+		<span>Per page</span>
+		<select name="per-page">
+			<option value="12">12</option>
+			<option value="24">24</option>
+			<option value="48" selected="selected">48</option>
+		</select>
+	</label>
+	<button>Filter</button>
+</form>
+
+			<ol class="ebooks-list grid">
+						<li typeof="schema:Book" about="/ebooks/jane-austen/pride-and-prejudice">
+						<div class="thumbnail-container" aria-hidden="true">				<a href="/ebooks/jane-austen/pride-and-prejudice" tabindex="-1" property="schema:url">
+											<picture>
+							<source srcset="/images/covers/jane-austen_pride-and-prejudice/495dd49502f1fd5609a27a16f5af2f0a387accb4/cover@2x.avif 2x, /images/covers/jane-austen_pride-and-prejudice/495dd49502f1fd5609a27a16f5af2f0a387accb4/cover.avif 1x" type="image/avif"/>							<source srcset="/images/covers/jane-austen_pride-and-prejudice/495dd49502f1fd5609a27a16f5af2f0a387accb4/cover@2x.jpg 2x, /images/covers/jane-austen_pride-and-prejudice/495dd49502f1fd5609a27a16f5af2f0a387accb4/cover.jpg 1x" type="image/jpeg"/>							<img src="/images/covers/jane-austen_pride-and-prejudice/495dd49502f1fd5609a27a16f5af2f0a387accb4/cover@2x.jpg" alt="" property="schema:image" height="335" width="224" loading="lazy"/>
+						</picture>
+									</a>
+			</div>
+			<p><a href="/ebooks/jane-austen/pride-and-prejudice" property="schema:url"><span property="schema:name">Pride and Prejudice</span></a></p>
+												<p class="author" typeof="schema:Person" property="schema:author" resource="/ebooks/jane-austen"><a href="https://standardebooks.org/ebooks/jane-austen" property="schema:url"><span property="schema:name">Jane Austen</span></a></p>
+									</li>
+					<li typeof="schema:Book" about="/ebooks/mary-shelley/frankenstein">
+						<div class="thumbnail-container" aria-hidden="true">				<a href="/ebooks/mary-shelley/frankenstein" tabindex="-1" property="schema:url">
+											<picture>
+							<source srcset="/images/covers/mary-shelley_frankenstein/a2a4d948cd6d7eaa6bd1ce223fe17e4380689b5a/cover@2x.avif 2x, /images/covers/mary-shelley_frankenstein/a2a4d948cd6d7eaa6bd1ce223fe17e4380689b5a/cover.avif 1x" type="image/avif"/>							<source srcset="/images/covers/mary-shelley_frankenstein/a2a4d948cd6d7eaa6bd1ce223fe17e4380689b5a/cover@2x.jpg 2x, /images/covers/mary-shelley_frankenstein/a2a4d948cd6d7eaa6bd1ce223fe17e4380689b5a/cover.jpg 1x" type="image/jpeg"/>							<img src="/images/covers/mary-shelley_frankenstein/a2a4d948cd6d7eaa6bd1ce223fe17e4380689b5a/cover@2x.jpg" alt="" property="schema:image" height="335" width="224" loading="lazy"/>
+						</picture>
+									</a>
+			</div>
+			<p><a href="/ebooks/mary-shelley/frankenstein" property="schema:url"><span property="schema:name">Frankenstein</span></a></p>
+												<p class="author" typeof="schema:Person" property="schema:author" resource="/ebooks/mary-shelley"><a href="https://standardebooks.org/ebooks/mary-shelley" property="schema:url"><span property="schema:name">Mary Shelley</span></a></p>
+									</li>
+					<li typeof="schema:Book" about="/ebooks/alexandre-dumas/the-count-of-monte-cristo/chapman-and-hall">
+						<div class="thumbnail-container" aria-hidden="true">				<a href="/ebooks/alexandre-dumas/the-count-of-monte-cristo/chapman-and-hall" tabindex="-1" property="schema:url">
+											<picture>
+							<source srcset="/images/covers/alexandre-dumas_the-count-of-monte-cristo_chapman-and-hall/c819d1266b6f91c00f460389467ffdaa582d0ea6/cover@2x.avif 2x, /images/covers/alexandre-dumas_the-count-of-monte-cristo_chapman-and-hall/c819d1266b6f91c00f460389467ffdaa582d0ea6/cover.avif 1x" type="image/avif"/>							<source srcset="/images/covers/alexandre-dumas_the-count-of-monte-cristo_chapman-and-hall/c819d1266b6f91c00f460389467ffdaa582d0ea6/cover@2x.jpg 2x, /images/covers/alexandre-dumas_the-count-of-monte-cristo_chapman-and-hall/c819d1266b6f91c00f460389467ffdaa582d0ea6/cover.jpg 1x" type="image/jpeg"/>							<img src="/images/covers/alexandre-dumas_the-count-of-monte-cristo_chapman-and-hall/c819d1266b6f91c00f460389467ffdaa582d0ea6/cover@2x.jpg" alt="" property="schema:image" height="335" width="224" loading="lazy"/>
+						</picture>
+									</a>
+			</div>
+			<p><a href="/ebooks/alexandre-dumas/the-count-of-monte-cristo/chapman-and-hall" property="schema:url"><span property="schema:name">The Count of Monte Cristo</span></a></p>
+												<p class="author" typeof="schema:Person" property="schema:author" resource="/ebooks/alexandre-dumas"><a href="https://standardebooks.org/ebooks/alexandre-dumas" property="schema:url"><span property="schema:name">Alexandre Dumas</span></a></p>
+									</li>
+					<li typeof="schema:Book" about="/ebooks/h-g-wells/the-wheels-of-chance">
+						<div class="thumbnail-container" aria-hidden="true">				<a href="/ebooks/h-g-wells/the-wheels-of-chance" tabindex="-1" property="schema:url">
+											<picture>
+							<source srcset="/images/covers/h-g-wells_the-wheels-of-chance/f293c13e1d9309569e2fee5a65783b66301283f5/cover@2x.avif 2x, /images/covers/h-g-wells_the-wheels-of-chance/f293c13e1d9309569e2fee5a65783b66301283f5/cover.avif 1x" type="image/avif"/>							<source srcset="/images/covers/h-g-wells_the-wheels-of-chance/f293c13e1d9309569e2fee5a65783b66301283f5/cover@2x.jpg 2x, /images/covers/h-g-wells_the-wheels-of-chance/f293c13e1d9309569e2fee5a65783b66301283f5/cover.jpg 1x" type="image/jpeg"/>							<img src="/images/covers/h-g-wells_the-wheels-of-chance/f293c13e1d9309569e2fee5a65783b66301283f5/cover@2x.jpg" alt="" property="schema:image" height="335" width="224" loading="lazy"/>
+						</picture>
+									</a>
+			</div>
+			<p><a href="/ebooks/h-g-wells/the-wheels-of-chance" property="schema:url"><span property="schema:name">The Wheels of Chance</span></a></p>
+												<p class="author" typeof="schema:Person" property="schema:author" resource="/ebooks/h-g-wells"><a href="https://standardebooks.org/ebooks/h-g-wells" property="schema:url"><span property="schema:name">H. G. Wells</span></a></p>
+									</li>
+					<li typeof="schema:Book" about="/ebooks/jane-c-loudon/the-mummy">
+						<div class="thumbnail-container" aria-hidden="true">				<a href="/ebooks/jane-c-loudon/the-mummy" tabindex="-1" property="schema:url">
+											<picture>
+							<source srcset="/images/covers/jane-c-loudon_the-mummy/9ec8047e8252bca555fa9a35b0aa0395f59119b5/cover@2x.avif 2x, /images/covers/jane-c-loudon_the-mummy/9ec8047e8252bca555fa9a35b0aa0395f59119b5/cover.avif 1x" type="image/avif"/>							<source srcset="/images/covers/jane-c-loudon_the-mummy/9ec8047e8252bca555fa9a35b0aa0395f59119b5/cover@2x.jpg 2x, /images/covers/jane-c-loudon_the-mummy/9ec8047e8252bca555fa9a35b0aa0395f59119b5/cover.jpg 1x" type="image/jpeg"/>							<img src="/images/covers/jane-c-loudon_the-mummy/9ec8047e8252bca555fa9a35b0aa0395f59119b5/cover@2x.jpg" alt="" property="schema:image" height="335" width="224" loading="lazy"/>
+						</picture>
+									</a>
+			</div>
+			<p><a href="/ebooks/jane-c-loudon/the-mummy" property="schema:url"><span property="schema:name">The Mummy!</span></a></p>
+												<p class="author" typeof="schema:Person" property="schema:author" resource="/ebooks/jane-c-loudon"><a href="https://standardebooks.org/ebooks/jane-c-loudon" property="schema:url"><span property="schema:name">Jane C. Loudon</span></a></p>
+									</li>
+					<li typeof="schema:Book" about="/ebooks/thomas-mann/short-fiction/various-translators">
+						<div class="thumbnail-container" aria-hidden="true">				<a href="/ebooks/thomas-mann/short-fiction/various-translators" tabindex="-1" property="schema:url">
+											<picture>
+							<source srcset="/images/covers/thomas-mann_short-fiction_various-translators/cb6b8097af47a431e7218e928190e49d1b2e3746/cover@2x.avif 2x, /images/covers/thomas-mann_short-fiction_various-translators/cb6b8097af47a431e7218e928190e49d1b2e3746/cover.avif 1x" type="image/avif"/>							<source srcset="/images/covers/thomas-mann_short-fiction_various-translators/cb6b8097af47a431e7218e928190e49d1b2e3746/cover@2x.jpg 2x, /images/covers/thomas-mann_short-fiction_various-translators/cb6b8097af47a431e7218e928190e49d1b2e3746/cover.jpg 1x" type="image/jpeg"/>							<img src="/images/covers/thomas-mann_short-fiction_various-translators/cb6b8097af47a431e7218e928190e49d1b2e3746/cover@2x.jpg" alt="" property="schema:image" height="335" width="224" loading="lazy"/>
+						</picture>
+									</a>
+			</div>
+			<p><a href="/ebooks/thomas-mann/short-fiction/various-translators" property="schema:url"><span property="schema:name">Short Fiction</span></a></p>
+												<p class="author" typeof="schema:Person" property="schema:author" resource="/ebooks/thomas-mann"><a href="https://standardebooks.org/ebooks/thomas-mann" property="schema:url"><span property="schema:name">Thomas Mann</span></a></p>
+									</li>
+					<li typeof="schema:Book" about="/ebooks/bram-stoker/dracula">
+						<div class="thumbnail-container" aria-hidden="true">				<a href="/ebooks/bram-stoker/dracula" tabindex="-1" property="schema:url">
+											<picture>
+							<source srcset="/images/covers/bram-stoker_dracula/a02c17aca72aec342c861065c62cd25559a6d960/cover@2x.avif 2x, /images/covers/bram-stoker_dracula/a02c17aca72aec342c861065c62cd25559a6d960/cover.avif 1x" type="image/avif"/>							<source srcset="/images/covers/bram-stoker_dracula/a02c17aca72aec342c861065c62cd25559a6d960/cover@2x.jpg 2x, /images/covers/bram-stoker_dracula/a02c17aca72aec342c861065c62cd25559a6d960/cover.jpg 1x" type="image/jpeg"/>							<img src="/images/covers/bram-stoker_dracula/a02c17aca72aec342c861065c62cd25559a6d960/cover@2x.jpg" alt="" property="schema:image" height="335" width="224" loading="lazy"/>
+						</picture>
+									</a>
+			</div>
+			<p><a href="/ebooks/bram-stoker/dracula" property="schema:url"><span property="schema:name">Dracula</span></a></p>
+												<p class="author" typeof="schema:Person" property="schema:author" resource="/ebooks/bram-stoker"><a href="https://standardebooks.org/ebooks/bram-stoker" property="schema:url"><span property="schema:name">Bram Stoker</span></a></p>
+									</li>
+					<li typeof="schema:Book" about="/ebooks/herbert-gorman/the-place-called-dagon">
+						<div class="thumbnail-container" aria-hidden="true">				<a href="/ebooks/herbert-gorman/the-place-called-dagon" tabindex="-1" property="schema:url">
+											<picture>
+							<source srcset="/images/covers/herbert-gorman_the-place-called-dagon/f5943ba7bc90c500628a8a074e883dc3de48100a/cover@2x.avif 2x, /images/covers/herbert-gorman_the-place-called-dagon/f5943ba7bc90c500628a8a074e883dc3de48100a/cover.avif 1x" type="image/avif"/>							<source srcset="/images/covers/herbert-gorman_the-place-called-dagon/f5943ba7bc90c500628a8a074e883dc3de48100a/cover@2x.jpg 2x, /images/covers/herbert-gorman_the-place-called-dagon/f5943ba7bc90c500628a8a074e883dc3de48100a/cover.jpg 1x" type="image/jpeg"/>							<img src="/images/covers/herbert-gorman_the-place-called-dagon/f5943ba7bc90c500628a8a074e883dc3de48100a/cover@2x.jpg" alt="" property="schema:image" height="335" width="224" loading="lazy"/>
+						</picture>
+									</a>
+			</div>
+			<p><a href="/ebooks/herbert-gorman/the-place-called-dagon" property="schema:url"><span property="schema:name">The Place Called Dagon</span></a></p>
+												<p class="author" typeof="schema:Person" property="schema:author" resource="/ebooks/herbert-gorman"><a href="https://standardebooks.org/ebooks/herbert-gorman" property="schema:url"><span property="schema:name">Herbert Gorman</span></a></p>
+									</li>
+					<li typeof="schema:Book" about="/ebooks/homer/the-odyssey/william-cullen-bryant">
+						<div class="thumbnail-container" aria-hidden="true">				<a href="/ebooks/homer/the-odyssey/william-cullen-bryant" tabindex="-1" property="schema:url">
+											<picture>
+							<source srcset="/images/covers/homer_the-odyssey_william-cullen-bryant/b0a8b196f6813f15676895ff62ddbd3d6b2cd365/cover@2x.avif 2x, /images/covers/homer_the-odyssey_william-cullen-bryant/b0a8b196f6813f15676895ff62ddbd3d6b2cd365/cover.avif 1x" type="image/avif"/>							<source srcset="/images/covers/homer_the-odyssey_william-cullen-bryant/b0a8b196f6813f15676895ff62ddbd3d6b2cd365/cover@2x.jpg 2x, /images/covers/homer_the-odyssey_william-cullen-bryant/b0a8b196f6813f15676895ff62ddbd3d6b2cd365/cover.jpg 1x" type="image/jpeg"/>							<img src="/images/covers/homer_the-odyssey_william-cullen-bryant/b0a8b196f6813f15676895ff62ddbd3d6b2cd365/cover@2x.jpg" alt="" property="schema:image" height="335" width="224" loading="lazy"/>
+						</picture>
+									</a>
+			</div>
+			<p><a href="/ebooks/homer/the-odyssey/william-cullen-bryant" property="schema:url"><span property="schema:name">The Odyssey</span></a></p>
+												<p class="author" typeof="schema:Person" property="schema:author" resource="/ebooks/homer"><a href="https://standardebooks.org/ebooks/homer" property="schema:url"><span property="schema:name">Homer</span></a></p>
+									</li>
+					<li typeof="schema:Book" about="/ebooks/heinrich-kramer/malleus-maleficarum/montague-summers">
+						<div class="thumbnail-container" aria-hidden="true">				<a href="/ebooks/heinrich-kramer/malleus-maleficarum/montague-summers" tabindex="-1" property="schema:url">
+											<picture>
+							<source srcset="/images/covers/heinrich-kramer_malleus-maleficarum_montague-summers/c3749c6a5c1b6df681e6eaac22fb124840583547/cover@2x.avif 2x, /images/covers/heinrich-kramer_malleus-maleficarum_montague-summers/c3749c6a5c1b6df681e6eaac22fb124840583547/cover.avif 1x" type="image/avif"/>							<source srcset="/images/covers/heinrich-kramer_malleus-maleficarum_montague-summers/c3749c6a5c1b6df681e6eaac22fb124840583547/cover@2x.jpg 2x, /images/covers/heinrich-kramer_malleus-maleficarum_montague-summers/c3749c6a5c1b6df681e6eaac22fb124840583547/cover.jpg 1x" type="image/jpeg"/>							<img src="/images/covers/heinrich-kramer_malleus-maleficarum_montague-summers/c3749c6a5c1b6df681e6eaac22fb124840583547/cover@2x.jpg" alt="" property="schema:image" height="335" width="224" loading="lazy"/>
+						</picture>
+									</a>
+			</div>
+			<p><a href="/ebooks/heinrich-kramer/malleus-maleficarum/montague-summers" property="schema:url"><span property="schema:name">Malleus Maleficarum</span></a></p>
+												<p class="author" typeof="schema:Person" property="schema:author" resource="/ebooks/heinrich-kramer"><a href="https://standardebooks.org/ebooks/heinrich-kramer" property="schema:url"><span property="schema:name">Heinrich Kramer</span></a></p>
+									</li>
+					<li typeof="schema:Book" about="/ebooks/marcus-aurelius/meditations/george-long">
+						<div class="thumbnail-container" aria-hidden="true">				<a href="/ebooks/marcus-aurelius/meditations/george-long" tabindex="-1" property="schema:url">
+											<picture>
+							<source srcset="/images/covers/marcus-aurelius_meditations_george-long/463d624aab8bb716f04517f2a7e58ba99847d045/cover@2x.avif 2x, /images/covers/marcus-aurelius_meditations_george-long/463d624aab8bb716f04517f2a7e58ba99847d045/cover.avif 1x" type="image/avif"/>							<source srcset="/images/covers/marcus-aurelius_meditations_george-long/463d624aab8bb716f04517f2a7e58ba99847d045/cover@2x.jpg 2x, /images/covers/marcus-aurelius_meditations_george-long/463d624aab8bb716f04517f2a7e58ba99847d045/cover.jpg 1x" type="image/jpeg"/>							<img src="/images/covers/marcus-aurelius_meditations_george-long/463d624aab8bb716f04517f2a7e58ba99847d045/cover@2x.jpg" alt="" property="schema:image" height="335" width="224" loading="lazy"/>
+						</picture>
+									</a>
+			</div>
+			<p><a href="/ebooks/marcus-aurelius/meditations/george-long" property="schema:url"><span property="schema:name">Meditations</span></a></p>
+												<p class="author" typeof="schema:Person" property="schema:author" resource="/ebooks/marcus-aurelius"><a href="https://standardebooks.org/ebooks/marcus-aurelius" property="schema:url"><span property="schema:name">Marcus Aurelius</span></a></p>
+									</li>
+					<li typeof="schema:Book" about="/ebooks/edmund-burke/reflections-on-the-revolution-in-france">
+						<div class="thumbnail-container" aria-hidden="true">				<a href="/ebooks/edmund-burke/reflections-on-the-revolution-in-france" tabindex="-1" property="schema:url">
+											<picture>
+							<source srcset="/images/covers/edmund-burke_reflections-on-the-revolution-in-france/bddc6b813d6786b46a2af85f282ef0a6885c0303/cover@2x.avif 2x, /images/covers/edmund-burke_reflections-on-the-revolution-in-france/bddc6b813d6786b46a2af85f282ef0a6885c0303/cover.avif 1x" type="image/avif"/>							<source srcset="/images/covers/edmund-burke_reflections-on-the-revolution-in-france/bddc6b813d6786b46a2af85f282ef0a6885c0303/cover@2x.jpg 2x, /images/covers/edmund-burke_reflections-on-the-revolution-in-france/bddc6b813d6786b46a2af85f282ef0a6885c0303/cover.jpg 1x" type="image/jpeg"/>							<img src="/images/covers/edmund-burke_reflections-on-the-revolution-in-france/bddc6b813d6786b46a2af85f282ef0a6885c0303/cover@2x.jpg" alt="" property="schema:image" height="335" width="224" loading="lazy"/>
+						</picture>
+									</a>
+			</div>
+			<p><a href="/ebooks/edmund-burke/reflections-on-the-revolution-in-france" property="schema:url"><span property="schema:name">Reflections on the Revolution in France</span></a></p>
+												<p class="author" typeof="schema:Person" property="schema:author" resource="/ebooks/edmund-burke"><a href="https://standardebooks.org/ebooks/edmund-burke" property="schema:url"><span property="schema:name">Edmund Burke</span></a></p>
+									</li>
+					<li typeof="schema:Book" about="/ebooks/samuel-taylor-coleridge_robert-southey/the-fall-of-robespierre">
+						<div class="thumbnail-container" aria-hidden="true">				<a href="/ebooks/samuel-taylor-coleridge_robert-southey/the-fall-of-robespierre" tabindex="-1" property="schema:url">
+											<picture>
+							<source srcset="/images/covers/samuel-taylor-coleridge_robert-southey_the-fall-of-robespierre/703477b7d0599b0e4e058114a5099e4ff059ddd0/cover@2x.avif 2x, /images/covers/samuel-taylor-coleridge_robert-southey_the-fall-of-robespierre/703477b7d0599b0e4e058114a5099e4ff059ddd0/cover.avif 1x" type="image/avif"/>							<source srcset="/images/covers/samuel-taylor-coleridge_robert-southey_the-fall-of-robespierre/703477b7d0599b0e4e058114a5099e4ff059ddd0/cover@2x.jpg 2x, /images/covers/samuel-taylor-coleridge_robert-southey_the-fall-of-robespierre/703477b7d0599b0e4e058114a5099e4ff059ddd0/cover.jpg 1x" type="image/jpeg"/>							<img src="/images/covers/samuel-taylor-coleridge_robert-southey_the-fall-of-robespierre/703477b7d0599b0e4e058114a5099e4ff059ddd0/cover@2x.jpg" alt="" property="schema:image" height="335" width="224" loading="lazy"/>
+						</picture>
+									</a>
+			</div>
+			<p><a href="/ebooks/samuel-taylor-coleridge_robert-southey/the-fall-of-robespierre" property="schema:url"><span property="schema:name">The Fall of Robespierre</span></a></p>
+												<p class="author" typeof="schema:Person" property="schema:author" resource="/ebooks/samuel-taylor-coleridge_robert-southey"><a href="https://standardebooks.org/ebooks/samuel-taylor-coleridge_robert-southey" property="schema:url"><span property="schema:name">Samuel Taylor Coleridge</span></a></p>
+									<p class="author" typeof="schema:Person" property="schema:author" resource="/ebooks/samuel-taylor-coleridge_robert-southey"><a href="https://standardebooks.org/ebooks/samuel-taylor-coleridge_robert-southey" property="schema:url"><span property="schema:name">Robert Southey</span></a></p>
+									</li>
+					<li typeof="schema:Book" about="/ebooks/theodore-roosevelt/a-book-lovers-holidays-in-the-open">
+						<div class="thumbnail-container" aria-hidden="true">				<a href="/ebooks/theodore-roosevelt/a-book-lovers-holidays-in-the-open" tabindex="-1" property="schema:url">
+											<picture>
+							<source srcset="/images/covers/theodore-roosevelt_a-book-lovers-holidays-in-the-open/e33ef8cf0d083669acdc41bbf9de8c762acbdbb9/cover@2x.avif 2x, /images/covers/theodore-roosevelt_a-book-lovers-holidays-in-the-open/e33ef8cf0d083669acdc41bbf9de8c762acbdbb9/cover.avif 1x" type="image/avif"/>							<source srcset="/images/covers/theodore-roosevelt_a-book-lovers-holidays-in-the-open/e33ef8cf0d083669acdc41bbf9de8c762acbdbb9/cover@2x.jpg 2x, /images/covers/theodore-roosevelt_a-book-lovers-holidays-in-the-open/e33ef8cf0d083669acdc41bbf9de8c762acbdbb9/cover.jpg 1x" type="image/jpeg"/>							<img src="/images/covers/theodore-roosevelt_a-book-lovers-holidays-in-the-open/e33ef8cf0d083669acdc41bbf9de8c762acbdbb9/cover@2x.jpg" alt="" property="schema:image" height="335" width="224" loading="lazy"/>
+						</picture>
+									</a>
+			</div>
+			<p><a href="/ebooks/theodore-roosevelt/a-book-lovers-holidays-in-the-open" property="schema:url"><span property="schema:name">A Book-Lover’s Holidays in the Open</span></a></p>
+												<p class="author" typeof="schema:Person" property="schema:author" resource="/ebooks/theodore-roosevelt"><a href="https://standardebooks.org/ebooks/theodore-roosevelt" property="schema:url"><span property="schema:name">Theodore Roosevelt</span></a></p>
+									</li>
+					<li typeof="schema:Book" about="/ebooks/arthur-conan-doyle/brigadier-gerard-stories">
+						<div class="thumbnail-container" aria-hidden="true">				<a href="/ebooks/arthur-conan-doyle/brigadier-gerard-stories" tabindex="-1" property="schema:url">
+											<picture>
+							<source srcset="/images/covers/arthur-conan-doyle_brigadier-gerard-stories/e2107a97c06b430333019e509b9ff3b5c69ca03a/cover@2x.avif 2x, /images/covers/arthur-conan-doyle_brigadier-gerard-stories/e2107a97c06b430333019e509b9ff3b5c69ca03a/cover.avif 1x" type="image/avif"/>							<source srcset="/images/covers/arthur-conan-doyle_brigadier-gerard-stories/e2107a97c06b430333019e509b9ff3b5c69ca03a/cover@2x.jpg 2x, /images/covers/arthur-conan-doyle_brigadier-gerard-stories/e2107a97c06b430333019e509b9ff3b5c69ca03a/cover.jpg 1x" type="image/jpeg"/>							<img src="/images/covers/arthur-conan-doyle_brigadier-gerard-stories/e2107a97c06b430333019e509b9ff3b5c69ca03a/cover@2x.jpg" alt="" property="schema:image" height="335" width="224" loading="lazy"/>
+						</picture>
+									</a>
+			</div>
+			<p><a href="/ebooks/arthur-conan-doyle/brigadier-gerard-stories" property="schema:url"><span property="schema:name">Brigadier Gerard Stories</span></a></p>
+												<p class="author" typeof="schema:Person" property="schema:author" resource="/ebooks/arthur-conan-doyle"><a href="https://standardebooks.org/ebooks/arthur-conan-doyle" property="schema:url"><span property="schema:name">Arthur Conan Doyle</span></a></p>
+									</li>
+					<li typeof="schema:Book" about="/ebooks/dorothy-m-richardson/the-trap">
+						<div class="thumbnail-container" aria-hidden="true">				<a href="/ebooks/dorothy-m-richardson/the-trap" tabindex="-1" property="schema:url">
+											<picture>
+							<source srcset="/images/covers/dorothy-m-richardson_the-trap/87e8d77e9fe02bc19ae1cf158f29ce44b4d4ee2e/cover@2x.avif 2x, /images/covers/dorothy-m-richardson_the-trap/87e8d77e9fe02bc19ae1cf158f29ce44b4d4ee2e/cover.avif 1x" type="image/avif"/>							<source srcset="/images/covers/dorothy-m-richardson_the-trap/87e8d77e9fe02bc19ae1cf158f29ce44b4d4ee2e/cover@2x.jpg 2x, /images/covers/dorothy-m-richardson_the-trap/87e8d77e9fe02bc19ae1cf158f29ce44b4d4ee2e/cover.jpg 1x" type="image/jpeg"/>							<img src="/images/covers/dorothy-m-richardson_the-trap/87e8d77e9fe02bc19ae1cf158f29ce44b4d4ee2e/cover@2x.jpg" alt="" property="schema:image" height="335" width="224" loading="lazy"/>
+						</picture>
+									</a>
+			</div>
+			<p><a href="/ebooks/dorothy-m-richardson/the-trap" property="schema:url"><span property="schema:name">The Trap</span></a></p>
+												<p class="author" typeof="schema:Person" property="schema:author" resource="/ebooks/dorothy-m-richardson"><a href="https://standardebooks.org/ebooks/dorothy-m-richardson" property="schema:url"><span property="schema:name">Dorothy M. Richardson</span></a></p>
+									</li>
+					<li typeof="schema:Book" about="/ebooks/herman-melville/moby-dick">
+						<div class="thumbnail-container" aria-hidden="true">				<a href="/ebooks/herman-melville/moby-dick" tabindex="-1" property="schema:url">
+											<picture>
+							<source srcset="/images/covers/herman-melville_moby-dick/d30d8f15cb2f832ae68dbbc08e6b2a154aa6d109/cover@2x.avif 2x, /images/covers/herman-melville_moby-dick/d30d8f15cb2f832ae68dbbc08e6b2a154aa6d109/cover.avif 1x" type="image/avif"/>							<source srcset="/images/covers/herman-melville_moby-dick/d30d8f15cb2f832ae68dbbc08e6b2a154aa6d109/cover@2x.jpg 2x, /images/covers/herman-melville_moby-dick/d30d8f15cb2f832ae68dbbc08e6b2a154aa6d109/cover.jpg 1x" type="image/jpeg"/>							<img src="/images/covers/herman-melville_moby-dick/d30d8f15cb2f832ae68dbbc08e6b2a154aa6d109/cover@2x.jpg" alt="" property="schema:image" height="335" width="224" loading="lazy"/>
+						</picture>
+									</a>
+			</div>
+			<p><a href="/ebooks/herman-melville/moby-dick" property="schema:url"><span property="schema:name">Moby Dick</span></a></p>
+												<p class="author" typeof="schema:Person" property="schema:author" resource="/ebooks/herman-melville"><a href="https://standardebooks.org/ebooks/herman-melville" property="schema:url"><span property="schema:name">Herman Melville</span></a></p>
+									</li>
+					<li typeof="schema:Book" about="/ebooks/fyodor-dostoevsky/crime-and-punishment/constance-garnett">
+						<div class="thumbnail-container" aria-hidden="true">				<a href="/ebooks/fyodor-dostoevsky/crime-and-punishment/constance-garnett" tabindex="-1" property="schema:url">
+											<picture>
+							<source srcset="/images/covers/fyodor-dostoevsky_crime-and-punishment_constance-garnett/79f3212ab29250fa73d7e66149549c9d736466df/cover@2x.avif 2x, /images/covers/fyodor-dostoevsky_crime-and-punishment_constance-garnett/79f3212ab29250fa73d7e66149549c9d736466df/cover.avif 1x" type="image/avif"/>							<source srcset="/images/covers/fyodor-dostoevsky_crime-and-punishment_constance-garnett/79f3212ab29250fa73d7e66149549c9d736466df/cover@2x.jpg 2x, /images/covers/fyodor-dostoevsky_crime-and-punishment_constance-garnett/79f3212ab29250fa73d7e66149549c9d736466df/cover.jpg 1x" type="image/jpeg"/>							<img src="/images/covers/fyodor-dostoevsky_crime-and-punishment_constance-garnett/79f3212ab29250fa73d7e66149549c9d736466df/cover@2x.jpg" alt="" property="schema:image" height="335" width="224" loading="lazy"/>
+						</picture>
+									</a>
+			</div>
+			<p><a href="/ebooks/fyodor-dostoevsky/crime-and-punishment/constance-garnett" property="schema:url"><span property="schema:name">Crime and Punishment</span></a></p>
+												<p class="author" typeof="schema:Person" property="schema:author" resource="/ebooks/fyodor-dostoevsky"><a href="https://standardebooks.org/ebooks/fyodor-dostoevsky" property="schema:url"><span property="schema:name">Fyodor Dostoevsky</span></a></p>
+									</li>
+					<li typeof="schema:Book" about="/ebooks/lewis-carroll/alices-adventures-in-wonderland/john-tenniel">
+						<div class="thumbnail-container" aria-hidden="true">				<a href="/ebooks/lewis-carroll/alices-adventures-in-wonderland/john-tenniel" tabindex="-1" property="schema:url">
+											<picture>
+							<source srcset="/images/covers/lewis-carroll_alices-adventures-in-wonderland_john-tenniel/6646aa82efefe0c673971c9df73c778c6f87d383/cover@2x.avif 2x, /images/covers/lewis-carroll_alices-adventures-in-wonderland_john-tenniel/6646aa82efefe0c673971c9df73c778c6f87d383/cover.avif 1x" type="image/avif"/>							<source srcset="/images/covers/lewis-carroll_alices-adventures-in-wonderland_john-tenniel/6646aa82efefe0c673971c9df73c778c6f87d383/cover@2x.jpg 2x, /images/covers/lewis-carroll_alices-adventures-in-wonderland_john-tenniel/6646aa82efefe0c673971c9df73c778c6f87d383/cover.jpg 1x" type="image/jpeg"/>							<img src="/images/covers/lewis-carroll_alices-adventures-in-wonderland_john-tenniel/6646aa82efefe0c673971c9df73c778c6f87d383/cover@2x.jpg" alt="" property="schema:image" height="335" width="224" loading="lazy"/>
+						</picture>
+									</a>
+			</div>
+			<p><a href="/ebooks/lewis-carroll/alices-adventures-in-wonderland/john-tenniel" property="schema:url"><span property="schema:name">Alice’s Adventures in Wonderland</span></a></p>
+												<p class="author" typeof="schema:Person" property="schema:author" resource="/ebooks/lewis-carroll"><a href="https://standardebooks.org/ebooks/lewis-carroll" property="schema:url"><span property="schema:name">Lewis Carroll</span></a></p>
+									</li>
+					<li typeof="schema:Book" about="/ebooks/f-scott-fitzgerald/the-great-gatsby">
+						<div class="thumbnail-container" aria-hidden="true">				<a href="/ebooks/f-scott-fitzgerald/the-great-gatsby" tabindex="-1" property="schema:url">
+											<picture>
+							<source srcset="/images/covers/f-scott-fitzgerald_the-great-gatsby/399c03297cdb569cde0a0e487576c5fc3ca96ed3/cover@2x.avif 2x, /images/covers/f-scott-fitzgerald_the-great-gatsby/399c03297cdb569cde0a0e487576c5fc3ca96ed3/cover.avif 1x" type="image/avif"/>							<source srcset="/images/covers/f-scott-fitzgerald_the-great-gatsby/399c03297cdb569cde0a0e487576c5fc3ca96ed3/cover@2x.jpg 2x, /images/covers/f-scott-fitzgerald_the-great-gatsby/399c03297cdb569cde0a0e487576c5fc3ca96ed3/cover.jpg 1x" type="image/jpeg"/>							<img src="/images/covers/f-scott-fitzgerald_the-great-gatsby/399c03297cdb569cde0a0e487576c5fc3ca96ed3/cover@2x.jpg" alt="" property="schema:image" height="335" width="224" loading="lazy"/>
+						</picture>
+									</a>
+			</div>
+			<p><a href="/ebooks/f-scott-fitzgerald/the-great-gatsby" property="schema:url"><span property="schema:name">The Great Gatsby</span></a></p>
+												<p class="author" typeof="schema:Person" property="schema:author" resource="/ebooks/f-scott-fitzgerald"><a href="https://standardebooks.org/ebooks/f-scott-fitzgerald" property="schema:url"><span property="schema:name">F. Scott Fitzgerald</span></a></p>
+									</li>
+					<li typeof="schema:Book" about="/ebooks/oscar-wilde/the-picture-of-dorian-gray">
+						<div class="thumbnail-container" aria-hidden="true">				<a href="/ebooks/oscar-wilde/the-picture-of-dorian-gray" tabindex="-1" property="schema:url">
+											<picture>
+							<source srcset="/images/covers/oscar-wilde_the-picture-of-dorian-gray/dd3646f331ad1bb43a4085a8a343cd57fd114d9b/cover@2x.avif 2x, /images/covers/oscar-wilde_the-picture-of-dorian-gray/dd3646f331ad1bb43a4085a8a343cd57fd114d9b/cover.avif 1x" type="image/avif"/>							<source srcset="/images/covers/oscar-wilde_the-picture-of-dorian-gray/dd3646f331ad1bb43a4085a8a343cd57fd114d9b/cover@2x.jpg 2x, /images/covers/oscar-wilde_the-picture-of-dorian-gray/dd3646f331ad1bb43a4085a8a343cd57fd114d9b/cover.jpg 1x" type="image/jpeg"/>							<img src="/images/covers/oscar-wilde_the-picture-of-dorian-gray/dd3646f331ad1bb43a4085a8a343cd57fd114d9b/cover@2x.jpg" alt="" property="schema:image" height="335" width="224" loading="lazy"/>
+						</picture>
+									</a>
+			</div>
+			<p><a href="/ebooks/oscar-wilde/the-picture-of-dorian-gray" property="schema:url"><span property="schema:name">The Picture of Dorian Gray</span></a></p>
+												<p class="author" typeof="schema:Person" property="schema:author" resource="/ebooks/oscar-wilde"><a href="https://standardebooks.org/ebooks/oscar-wilde" property="schema:url"><span property="schema:name">Oscar Wilde</span></a></p>
+									</li>
+					<li typeof="schema:Book" about="/ebooks/c-h-spurgeon/the-art-of-illustration">
+						<div class="thumbnail-container" aria-hidden="true">				<a href="/ebooks/c-h-spurgeon/the-art-of-illustration" tabindex="-1" property="schema:url">
+											<picture>
+							<source srcset="/images/covers/c-h-spurgeon_the-art-of-illustration/4cb010ef3e14ac3ae0744a9d4b06dee2d6992d81/cover@2x.avif 2x, /images/covers/c-h-spurgeon_the-art-of-illustration/4cb010ef3e14ac3ae0744a9d4b06dee2d6992d81/cover.avif 1x" type="image/avif"/>							<source srcset="/images/covers/c-h-spurgeon_the-art-of-illustration/4cb010ef3e14ac3ae0744a9d4b06dee2d6992d81/cover@2x.jpg 2x, /images/covers/c-h-spurgeon_the-art-of-illustration/4cb010ef3e14ac3ae0744a9d4b06dee2d6992d81/cover.jpg 1x" type="image/jpeg"/>							<img src="/images/covers/c-h-spurgeon_the-art-of-illustration/4cb010ef3e14ac3ae0744a9d4b06dee2d6992d81/cover@2x.jpg" alt="" property="schema:image" height="335" width="224" loading="lazy"/>
+						</picture>
+									</a>
+			</div>
+			<p><a href="/ebooks/c-h-spurgeon/the-art-of-illustration" property="schema:url"><span property="schema:name">The Art of Illustration</span></a></p>
+												<p class="author" typeof="schema:Person" property="schema:author" resource="/ebooks/c-h-spurgeon"><a href="https://standardebooks.org/ebooks/c-h-spurgeon" property="schema:url"><span property="schema:name">C. H. Spurgeon</span></a></p>
+									</li>
+					<li typeof="schema:Book" about="/ebooks/charlotte-bronte/jane-eyre">
+						<div class="thumbnail-container" aria-hidden="true">				<a href="/ebooks/charlotte-bronte/jane-eyre" tabindex="-1" property="schema:url">
+											<picture>
+							<source srcset="/images/covers/charlotte-bronte_jane-eyre/315cd8030f893603f1cd1c5df3d11e000bfc3c8f/cover@2x.avif 2x, /images/covers/charlotte-bronte_jane-eyre/315cd8030f893603f1cd1c5df3d11e000bfc3c8f/cover.avif 1x" type="image/avif"/>							<source srcset="/images/covers/charlotte-bronte_jane-eyre/315cd8030f893603f1cd1c5df3d11e000bfc3c8f/cover@2x.jpg 2x, /images/covers/charlotte-bronte_jane-eyre/315cd8030f893603f1cd1c5df3d11e000bfc3c8f/cover.jpg 1x" type="image/jpeg"/>							<img src="/images/covers/charlotte-bronte_jane-eyre/315cd8030f893603f1cd1c5df3d11e000bfc3c8f/cover@2x.jpg" alt="" property="schema:image" height="335" width="224" loading="lazy"/>
+						</picture>
+									</a>
+			</div>
+			<p><a href="/ebooks/charlotte-bronte/jane-eyre" property="schema:url"><span property="schema:name">Jane Eyre</span></a></p>
+												<p class="author" typeof="schema:Person" property="schema:author" resource="/ebooks/charlotte-bronte"><a href="https://standardebooks.org/ebooks/charlotte-bronte" property="schema:url"><span property="schema:name">Charlotte Brontë</span></a></p>
+									</li>
+					<li typeof="schema:Book" about="/ebooks/fyodor-dostoevsky/the-brothers-karamazov/constance-garnett">
+						<div class="thumbnail-container" aria-hidden="true">				<a href="/ebooks/fyodor-dostoevsky/the-brothers-karamazov/constance-garnett" tabindex="-1" property="schema:url">
+											<picture>
+							<source srcset="/images/covers/fyodor-dostoevsky_the-brothers-karamazov_constance-garnett/780fd307fad5956e4585a8dcb7b43d2279c4a5d0/cover@2x.avif 2x, /images/covers/fyodor-dostoevsky_the-brothers-karamazov_constance-garnett/780fd307fad5956e4585a8dcb7b43d2279c4a5d0/cover.avif 1x" type="image/avif"/>							<source srcset="/images/covers/fyodor-dostoevsky_the-brothers-karamazov_constance-garnett/780fd307fad5956e4585a8dcb7b43d2279c4a5d0/cover@2x.jpg 2x, /images/covers/fyodor-dostoevsky_the-brothers-karamazov_constance-garnett/780fd307fad5956e4585a8dcb7b43d2279c4a5d0/cover.jpg 1x" type="image/jpeg"/>							<img src="/images/covers/fyodor-dostoevsky_the-brothers-karamazov_constance-garnett/780fd307fad5956e4585a8dcb7b43d2279c4a5d0/cover@2x.jpg" alt="" property="schema:image" height="335" width="224" loading="lazy"/>
+						</picture>
+									</a>
+			</div>
+			<p><a href="/ebooks/fyodor-dostoevsky/the-brothers-karamazov/constance-garnett" property="schema:url"><span property="schema:name">The Brothers Karamazov</span></a></p>
+												<p class="author" typeof="schema:Person" property="schema:author" resource="/ebooks/fyodor-dostoevsky"><a href="https://standardebooks.org/ebooks/fyodor-dostoevsky" property="schema:url"><span property="schema:name">Fyodor Dostoevsky</span></a></p>
+									</li>
+					<li typeof="schema:Book" about="/ebooks/arthur-conan-doyle/the-adventures-of-sherlock-holmes">
+						<div class="thumbnail-container" aria-hidden="true">				<a href="/ebooks/arthur-conan-doyle/the-adventures-of-sherlock-holmes" tabindex="-1" property="schema:url">
+											<picture>
+							<source srcset="/images/covers/arthur-conan-doyle_the-adventures-of-sherlock-holmes/a8e833d443c0db97e1e05312725bbf2a406f0df8/cover@2x.avif 2x, /images/covers/arthur-conan-doyle_the-adventures-of-sherlock-holmes/a8e833d443c0db97e1e05312725bbf2a406f0df8/cover.avif 1x" type="image/avif"/>							<source srcset="/images/covers/arthur-conan-doyle_the-adventures-of-sherlock-holmes/a8e833d443c0db97e1e05312725bbf2a406f0df8/cover@2x.jpg 2x, /images/covers/arthur-conan-doyle_the-adventures-of-sherlock-holmes/a8e833d443c0db97e1e05312725bbf2a406f0df8/cover.jpg 1x" type="image/jpeg"/>							<img src="/images/covers/arthur-conan-doyle_the-adventures-of-sherlock-holmes/a8e833d443c0db97e1e05312725bbf2a406f0df8/cover@2x.jpg" alt="" property="schema:image" height="335" width="224" loading="lazy"/>
+						</picture>
+									</a>
+			</div>
+			<p><a href="/ebooks/arthur-conan-doyle/the-adventures-of-sherlock-holmes" property="schema:url"><span property="schema:name">The Adventures of Sherlock Holmes</span></a></p>
+												<p class="author" typeof="schema:Person" property="schema:author" resource="/ebooks/arthur-conan-doyle"><a href="https://standardebooks.org/ebooks/arthur-conan-doyle" property="schema:url"><span property="schema:name">Arthur Conan Doyle</span></a></p>
+									</li>
+					<li typeof="schema:Book" about="/ebooks/h-c-mcneile/the-final-count">
+						<div class="thumbnail-container" aria-hidden="true">				<a href="/ebooks/h-c-mcneile/the-final-count" tabindex="-1" property="schema:url">
+											<picture>
+							<source srcset="/images/covers/h-c-mcneile_the-final-count/f4b14b61c7ac7e9a14a404a50d688ba2ec451d1a/cover@2x.avif 2x, /images/covers/h-c-mcneile_the-final-count/f4b14b61c7ac7e9a14a404a50d688ba2ec451d1a/cover.avif 1x" type="image/avif"/>							<source srcset="/images/covers/h-c-mcneile_the-final-count/f4b14b61c7ac7e9a14a404a50d688ba2ec451d1a/cover@2x.jpg 2x, /images/covers/h-c-mcneile_the-final-count/f4b14b61c7ac7e9a14a404a50d688ba2ec451d1a/cover.jpg 1x" type="image/jpeg"/>							<img src="/images/covers/h-c-mcneile_the-final-count/f4b14b61c7ac7e9a14a404a50d688ba2ec451d1a/cover@2x.jpg" alt="" property="schema:image" height="335" width="224" loading="lazy"/>
+						</picture>
+									</a>
+			</div>
+			<p><a href="/ebooks/h-c-mcneile/the-final-count" property="schema:url"><span property="schema:name">The Final Count</span></a></p>
+												<p class="author" typeof="schema:Person" property="schema:author" resource="/ebooks/h-c-mcneile"><a href="https://standardebooks.org/ebooks/h-c-mcneile" property="schema:url"><span property="schema:name">H. C. McNeile</span></a></p>
+									</li>
+					<li typeof="schema:Book" about="/ebooks/george-macdonald/within-and-without">
+						<div class="thumbnail-container" aria-hidden="true">				<a href="/ebooks/george-macdonald/within-and-without" tabindex="-1" property="schema:url">
+											<picture>
+							<source srcset="/images/covers/george-macdonald_within-and-without/abb22b8af3e62d0a80eb70f510d29330c436bd34/cover@2x.avif 2x, /images/covers/george-macdonald_within-and-without/abb22b8af3e62d0a80eb70f510d29330c436bd34/cover.avif 1x" type="image/avif"/>							<source srcset="/images/covers/george-macdonald_within-and-without/abb22b8af3e62d0a80eb70f510d29330c436bd34/cover@2x.jpg 2x, /images/covers/george-macdonald_within-and-without/abb22b8af3e62d0a80eb70f510d29330c436bd34/cover.jpg 1x" type="image/jpeg"/>							<img src="/images/covers/george-macdonald_within-and-without/abb22b8af3e62d0a80eb70f510d29330c436bd34/cover@2x.jpg" alt="" property="schema:image" height="335" width="224" loading="lazy"/>
+						</picture>
+									</a>
+			</div>
+			<p><a href="/ebooks/george-macdonald/within-and-without" property="schema:url"><span property="schema:name">Within and Without</span></a></p>
+												<p class="author" typeof="schema:Person" property="schema:author" resource="/ebooks/george-macdonald"><a href="https://standardebooks.org/ebooks/george-macdonald" property="schema:url"><span property="schema:name">George MacDonald</span></a></p>
+									</li>
+					<li typeof="schema:Book" about="/ebooks/h-g-wells/the-time-machine">
+						<div class="thumbnail-container" aria-hidden="true">				<a href="/ebooks/h-g-wells/the-time-machine" tabindex="-1" property="schema:url">
+											<picture>
+							<source srcset="/images/covers/h-g-wells_the-time-machine/974914346ad9e79cf998605783ecd534716ce12c/cover@2x.avif 2x, /images/covers/h-g-wells_the-time-machine/974914346ad9e79cf998605783ecd534716ce12c/cover.avif 1x" type="image/avif"/>							<source srcset="/images/covers/h-g-wells_the-time-machine/974914346ad9e79cf998605783ecd534716ce12c/cover@2x.jpg 2x, /images/covers/h-g-wells_the-time-machine/974914346ad9e79cf998605783ecd534716ce12c/cover.jpg 1x" type="image/jpeg"/>							<img src="/images/covers/h-g-wells_the-time-machine/974914346ad9e79cf998605783ecd534716ce12c/cover@2x.jpg" alt="" property="schema:image" height="335" width="224" loading="lazy"/>
+						</picture>
+									</a>
+			</div>
+			<p><a href="/ebooks/h-g-wells/the-time-machine" property="schema:url"><span property="schema:name">The Time Machine</span></a></p>
+												<p class="author" typeof="schema:Person" property="schema:author" resource="/ebooks/h-g-wells"><a href="https://standardebooks.org/ebooks/h-g-wells" property="schema:url"><span property="schema:name">H. G. Wells</span></a></p>
+									</li>
+					<li typeof="schema:Book" about="/ebooks/john-meade-falkner/the-lost-stradivarius">
+						<div class="thumbnail-container" aria-hidden="true">				<a href="/ebooks/john-meade-falkner/the-lost-stradivarius" tabindex="-1" property="schema:url">
+											<picture>
+							<source srcset="/images/covers/john-meade-falkner_the-lost-stradivarius/303610a64639b5995e68b0fb819d3ae9171f82a1/cover@2x.avif 2x, /images/covers/john-meade-falkner_the-lost-stradivarius/303610a64639b5995e68b0fb819d3ae9171f82a1/cover.avif 1x" type="image/avif"/>							<source srcset="/images/covers/john-meade-falkner_the-lost-stradivarius/303610a64639b5995e68b0fb819d3ae9171f82a1/cover@2x.jpg 2x, /images/covers/john-meade-falkner_the-lost-stradivarius/303610a64639b5995e68b0fb819d3ae9171f82a1/cover.jpg 1x" type="image/jpeg"/>							<img src="/images/covers/john-meade-falkner_the-lost-stradivarius/303610a64639b5995e68b0fb819d3ae9171f82a1/cover@2x.jpg" alt="" property="schema:image" height="335" width="224" loading="lazy"/>
+						</picture>
+									</a>
+			</div>
+			<p><a href="/ebooks/john-meade-falkner/the-lost-stradivarius" property="schema:url"><span property="schema:name">The Lost Stradivarius</span></a></p>
+												<p class="author" typeof="schema:Person" property="schema:author" resource="/ebooks/john-meade-falkner"><a href="https://standardebooks.org/ebooks/john-meade-falkner" property="schema:url"><span property="schema:name">John Meade Falkner</span></a></p>
+									</li>
+					<li typeof="schema:Book" about="/ebooks/david-hume/a-treatise-of-human-nature">
+						<div class="thumbnail-container" aria-hidden="true">				<a href="/ebooks/david-hume/a-treatise-of-human-nature" tabindex="-1" property="schema:url">
+											<picture>
+							<source srcset="/images/covers/david-hume_a-treatise-of-human-nature/95aed2a34685d83e936d545121087b25f92a2d0b/cover@2x.avif 2x, /images/covers/david-hume_a-treatise-of-human-nature/95aed2a34685d83e936d545121087b25f92a2d0b/cover.avif 1x" type="image/avif"/>							<source srcset="/images/covers/david-hume_a-treatise-of-human-nature/95aed2a34685d83e936d545121087b25f92a2d0b/cover@2x.jpg 2x, /images/covers/david-hume_a-treatise-of-human-nature/95aed2a34685d83e936d545121087b25f92a2d0b/cover.jpg 1x" type="image/jpeg"/>							<img src="/images/covers/david-hume_a-treatise-of-human-nature/95aed2a34685d83e936d545121087b25f92a2d0b/cover@2x.jpg" alt="" property="schema:image" height="335" width="224" loading="lazy"/>
+						</picture>
+									</a>
+			</div>
+			<p><a href="/ebooks/david-hume/a-treatise-of-human-nature" property="schema:url"><span property="schema:name">A Treatise of Human Nature</span></a></p>
+												<p class="author" typeof="schema:Person" property="schema:author" resource="/ebooks/david-hume"><a href="https://standardebooks.org/ebooks/david-hume" property="schema:url"><span property="schema:name">David Hume</span></a></p>
+									</li>
+					<li typeof="schema:Book" about="/ebooks/robert-louis-stevenson/the-strange-case-of-dr-jekyll-and-mr-hyde">
+						<div class="thumbnail-container" aria-hidden="true">				<a href="/ebooks/robert-louis-stevenson/the-strange-case-of-dr-jekyll-and-mr-hyde" tabindex="-1" property="schema:url">
+											<picture>
+							<source srcset="/images/covers/robert-louis-stevenson_the-strange-case-of-dr-jekyll-and-mr-hyde/272fad7d23f75883b253e3d7aaf868c79ae572af/cover@2x.avif 2x, /images/covers/robert-louis-stevenson_the-strange-case-of-dr-jekyll-and-mr-hyde/272fad7d23f75883b253e3d7aaf868c79ae572af/cover.avif 1x" type="image/avif"/>							<source srcset="/images/covers/robert-louis-stevenson_the-strange-case-of-dr-jekyll-and-mr-hyde/272fad7d23f75883b253e3d7aaf868c79ae572af/cover@2x.jpg 2x, /images/covers/robert-louis-stevenson_the-strange-case-of-dr-jekyll-and-mr-hyde/272fad7d23f75883b253e3d7aaf868c79ae572af/cover.jpg 1x" type="image/jpeg"/>							<img src="/images/covers/robert-louis-stevenson_the-strange-case-of-dr-jekyll-and-mr-hyde/272fad7d23f75883b253e3d7aaf868c79ae572af/cover@2x.jpg" alt="" property="schema:image" height="335" width="224" loading="lazy"/>
+						</picture>
+									</a>
+			</div>
+			<p><a href="/ebooks/robert-louis-stevenson/the-strange-case-of-dr-jekyll-and-mr-hyde" property="schema:url"><span property="schema:name">The Strange Case of Dr. Jekyll and Mr. Hyde</span></a></p>
+												<p class="author" typeof="schema:Person" property="schema:author" resource="/ebooks/robert-louis-stevenson"><a href="https://standardebooks.org/ebooks/robert-louis-stevenson" property="schema:url"><span property="schema:name">Robert Louis Stevenson</span></a></p>
+									</li>
+					<li typeof="schema:Book" about="/ebooks/anna-katharine-green/hand-and-ring">
+						<div class="thumbnail-container" aria-hidden="true">				<a href="/ebooks/anna-katharine-green/hand-and-ring" tabindex="-1" property="schema:url">
+											<picture>
+							<source srcset="/images/covers/anna-katharine-green_hand-and-ring/cd12fa279bab2f216e0d16461cdfb1bdb2f57830/cover@2x.avif 2x, /images/covers/anna-katharine-green_hand-and-ring/cd12fa279bab2f216e0d16461cdfb1bdb2f57830/cover.avif 1x" type="image/avif"/>							<source srcset="/images/covers/anna-katharine-green_hand-and-ring/cd12fa279bab2f216e0d16461cdfb1bdb2f57830/cover@2x.jpg 2x, /images/covers/anna-katharine-green_hand-and-ring/cd12fa279bab2f216e0d16461cdfb1bdb2f57830/cover.jpg 1x" type="image/jpeg"/>							<img src="/images/covers/anna-katharine-green_hand-and-ring/cd12fa279bab2f216e0d16461cdfb1bdb2f57830/cover@2x.jpg" alt="" property="schema:image" height="335" width="224" loading="lazy"/>
+						</picture>
+									</a>
+			</div>
+			<p><a href="/ebooks/anna-katharine-green/hand-and-ring" property="schema:url"><span property="schema:name">Hand and Ring</span></a></p>
+												<p class="author" typeof="schema:Person" property="schema:author" resource="/ebooks/anna-katharine-green"><a href="https://standardebooks.org/ebooks/anna-katharine-green" property="schema:url"><span property="schema:name">Anna Katharine Green</span></a></p>
+									</li>
+					<li typeof="schema:Book" about="/ebooks/arthur-conan-doyle/a-study-in-scarlet">
+						<div class="thumbnail-container" aria-hidden="true">				<a href="/ebooks/arthur-conan-doyle/a-study-in-scarlet" tabindex="-1" property="schema:url">
+											<picture>
+							<source srcset="/images/covers/arthur-conan-doyle_a-study-in-scarlet/44a3935fc9a56519dc626a81da840514406d8542/cover@2x.avif 2x, /images/covers/arthur-conan-doyle_a-study-in-scarlet/44a3935fc9a56519dc626a81da840514406d8542/cover.avif 1x" type="image/avif"/>							<source srcset="/images/covers/arthur-conan-doyle_a-study-in-scarlet/44a3935fc9a56519dc626a81da840514406d8542/cover@2x.jpg 2x, /images/covers/arthur-conan-doyle_a-study-in-scarlet/44a3935fc9a56519dc626a81da840514406d8542/cover.jpg 1x" type="image/jpeg"/>							<img src="/images/covers/arthur-conan-doyle_a-study-in-scarlet/44a3935fc9a56519dc626a81da840514406d8542/cover@2x.jpg" alt="" property="schema:image" height="335" width="224" loading="lazy"/>
+						</picture>
+									</a>
+			</div>
+			<p><a href="/ebooks/arthur-conan-doyle/a-study-in-scarlet" property="schema:url"><span property="schema:name">A Study in Scarlet</span></a></p>
+												<p class="author" typeof="schema:Person" property="schema:author" resource="/ebooks/arthur-conan-doyle"><a href="https://standardebooks.org/ebooks/arthur-conan-doyle" property="schema:url"><span property="schema:name">Arthur Conan Doyle</span></a></p>
+									</li>
+					<li typeof="schema:Book" about="/ebooks/emily-bronte/wuthering-heights">
+						<div class="thumbnail-container" aria-hidden="true">				<a href="/ebooks/emily-bronte/wuthering-heights" tabindex="-1" property="schema:url">
+											<picture>
+							<source srcset="/images/covers/emily-bronte_wuthering-heights/af03f251f88ce15e63012ad982dc70055b7cd631/cover@2x.avif 2x, /images/covers/emily-bronte_wuthering-heights/af03f251f88ce15e63012ad982dc70055b7cd631/cover.avif 1x" type="image/avif"/>							<source srcset="/images/covers/emily-bronte_wuthering-heights/af03f251f88ce15e63012ad982dc70055b7cd631/cover@2x.jpg 2x, /images/covers/emily-bronte_wuthering-heights/af03f251f88ce15e63012ad982dc70055b7cd631/cover.jpg 1x" type="image/jpeg"/>							<img src="/images/covers/emily-bronte_wuthering-heights/af03f251f88ce15e63012ad982dc70055b7cd631/cover@2x.jpg" alt="" property="schema:image" height="335" width="224" loading="lazy"/>
+						</picture>
+									</a>
+			</div>
+			<p><a href="/ebooks/emily-bronte/wuthering-heights" property="schema:url"><span property="schema:name">Wuthering Heights</span></a></p>
+												<p class="author" typeof="schema:Person" property="schema:author" resource="/ebooks/emily-bronte"><a href="https://standardebooks.org/ebooks/emily-bronte" property="schema:url"><span property="schema:name">Emily Brontë</span></a></p>
+									</li>
+					<li typeof="schema:Book" about="/ebooks/leo-tolstoy/war-and-peace/louise-maude_aylmer-maude">
+						<div class="thumbnail-container" aria-hidden="true">				<a href="/ebooks/leo-tolstoy/war-and-peace/louise-maude_aylmer-maude" tabindex="-1" property="schema:url">
+											<picture>
+							<source srcset="/images/covers/leo-tolstoy_war-and-peace_louise-maude_aylmer-maude/aa13b9bf94f89e35da9cce5b478b68c9804c31a8/cover@2x.avif 2x, /images/covers/leo-tolstoy_war-and-peace_louise-maude_aylmer-maude/aa13b9bf94f89e35da9cce5b478b68c9804c31a8/cover.avif 1x" type="image/avif"/>							<source srcset="/images/covers/leo-tolstoy_war-and-peace_louise-maude_aylmer-maude/aa13b9bf94f89e35da9cce5b478b68c9804c31a8/cover@2x.jpg 2x, /images/covers/leo-tolstoy_war-and-peace_louise-maude_aylmer-maude/aa13b9bf94f89e35da9cce5b478b68c9804c31a8/cover.jpg 1x" type="image/jpeg"/>							<img src="/images/covers/leo-tolstoy_war-and-peace_louise-maude_aylmer-maude/aa13b9bf94f89e35da9cce5b478b68c9804c31a8/cover@2x.jpg" alt="" property="schema:image" height="335" width="224" loading="lazy"/>
+						</picture>
+									</a>
+			</div>
+			<p><a href="/ebooks/leo-tolstoy/war-and-peace/louise-maude_aylmer-maude" property="schema:url"><span property="schema:name">War and Peace</span></a></p>
+												<p class="author" typeof="schema:Person" property="schema:author" resource="/ebooks/leo-tolstoy"><a href="https://standardebooks.org/ebooks/leo-tolstoy" property="schema:url"><span property="schema:name">Leo Tolstoy</span></a></p>
+									</li>
+					<li typeof="schema:Book" about="/ebooks/james-joyce/ulysses">
+						<div class="thumbnail-container" aria-hidden="true">				<a href="/ebooks/james-joyce/ulysses" tabindex="-1" property="schema:url">
+											<picture>
+							<source srcset="/images/covers/james-joyce_ulysses/058b7a1bcabbd5eb354e824db35bb6364a1d09b9/cover@2x.avif 2x, /images/covers/james-joyce_ulysses/058b7a1bcabbd5eb354e824db35bb6364a1d09b9/cover.avif 1x" type="image/avif"/>							<source srcset="/images/covers/james-joyce_ulysses/058b7a1bcabbd5eb354e824db35bb6364a1d09b9/cover@2x.jpg 2x, /images/covers/james-joyce_ulysses/058b7a1bcabbd5eb354e824db35bb6364a1d09b9/cover.jpg 1x" type="image/jpeg"/>							<img src="/images/covers/james-joyce_ulysses/058b7a1bcabbd5eb354e824db35bb6364a1d09b9/cover@2x.jpg" alt="" property="schema:image" height="335" width="224" loading="lazy"/>
+						</picture>
+									</a>
+			</div>
+			<p><a href="/ebooks/james-joyce/ulysses" property="schema:url"><span property="schema:name">Ulysses</span></a></p>
+												<p class="author" typeof="schema:Person" property="schema:author" resource="/ebooks/james-joyce"><a href="https://standardebooks.org/ebooks/james-joyce" property="schema:url"><span property="schema:name">James Joyce</span></a></p>
+									</li>
+					<li typeof="schema:Book" about="/ebooks/gustave-flaubert/sentimental-education/m-walter-dunne">
+						<div class="thumbnail-container" aria-hidden="true">				<a href="/ebooks/gustave-flaubert/sentimental-education/m-walter-dunne" tabindex="-1" property="schema:url">
+											<picture>
+							<source srcset="/images/covers/gustave-flaubert_sentimental-education_m-walter-dunne/77136be6fa944bf78b9aae4788ea81f732a9e844/cover@2x.avif 2x, /images/covers/gustave-flaubert_sentimental-education_m-walter-dunne/77136be6fa944bf78b9aae4788ea81f732a9e844/cover.avif 1x" type="image/avif"/>							<source srcset="/images/covers/gustave-flaubert_sentimental-education_m-walter-dunne/77136be6fa944bf78b9aae4788ea81f732a9e844/cover@2x.jpg 2x, /images/covers/gustave-flaubert_sentimental-education_m-walter-dunne/77136be6fa944bf78b9aae4788ea81f732a9e844/cover.jpg 1x" type="image/jpeg"/>							<img src="/images/covers/gustave-flaubert_sentimental-education_m-walter-dunne/77136be6fa944bf78b9aae4788ea81f732a9e844/cover@2x.jpg" alt="" property="schema:image" height="335" width="224" loading="lazy"/>
+						</picture>
+									</a>
+			</div>
+			<p><a href="/ebooks/gustave-flaubert/sentimental-education/m-walter-dunne" property="schema:url"><span property="schema:name">Sentimental Education</span></a></p>
+												<p class="author" typeof="schema:Person" property="schema:author" resource="/ebooks/gustave-flaubert"><a href="https://standardebooks.org/ebooks/gustave-flaubert" property="schema:url"><span property="schema:name">Gustave Flaubert</span></a></p>
+									</li>
+					<li typeof="schema:Book" about="/ebooks/george-eliot/middlemarch">
+						<div class="thumbnail-container" aria-hidden="true">				<a href="/ebooks/george-eliot/middlemarch" tabindex="-1" property="schema:url">
+											<picture>
+							<source srcset="/images/covers/george-eliot_middlemarch/7b661137bfcb82f7b9a2d798a424225b8abf8b8c/cover@2x.avif 2x, /images/covers/george-eliot_middlemarch/7b661137bfcb82f7b9a2d798a424225b8abf8b8c/cover.avif 1x" type="image/avif"/>							<source srcset="/images/covers/george-eliot_middlemarch/7b661137bfcb82f7b9a2d798a424225b8abf8b8c/cover@2x.jpg 2x, /images/covers/george-eliot_middlemarch/7b661137bfcb82f7b9a2d798a424225b8abf8b8c/cover.jpg 1x" type="image/jpeg"/>							<img src="/images/covers/george-eliot_middlemarch/7b661137bfcb82f7b9a2d798a424225b8abf8b8c/cover@2x.jpg" alt="" property="schema:image" height="335" width="224" loading="lazy"/>
+						</picture>
+									</a>
+			</div>
+			<p><a href="/ebooks/george-eliot/middlemarch" property="schema:url"><span property="schema:name">Middlemarch</span></a></p>
+												<p class="author" typeof="schema:Person" property="schema:author" resource="/ebooks/george-eliot"><a href="https://standardebooks.org/ebooks/george-eliot" property="schema:url"><span property="schema:name">George Eliot</span></a></p>
+									</li>
+					<li typeof="schema:Book" about="/ebooks/sun-tzu/the-art-of-war/lionel-giles">
+						<div class="thumbnail-container" aria-hidden="true">				<a href="/ebooks/sun-tzu/the-art-of-war/lionel-giles" tabindex="-1" property="schema:url">
+											<picture>
+							<source srcset="/images/covers/sun-tzu_the-art-of-war_lionel-giles/6c4312d7c3f753293f5f01e55a1b42695dfaebb6/cover@2x.avif 2x, /images/covers/sun-tzu_the-art-of-war_lionel-giles/6c4312d7c3f753293f5f01e55a1b42695dfaebb6/cover.avif 1x" type="image/avif"/>							<source srcset="/images/covers/sun-tzu_the-art-of-war_lionel-giles/6c4312d7c3f753293f5f01e55a1b42695dfaebb6/cover@2x.jpg 2x, /images/covers/sun-tzu_the-art-of-war_lionel-giles/6c4312d7c3f753293f5f01e55a1b42695dfaebb6/cover.jpg 1x" type="image/jpeg"/>							<img src="/images/covers/sun-tzu_the-art-of-war_lionel-giles/6c4312d7c3f753293f5f01e55a1b42695dfaebb6/cover@2x.jpg" alt="" property="schema:image" height="335" width="224" loading="lazy"/>
+						</picture>
+									</a>
+			</div>
+			<p><a href="/ebooks/sun-tzu/the-art-of-war/lionel-giles" property="schema:url"><span property="schema:name">The Art of War</span></a></p>
+												<p class="author" typeof="schema:Person" property="schema:author" resource="/ebooks/sun-tzu"><a href="https://standardebooks.org/ebooks/sun-tzu" property="schema:url"><span property="schema:name">Sun Tzu</span></a></p>
+									</li>
+					<li typeof="schema:Book" about="/ebooks/robert-louis-stevenson/treasure-island">
+						<div class="thumbnail-container" aria-hidden="true">				<a href="/ebooks/robert-louis-stevenson/treasure-island" tabindex="-1" property="schema:url">
+											<picture>
+							<source srcset="/images/covers/robert-louis-stevenson_treasure-island/3f6e12af1fa3a3600bc39de850901e95f4064999/cover@2x.avif 2x, /images/covers/robert-louis-stevenson_treasure-island/3f6e12af1fa3a3600bc39de850901e95f4064999/cover.avif 1x" type="image/avif"/>							<source srcset="/images/covers/robert-louis-stevenson_treasure-island/3f6e12af1fa3a3600bc39de850901e95f4064999/cover@2x.jpg 2x, /images/covers/robert-louis-stevenson_treasure-island/3f6e12af1fa3a3600bc39de850901e95f4064999/cover.jpg 1x" type="image/jpeg"/>							<img src="/images/covers/robert-louis-stevenson_treasure-island/3f6e12af1fa3a3600bc39de850901e95f4064999/cover@2x.jpg" alt="" property="schema:image" height="335" width="224" loading="lazy"/>
+						</picture>
+									</a>
+			</div>
+			<p><a href="/ebooks/robert-louis-stevenson/treasure-island" property="schema:url"><span property="schema:name">Treasure Island</span></a></p>
+												<p class="author" typeof="schema:Person" property="schema:author" resource="/ebooks/robert-louis-stevenson"><a href="https://standardebooks.org/ebooks/robert-louis-stevenson" property="schema:url"><span property="schema:name">Robert Louis Stevenson</span></a></p>
+									</li>
+					<li typeof="schema:Book" about="/ebooks/niccolo-machiavelli/the-prince/w-k-marriott">
+						<div class="thumbnail-container" aria-hidden="true">				<a href="/ebooks/niccolo-machiavelli/the-prince/w-k-marriott" tabindex="-1" property="schema:url">
+											<picture>
+							<source srcset="/images/covers/niccolo-machiavelli_the-prince_w-k-marriott/85768043af5e76df5f219a26fb139d5d11e5f6bd/cover@2x.avif 2x, /images/covers/niccolo-machiavelli_the-prince_w-k-marriott/85768043af5e76df5f219a26fb139d5d11e5f6bd/cover.avif 1x" type="image/avif"/>							<source srcset="/images/covers/niccolo-machiavelli_the-prince_w-k-marriott/85768043af5e76df5f219a26fb139d5d11e5f6bd/cover@2x.jpg 2x, /images/covers/niccolo-machiavelli_the-prince_w-k-marriott/85768043af5e76df5f219a26fb139d5d11e5f6bd/cover.jpg 1x" type="image/jpeg"/>							<img src="/images/covers/niccolo-machiavelli_the-prince_w-k-marriott/85768043af5e76df5f219a26fb139d5d11e5f6bd/cover@2x.jpg" alt="" property="schema:image" height="335" width="224" loading="lazy"/>
+						</picture>
+									</a>
+			</div>
+			<p><a href="/ebooks/niccolo-machiavelli/the-prince/w-k-marriott" property="schema:url"><span property="schema:name">The Prince</span></a></p>
+												<p class="author" typeof="schema:Person" property="schema:author" resource="/ebooks/niccolo-machiavelli"><a href="https://standardebooks.org/ebooks/niccolo-machiavelli" property="schema:url"><span property="schema:name">Niccolò Machiavelli</span></a></p>
+									</li>
+					<li typeof="schema:Book" about="/ebooks/arthur-ransome/racundras-first-cruise">
+						<div class="thumbnail-container" aria-hidden="true">				<a href="/ebooks/arthur-ransome/racundras-first-cruise" tabindex="-1" property="schema:url">
+											<picture>
+							<source srcset="/images/covers/arthur-ransome_racundras-first-cruise/da8c4e6d35e9159d36852bdc517f5694f6008ce8/cover@2x.avif 2x, /images/covers/arthur-ransome_racundras-first-cruise/da8c4e6d35e9159d36852bdc517f5694f6008ce8/cover.avif 1x" type="image/avif"/>							<source srcset="/images/covers/arthur-ransome_racundras-first-cruise/da8c4e6d35e9159d36852bdc517f5694f6008ce8/cover@2x.jpg 2x, /images/covers/arthur-ransome_racundras-first-cruise/da8c4e6d35e9159d36852bdc517f5694f6008ce8/cover.jpg 1x" type="image/jpeg"/>							<img src="/images/covers/arthur-ransome_racundras-first-cruise/da8c4e6d35e9159d36852bdc517f5694f6008ce8/cover@2x.jpg" alt="" property="schema:image" height="335" width="224" loading="lazy"/>
+						</picture>
+									</a>
+			</div>
+			<p><a href="/ebooks/arthur-ransome/racundras-first-cruise" property="schema:url"><span property="schema:name">Racundra’s First Cruise</span></a></p>
+												<p class="author" typeof="schema:Person" property="schema:author" resource="/ebooks/arthur-ransome"><a href="https://standardebooks.org/ebooks/arthur-ransome" property="schema:url"><span property="schema:name">Arthur Ransome</span></a></p>
+									</li>
+					<li typeof="schema:Book" about="/ebooks/homer/the-iliad/william-cullen-bryant">
+						<div class="thumbnail-container" aria-hidden="true">				<a href="/ebooks/homer/the-iliad/william-cullen-bryant" tabindex="-1" property="schema:url">
+											<picture>
+							<source srcset="/images/covers/homer_the-iliad_william-cullen-bryant/b77a83c417d741b935f60002618656cb746b251a/cover@2x.avif 2x, /images/covers/homer_the-iliad_william-cullen-bryant/b77a83c417d741b935f60002618656cb746b251a/cover.avif 1x" type="image/avif"/>							<source srcset="/images/covers/homer_the-iliad_william-cullen-bryant/b77a83c417d741b935f60002618656cb746b251a/cover@2x.jpg 2x, /images/covers/homer_the-iliad_william-cullen-bryant/b77a83c417d741b935f60002618656cb746b251a/cover.jpg 1x" type="image/jpeg"/>							<img src="/images/covers/homer_the-iliad_william-cullen-bryant/b77a83c417d741b935f60002618656cb746b251a/cover@2x.jpg" alt="" property="schema:image" height="335" width="224" loading="lazy"/>
+						</picture>
+									</a>
+			</div>
+			<p><a href="/ebooks/homer/the-iliad/william-cullen-bryant" property="schema:url"><span property="schema:name">The Iliad</span></a></p>
+												<p class="author" typeof="schema:Person" property="schema:author" resource="/ebooks/homer"><a href="https://standardebooks.org/ebooks/homer" property="schema:url"><span property="schema:name">Homer</span></a></p>
+									</li>
+					<li typeof="schema:Book" about="/ebooks/j-storer-clouston/the-man-from-the-clouds">
+						<div class="thumbnail-container" aria-hidden="true">				<a href="/ebooks/j-storer-clouston/the-man-from-the-clouds" tabindex="-1" property="schema:url">
+											<picture>
+							<source srcset="/images/covers/j-storer-clouston_the-man-from-the-clouds/3daa151f4259676ea97b274edaea561ba824d1a1/cover@2x.avif 2x, /images/covers/j-storer-clouston_the-man-from-the-clouds/3daa151f4259676ea97b274edaea561ba824d1a1/cover.avif 1x" type="image/avif"/>							<source srcset="/images/covers/j-storer-clouston_the-man-from-the-clouds/3daa151f4259676ea97b274edaea561ba824d1a1/cover@2x.jpg 2x, /images/covers/j-storer-clouston_the-man-from-the-clouds/3daa151f4259676ea97b274edaea561ba824d1a1/cover.jpg 1x" type="image/jpeg"/>							<img src="/images/covers/j-storer-clouston_the-man-from-the-clouds/3daa151f4259676ea97b274edaea561ba824d1a1/cover@2x.jpg" alt="" property="schema:image" height="335" width="224" loading="lazy"/>
+						</picture>
+									</a>
+			</div>
+			<p><a href="/ebooks/j-storer-clouston/the-man-from-the-clouds" property="schema:url"><span property="schema:name">The Man from the Clouds</span></a></p>
+												<p class="author" typeof="schema:Person" property="schema:author" resource="/ebooks/j-storer-clouston"><a href="https://standardebooks.org/ebooks/j-storer-clouston" property="schema:url"><span property="schema:name">J. Storer Clouston</span></a></p>
+									</li>
+					<li typeof="schema:Book" about="/ebooks/miguel-de-cervantes-saavedra/don-quixote/john-ormsby">
+						<div class="thumbnail-container" aria-hidden="true">				<a href="/ebooks/miguel-de-cervantes-saavedra/don-quixote/john-ormsby" tabindex="-1" property="schema:url">
+											<picture>
+							<source srcset="/images/covers/miguel-de-cervantes-saavedra_don-quixote_john-ormsby/f41dff1317a9f7a48724b6481fa30696a8c28611/cover@2x.avif 2x, /images/covers/miguel-de-cervantes-saavedra_don-quixote_john-ormsby/f41dff1317a9f7a48724b6481fa30696a8c28611/cover.avif 1x" type="image/avif"/>							<source srcset="/images/covers/miguel-de-cervantes-saavedra_don-quixote_john-ormsby/f41dff1317a9f7a48724b6481fa30696a8c28611/cover@2x.jpg 2x, /images/covers/miguel-de-cervantes-saavedra_don-quixote_john-ormsby/f41dff1317a9f7a48724b6481fa30696a8c28611/cover.jpg 1x" type="image/jpeg"/>							<img src="/images/covers/miguel-de-cervantes-saavedra_don-quixote_john-ormsby/f41dff1317a9f7a48724b6481fa30696a8c28611/cover@2x.jpg" alt="" property="schema:image" height="335" width="224" loading="lazy"/>
+						</picture>
+									</a>
+			</div>
+			<p><a href="/ebooks/miguel-de-cervantes-saavedra/don-quixote/john-ormsby" property="schema:url"><span property="schema:name">Don Quixote</span></a></p>
+												<p class="author" typeof="schema:Person" property="schema:author" resource="/ebooks/miguel-de-cervantes-saavedra"><a href="https://standardebooks.org/ebooks/miguel-de-cervantes-saavedra" property="schema:url"><span property="schema:name">Miguel de Cervantes Saavedra</span></a></p>
+									</li>
+					<li typeof="schema:Book" about="/ebooks/virginia-woolf/to-the-lighthouse">
+						<div class="thumbnail-container" aria-hidden="true">				<a href="/ebooks/virginia-woolf/to-the-lighthouse" tabindex="-1" property="schema:url">
+											<picture>
+							<source srcset="/images/covers/virginia-woolf_to-the-lighthouse/9b102ec81604211efe28bfa597a0ad9b8de2264f/cover@2x.avif 2x, /images/covers/virginia-woolf_to-the-lighthouse/9b102ec81604211efe28bfa597a0ad9b8de2264f/cover.avif 1x" type="image/avif"/>							<source srcset="/images/covers/virginia-woolf_to-the-lighthouse/9b102ec81604211efe28bfa597a0ad9b8de2264f/cover@2x.jpg 2x, /images/covers/virginia-woolf_to-the-lighthouse/9b102ec81604211efe28bfa597a0ad9b8de2264f/cover.jpg 1x" type="image/jpeg"/>							<img src="/images/covers/virginia-woolf_to-the-lighthouse/9b102ec81604211efe28bfa597a0ad9b8de2264f/cover@2x.jpg" alt="" property="schema:image" height="335" width="224" loading="lazy"/>
+						</picture>
+									</a>
+			</div>
+			<p><a href="/ebooks/virginia-woolf/to-the-lighthouse" property="schema:url"><span property="schema:name">To the Lighthouse</span></a></p>
+												<p class="author" typeof="schema:Person" property="schema:author" resource="/ebooks/virginia-woolf"><a href="https://standardebooks.org/ebooks/virginia-woolf" property="schema:url"><span property="schema:name">Virginia Woolf</span></a></p>
+									</li>
+					<li typeof="schema:Book" about="/ebooks/robert-w-chambers/the-king-in-yellow">
+						<div class="thumbnail-container" aria-hidden="true">				<a href="/ebooks/robert-w-chambers/the-king-in-yellow" tabindex="-1" property="schema:url">
+											<picture>
+							<source srcset="/images/covers/robert-w-chambers_the-king-in-yellow/95aa8303691761eb7cfc68014f6bf453d907c259/cover@2x.avif 2x, /images/covers/robert-w-chambers_the-king-in-yellow/95aa8303691761eb7cfc68014f6bf453d907c259/cover.avif 1x" type="image/avif"/>							<source srcset="/images/covers/robert-w-chambers_the-king-in-yellow/95aa8303691761eb7cfc68014f6bf453d907c259/cover@2x.jpg 2x, /images/covers/robert-w-chambers_the-king-in-yellow/95aa8303691761eb7cfc68014f6bf453d907c259/cover.jpg 1x" type="image/jpeg"/>							<img src="/images/covers/robert-w-chambers_the-king-in-yellow/95aa8303691761eb7cfc68014f6bf453d907c259/cover@2x.jpg" alt="" property="schema:image" height="335" width="224" loading="lazy"/>
+						</picture>
+									</a>
+			</div>
+			<p><a href="/ebooks/robert-w-chambers/the-king-in-yellow" property="schema:url"><span property="schema:name">The King in Yellow</span></a></p>
+												<p class="author" typeof="schema:Person" property="schema:author" resource="/ebooks/robert-w-chambers"><a href="https://standardebooks.org/ebooks/robert-w-chambers" property="schema:url"><span property="schema:name">Robert W. Chambers</span></a></p>
+									</li>
+					<li typeof="schema:Book" about="/ebooks/edgar-allan-poe/short-fiction">
+						<div class="thumbnail-container" aria-hidden="true">				<a href="/ebooks/edgar-allan-poe/short-fiction" tabindex="-1" property="schema:url">
+											<picture>
+							<source srcset="/images/covers/edgar-allan-poe_short-fiction/113021f2b2d2f3b5cdb4751661bf742b6e3ee6b4/cover@2x.avif 2x, /images/covers/edgar-allan-poe_short-fiction/113021f2b2d2f3b5cdb4751661bf742b6e3ee6b4/cover.avif 1x" type="image/avif"/>							<source srcset="/images/covers/edgar-allan-poe_short-fiction/113021f2b2d2f3b5cdb4751661bf742b6e3ee6b4/cover@2x.jpg 2x, /images/covers/edgar-allan-poe_short-fiction/113021f2b2d2f3b5cdb4751661bf742b6e3ee6b4/cover.jpg 1x" type="image/jpeg"/>							<img src="/images/covers/edgar-allan-poe_short-fiction/113021f2b2d2f3b5cdb4751661bf742b6e3ee6b4/cover@2x.jpg" alt="" property="schema:image" height="335" width="224" loading="lazy"/>
+						</picture>
+									</a>
+			</div>
+			<p><a href="/ebooks/edgar-allan-poe/short-fiction" property="schema:url"><span property="schema:name">Short Fiction</span></a></p>
+												<p class="author" typeof="schema:Person" property="schema:author" resource="/ebooks/edgar-allan-poe"><a href="https://standardebooks.org/ebooks/edgar-allan-poe" property="schema:url"><span property="schema:name">Edgar Allan Poe</span></a></p>
+									</li>
+	</ol>
+				<nav class="pagination" aria-label="Pagination">
+			<a aria-disabled="true">Back</a>
+			<ol>
+							<li>
+					<a aria-current="page" href="#">1</a>
+				</li>
+							<li>
+					<a href="/ebooks?page=2&amp;per-page=48&amp;sort=popularity">2</a>
+				</li>
+							<li>
+					<a href="/ebooks?page=3&amp;per-page=48&amp;sort=popularity">3</a>
+				</li>
+							<li>
+					<a href="/ebooks?page=4&amp;per-page=48&amp;sort=popularity">4</a>
+				</li>
+							<li>
+					<a href="/ebooks?page=5&amp;per-page=48&amp;sort=popularity">5</a>
+				</li>
+							<li>
+					<a href="/ebooks?page=6&amp;per-page=48&amp;sort=popularity">6</a>
+				</li>
+							<li>
+					<a href="/ebooks?page=7&amp;per-page=48&amp;sort=popularity">7</a>
+				</li>
+							<li>
+					<a href="/ebooks?page=8&amp;per-page=48&amp;sort=popularity">8</a>
+				</li>
+							<li>
+					<a href="/ebooks?page=9&amp;per-page=48&amp;sort=popularity">9</a>
+				</li>
+							<li>
+					<a href="/ebooks?page=10&amp;per-page=48&amp;sort=popularity">10</a>
+				</li>
+							<li>
+					<a href="/ebooks?page=11&amp;per-page=48&amp;sort=popularity">11</a>
+				</li>
+							<li>
+					<a href="/ebooks?page=12&amp;per-page=48&amp;sort=popularity">12</a>
+				</li>
+							<li>
+					<a href="/ebooks?page=13&amp;per-page=48&amp;sort=popularity">13</a>
+				</li>
+							<li>
+					<a href="/ebooks?page=14&amp;per-page=48&amp;sort=popularity">14</a>
+				</li>
+							<li>
+					<a href="/ebooks?page=15&amp;per-page=48&amp;sort=popularity">15</a>
+				</li>
+							<li>
+					<a href="/ebooks?page=16&amp;per-page=48&amp;sort=popularity">16</a>
+				</li>
+							<li>
+					<a href="/ebooks?page=17&amp;per-page=48&amp;sort=popularity">17</a>
+				</li>
+							<li>
+					<a href="/ebooks?page=18&amp;per-page=48&amp;sort=popularity">18</a>
+				</li>
+							<li>
+					<a href="/ebooks?page=19&amp;per-page=48&amp;sort=popularity">19</a>
+				</li>
+							<li>
+					<a href="/ebooks?page=20&amp;per-page=48&amp;sort=popularity">20</a>
+				</li>
+							<li>
+					<a href="/ebooks?page=21&amp;per-page=48&amp;sort=popularity">21</a>
+				</li>
+							<li>
+					<a href="/ebooks?page=22&amp;per-page=48&amp;sort=popularity">22</a>
+				</li>
+							<li>
+					<a href="/ebooks?page=23&amp;per-page=48&amp;sort=popularity">23</a>
+				</li>
+							<li>
+					<a href="/ebooks?page=24&amp;per-page=48&amp;sort=popularity">24</a>
+				</li>
+							<li>
+					<a href="/ebooks?page=25&amp;per-page=48&amp;sort=popularity">25</a>
+				</li>
+							<li>
+					<a href="/ebooks?page=26&amp;per-page=48&amp;sort=popularity">26</a>
+				</li>
+							<li>
+					<a href="/ebooks?page=27&amp;per-page=48&amp;sort=popularity">27</a>
+				</li>
+							<li>
+					<a href="/ebooks?page=28&amp;per-page=48&amp;sort=popularity">28</a>
+				</li>
+							<li>
+					<a href="/ebooks?page=29&amp;per-page=48&amp;sort=popularity">29</a>
+				</li>
+							<li>
+					<a href="/ebooks?page=30&amp;per-page=48&amp;sort=popularity">30</a>
+				</li>
+							<li>
+					<a href="/ebooks?page=31&amp;per-page=48&amp;sort=popularity">31</a>
+				</li>
+							<li>
+					<a href="/ebooks?page=32&amp;per-page=48&amp;sort=popularity">32</a>
+				</li>
+						</ol>
+			<a href="/ebooks?page=2&amp;per-page=48&amp;sort=popularity" rel="next">Next</a>
+		</nav>
+	
+	<p class="feeds-alert">We also have <a href="/bulk-downloads">bulk ebook downloads</a> and a <a href="/collections">list of collections</a> available, as well as <a href="/feeds">ebook catalog feeds</a> for use directly in your ereader app or RSS reader.</p>
+			<aside class="alert">
+	<p>Is there an out-of-copyright book you’d like to read, but that we don’t have in our catalog?</p>
+	<p><a href="/contribute">Help us produce that ebook</a> so that others can read it in the future! There’s probably a basic transcription available at <a href="https://www.gutenberg.org">Project Gutenberg</a>—<a href="/contribute">get in touch with us</a> and we’ll help you make it meet Standard Ebooks standards.</p>
+	<p>Any skill level, from simple proofreading to complete ebook production, is welcome. We’re here to help!</p>
+</aside>
+	</main>
+	<footer>
+		<p class="sponsor-header">
+			<a href="/about#corporate-sponsors">Sponsored by</a>
+		</p>
+		<ul>
+			<li>
+				<a href="https://elevenreader.io/standard-ebooks">
+					<img src="/images/masthead/sponsors/elevenreader.svg" alt="ElevenReader: Turn ebooks into audio" />
+				</a>
+			</li>
+		</ul>
+		<ul class="social-media">
+			<li>
+				<p>
+					<a href="https://x.com/standardebooks" rel="me">X</a>
+				</p>
+			</li>
+			<li>
+				<p>
+					<a href="https://www.facebook.com/standardebooks/" rel="me">Facebook</a>
+				</p>
+			</li>
+			<li>
+				<p>
+					<a href="https://www.instagram.com/standardebooks/" rel="me">Instagram</a>
+				</p>
+			</li>
+			<li>
+				<p>
+					<a href="https://mastodon.social/@standardebooks" rel="me">Mastodon</a>
+				</p>
+			</li>
+			<li>
+				<p>
+					<a href="https://bsky.app/profile/standardebooks.org" rel="me">Bluesky</a>
+				</p>
+			</li>
+		</ul>
+		<p class="newsletter"><a href="/newsletter">Subscribe to our free newsletter</a></p>
+		<ul class="nav-links">
+			<li>
+				<a href="/ebooks">Ebooks</a>
+			</li>
+			<li>
+				<a href="/about">About</a>
+			</li>
+			<li>
+				<a href="/blog">Blog</a>
+			</li>
+			<li>
+				<a href="/contribute">Get Involved</a>
+			</li>
+			<li>
+				<a href="/donate">Donate</a>
+			</li>
+		</ul>
+		<ul class="nav-links">
+			<li>
+				<a href="https://github.com/standardebooks">GitHub</a>
+			</li>
+			<li>
+				<a href="/bulk-downloads">Bulk downloads</a>
+			</li>
+			<li>
+				<a href="/feeds">Ebook Feeds</a>
+			</li>
+			<li>
+				<a href="/about/accessibility">Accessibility</a>
+			</li>
+			<li>
+				<a href="/settings">Settings</a>
+			</li>
+		</ul>
+		<p>Content produced by or for Standard Ebooks L<sup>3</sup>C is dedicated to the <a href="https://en.wikipedia.org/wiki/Public_domain">public domain</a> via the <a href="https://creativecommons.org/publicdomain/zero/1.0/" rel="license">CC0 1.0 Universal Public Domain Dedication</a>.</p>
+		<p>Content not produced by or for Standard Ebooks L<sup>3</sup>C but displayed on this website may be subject to copyright.</p>
+		<p>
+			<a href="/">Standard Ebooks</a>
+		</p>
+	</footer>
+</body>
+</html>
