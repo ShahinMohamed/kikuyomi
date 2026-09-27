@@ -728,6 +728,10 @@ class _DownloadMenu extends StatelessWidget {
         ),
       ],
     ],
+    // The strip's own cell. Without this, `PopupMenuButton` falls back to its default overflow
+    // glyph, and the Download button silently became three dots -- which is exactly what happened,
+    // because the tests reached the menu by its tooltip and never looked at what it drew.
+    child: child,
   );
 }
 
@@ -984,18 +988,20 @@ class _ActionStrip extends StatelessWidget {
     }
     if (onDownloadChapters != null) {
       // The whole book is one of the things this menu offers, so the cell opens the menu rather
-      // than being a second way to ask for the same thing.
-      return _DownloadMenu(
-        next: nextChapters,
-        all: allChapters,
-        onDownloadChapters: onDownloadChapters!,
-        onOpenDownloadQueue: onOpenDownloadQueue,
-        child: const _Action(
-          icon: Icons.download_outlined,
-          label: 'Download',
-          active: false,
-          // The menu above it takes the tap; this is what the cell looks like.
-          onTap: null,
+      // than being a second way to ask for the same thing. The `Expanded` stays out here, because a
+      // flex child has to be the Row's own child; the menu goes inside it.
+      return Expanded(
+        child: _DownloadMenu(
+          next: nextChapters,
+          all: allChapters,
+          onDownloadChapters: onDownloadChapters!,
+          onOpenDownloadQueue: onOpenDownloadQueue,
+          child: const _ActionFace(
+            icon: Icons.download_outlined,
+            label: 'Download',
+            active: false,
+            dim: false,
+          ),
         ),
       );
     }
@@ -1026,32 +1032,61 @@ class _Action extends StatelessWidget {
   final VoidCallback? onTap;
 
   @override
+  Widget build(BuildContext context) => Expanded(
+    child: InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: _ActionFace(
+        icon: icon,
+        label: label,
+        active: active,
+        dim: onTap == null,
+      ),
+    ),
+  );
+}
+
+/// What one cell looks like, without the [Expanded] around it.
+///
+/// Split out because the [Expanded] has to be the strip's own child -- a flex child cannot be
+/// wrapped in anything else -- and the Download cell is wrapped, in the menu it opens. Wrapping the
+/// whole cell instead threw `Incorrect use of ParentDataWidget` on every build of the page.
+class _ActionFace extends StatelessWidget {
+  const _ActionFace({
+    required this.icon,
+    required this.label,
+    required this.active,
+    required this.dim,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool active;
+
+  /// Whether there is nothing to press, which greys it.
+  final bool dim;
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colour = onTap == null && !active
+    final colour = dim && !active
         ? theme.colorScheme.outlineVariant
         : active
         ? theme.colorScheme.primary
         : theme.colorScheme.onSurfaceVariant;
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          child: Column(
-            children: [
-              Icon(icon, color: colour),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                style: theme.textTheme.labelSmall?.copyWith(color: colour),
-              ),
-            ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Column(
+        children: [
+          Icon(icon, color: colour),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            style: theme.textTheme.labelSmall?.copyWith(color: colour),
           ),
-        ),
+        ],
       ),
     );
   }

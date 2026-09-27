@@ -225,9 +225,34 @@ Future<File?> findFolderCoverImage(Directory folder) async {
   return images[_coverFileName(images.keys.toList())];
 }
 
+/// The names a cover image is actually saved under, in the order they are preferred.
+///
+/// Three of these were here from the start; the rest are what real folders turn out to hold.
+/// `albumart` and `albumartsmall` are what Windows Media Player leaves behind, `artwork` and
+/// `poster` are what several rippers write, and `folder` is the one Windows itself understands.
+/// Nothing here is a guess about a particular listener's folders: each is a name some tool writes
+/// by convention.
+const _coverStems = [
+  'cover',
+  'folder',
+  'front',
+  'artwork',
+  'albumart',
+  'album art',
+  'albumartsmall',
+  'poster',
+  'thumb',
+  'thumbnail',
+];
+
 /// The cover among a folder's [images], by name, as [readFolderBook] describes it.
+///
+/// A folder with exactly one image is taken to mean it, whatever it is called -- a book's cover
+/// saved under the book's own title is common and cannot be matched by name. A folder with several
+/// images and none of the known names has no cover this can pick without guessing, and the embedded
+/// picture is a better answer than a coin toss.
 String? _coverFileName(List<String> images) {
-  for (final stem in const ['cover', 'folder', 'front']) {
+  for (final stem in _coverStems) {
     final named = [
       for (final name in images)
         if (_stem(name).toLowerCase() == stem) name,

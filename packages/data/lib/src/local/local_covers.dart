@@ -205,6 +205,21 @@ Future<List<LocalBookAwaitingCover>> localBooksAwaitingCover(
   return awaiting;
 }
 
+/// Forgets that a book was looked at and found to have no cover, so it will be looked at again.
+///
+/// A book is recorded as having no cover so that every start does not read every file again. That is
+/// right, and it also means the answer is permanent: a listener who adds artwork beside their files,
+/// or who updates to a build that reads a format better than the one that looked, has no way to ask
+/// again. This is that way.
+///
+/// Only books with no cover kept. One that has an image is left alone, including a custom one §4.4
+/// protects.
+Future<int> forgetMissingCovers(KikuyomiDatabase db) =>
+    (db.update(db.books)..where(
+          (b) => b.coverLocalPath.isNull() & b.coverUpdatedAt.isNotNull(),
+        ))
+        .write(const BooksCompanion(coverUpdatedAt: Value(null)));
+
 /// Reads a book's cover from its files: [audio], its file or first file, and for a book in a folder
 /// the [folder], both where they are on this device.
 ///

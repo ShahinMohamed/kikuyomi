@@ -406,6 +406,12 @@ final class SourceRegistry {
       }
     }
     final known = {for (final source in sources) source.id};
+    // Before listing the stubs, throw away the ones that are not stubs any more. A source row
+    // outlives its extension so that the library's books still point somewhere; once the last of
+    // those books has gone there is nothing to point, and what is left is a dead row a listener
+    // cannot get rid of. Three of them turned up in one library from extensions installed under ids
+    // their author has since changed.
+    await pruneUnusedSources(_database, keep: known);
     for (final row in await readRegisteredSources(_database)) {
       if (known.contains(row.id) || row.extensionId == null) continue;
       sources.add(

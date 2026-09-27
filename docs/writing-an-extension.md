@@ -68,6 +68,30 @@ stable paths. Never a title. Never a URL that carries a token or an expiry.
 
 ---
 
+## 2b. What a package holds
+
+Three files, flat, with no folder around them (§3.3):
+
+```
+manifest.json     required
+main.js           required, your bundled code
+icon.png          optional, and worth doing
+```
+
+**`icon.png` is how your extension gets its own face.** Without one the app draws a puzzle piece,
+which is the same puzzle piece every other extension without one gets, and a listener with a dozen
+installed cannot tell them apart. It is read from the package at install and drawn from disk
+afterwards, so it costs no network and works offline.
+
+A square PNG. 512×512 is plenty and 256×256 is enough; the app rounds the corners itself, so supply
+a plain square and let it do that. Keep it under a megabyte for a package nobody minds downloading.
+
+If you list it in `files`, it is hashed at install exactly as `main.js` is, and a package that names
+an icon it does not contain is refused. Leave it out of `files` while you are developing, as you do
+for `main.js`.
+
+---
+
 ## 3. `manifest.json`
 
 ```json

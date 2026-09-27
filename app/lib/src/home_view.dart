@@ -211,7 +211,12 @@ class ContinueListeningCard extends StatelessWidget {
 
 /// The books to continue, one to a row on a phone and several to a row on a wide window, so the
 /// shelf never needs scrolling sideways, which a mouse cannot do by dragging.
-class _Shelf extends StatelessWidget {
+/// Continue listening, one row of it.
+///
+/// Stateful only to remember whether it has been opened up, which nothing above it needs to know --
+/// the same reason the chapter list holds its own selection. `HomeView` stays a pure function of
+/// the library.
+class _Shelf extends StatefulWidget {
   const _Shelf({
     required this.books,
     required this.covers,
@@ -221,6 +226,14 @@ class _Shelf extends StatelessWidget {
   final List<ContinueListeningBook> books;
   final CoverFiles covers;
   final ValueChanged<int> onResume;
+
+  @override
+  State<_Shelf> createState() => _ShelfState();
+}
+
+class _ShelfState extends State<_Shelf> {
+  /// Whether every book on the go is shown, rather than the one row that fits.
+  var _expanded = false;
 
   static const _minCardWidth = 320.0;
   static const _gap = 8.0;
@@ -236,17 +249,43 @@ class _Shelf extends StatelessWidget {
       // Rounded down, so rounding never pushes the last card of a row onto the next.
       final cardWidth = ((width - _gap * (columns - 1)) / columns)
           .floorToDouble();
-      return Wrap(
-        spacing: _gap,
-        runSpacing: _gap,
+      // One row unless asked otherwise. A listener with ten books on the go had three rows of
+      // cards above their library, which is most of a window spent on a list they were scrolling
+      // past. How many fit is not known until here, so the decision is made here too.
+      final books = widget.books;
+      // One row, but never fewer than three cards. On a wide window a row is five and the cap does
+      // nothing; on a phone a row is one, and collapsing ten books to a single card would hide two
+      // that used to be in plain sight for no gain worth having.
+      final shown = _expanded
+          ? books.length
+          : math.min(math.max(columns, 3), books.length);
+      final hidden = books.length - shown;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          for (final book in books)
-            SizedBox(
-              width: cardWidth,
-              child: ContinueListeningCard(
-                book: book,
-                covers: covers,
-                onTap: () => onResume(book.bookId),
+          Wrap(
+            spacing: _gap,
+            runSpacing: _gap,
+            children: [
+              for (final book in books.take(shown))
+                SizedBox(
+                  width: cardWidth,
+                  child: ContinueListeningCard(
+                    book: book,
+                    covers: widget.covers,
+                    onTap: () => widget.onResume(book.bookId),
+                  ),
+                ),
+            ],
+          ),
+          // Nothing is hidden for good: the rest are a press away, and they are in the library and
+          // in History besides.
+          if (hidden > 0 || _expanded)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(
+                onPressed: () => setState(() => _expanded = !_expanded),
+                child: Text(_expanded ? 'Show fewer' : 'Show $hidden more'),
               ),
             ),
         ],

@@ -456,6 +456,20 @@ void main() {
   });
 
   group('downloading several chapters', () {
+    testWidgets('the strip still shows a Download button, not an overflow', (
+      tester,
+    ) async {
+      // It did not. `PopupMenuButton` draws its default three-dot glyph unless it is given a child,
+      // and every test here reached the menu by its tooltip, so none of them looked at the cell.
+      tallView(tester);
+      await tester.pumpWidget(details(book(), <String>[]));
+
+      // Not "no overflow glyph anywhere": every chapter row has one of its own, rightly. What must
+      // be there is the cell, with the word a listener is looking for on it.
+      expect(find.text('Download'), findsOneWidget);
+      expect(find.byIcon(Icons.download_outlined), findsOneWidget);
+    });
+
     testWidgets('the next chapter is the first unlistened one', (tester) async {
       // Opening is listened, so "next" starts at Middle rather than at the top of the list.
       tallView(tester);

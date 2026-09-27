@@ -8,6 +8,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kikuyomi/src/sources/drift_extension_store.dart';
@@ -465,7 +466,23 @@ void main() {
       );
     });
 
+    /// A book of this extension's source, in the library, which is the only reason §3.9 keeps a
+    /// source row after its extension goes.
+    Future<void> aBookFromIt() => db
+        .into(db.books)
+        .insert(
+          BooksCompanion.insert(
+            sourceId: sourceId,
+            key: 'a-book',
+            title: 'A Book',
+            inLibrary: const Value(true),
+            createdAt: clock.now(),
+            updatedAt: clock.now(),
+          ),
+        );
+
     test('leaves its source as a stub the library can still name', () async {
+      await aBookFromIt();
       await library.remove(extensionId);
 
       final source = registry.describe(sourceId);
@@ -481,12 +498,21 @@ void main() {
     });
 
     test('a book from it can still say why it will not play', () async {
+      await aBookFromIt();
       await library.remove(extensionId);
 
       await expectLater(
         registry.open(sourceId),
         throwsA(isA<ExtensionMissingException>()),
       );
+    });
+
+    test('and with no books left, the source goes too', () async {
+      // The stub is there for the books. With none, what is left is a row naming an extension
+      // nobody has, which a listener sees as a dead entry in Browse they cannot get rid of.
+      await library.remove(extensionId);
+
+      expect(registry.describe(sourceId), isNull);
     });
 
     test('keeps what the extension had stored', () async {
@@ -531,10 +557,11 @@ void main() {
 
     expect(
       counts,
-      [3, 3],
+      [3, 2],
       reason:
-          'Local, the bundled extension and the installed one; then the '
-          'installed one again as a stub',
+          'Local, the bundled extension and the installed one; then, with the '
+          'installed one gone and no books left from it to keep a stub for, '
+          'Local and the bundled one',
     );
   });
 }

@@ -51,6 +51,85 @@ List<int> vorbisFile(List<String> comments, {int seconds = 10}) => oggFile(
 );
 
 void main() {
+  group('the image a folder takes as its cover', () {
+    // The three names that were here found cover.jpg, folder.jpg and front.jpg. Real folders also
+    // hold what Windows Media Player and the common rippers leave behind, and a folder whose only
+    // image is named after the book cannot be matched by name at all.
+    Future<Directory> folderWith(
+      Directory temp,
+      List<String> names, {
+      String audio = 'one.mp3',
+    }) async {
+      final folder = await Directory(
+        '${temp.path}${Platform.pathSeparator}book',
+      ).create(recursive: true);
+      await File('${folder.path}${Platform.pathSeparator}$audio')
+          .writeAsBytes(const [0]);
+      for (final name in names) {
+        await File('${folder.path}${Platform.pathSeparator}$name')
+            .writeAsBytes(const [0]);
+      }
+      return folder;
+    }
+
+    late Directory temp;
+
+    setUp(() async {
+      temp = await Directory.systemTemp.createTemp('kikuyomi_covers');
+    });
+
+    tearDown(() async {
+      if (await temp.exists()) await temp.delete(recursive: true);
+    });
+
+    for (final name in const [
+      'cover.jpg',
+      'folder.png',
+      'front.jpeg',
+      'artwork.jpg',
+      'AlbumArt.jpg',
+      'albumartsmall.jpg',
+      'poster.png',
+      'thumb.jpg',
+    ]) {
+      test('takes $name', () async {
+        final folder = await folderWith(temp, [name]);
+
+        final found = await findFolderCoverImage(folder);
+
+        expect(found?.path, endsWith(name));
+      });
+    }
+
+    test("takes a folder's only image whatever it is called", () async {
+      // A cover saved under the book's own title is common and cannot be matched by name.
+      final folder = await folderWith(temp, ['The Hobbit.jpg']);
+
+      final found = await findFolderCoverImage(folder);
+
+      expect(found?.path, endsWith('The Hobbit.jpg'));
+    });
+
+    test('prefers a known name over the others', () async {
+      final folder = await folderWith(temp, [
+        'scan-of-the-back.jpg',
+        'cover.jpg',
+      ]);
+
+      final found = await findFolderCoverImage(folder);
+
+      expect(found?.path, endsWith('cover.jpg'));
+    });
+
+    test('takes none when several are unnamed', () async {
+      // Guessing between them would be a coin toss, and the picture embedded in the audio is a
+      // better answer than that.
+      final folder = await folderWith(temp, ['page-1.jpg', 'page-2.jpg']);
+
+      expect(await findFolderCoverImage(folder), isNull);
+    });
+  });
+
   late Directory root;
   late Directory folder;
 
