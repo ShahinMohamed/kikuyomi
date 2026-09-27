@@ -141,6 +141,43 @@ void main() {
     });
   });
 
+  group('the details of a book to read', () {
+    test('say it is one, and mark the chapter the reader is in', () async {
+      // The player's chapter means nothing for a book the player cannot open.
+      final book = await addBook();
+      final chapters = await addChapters(book, 3);
+      await saveReadingPosition(
+        db,
+        bookId: book,
+        chapterId: chapters[2],
+        progress: 0.4,
+        clock: clock,
+      );
+
+      final overview = (await watchBookOverview(db, book).first)!;
+      expect(overview.kind, SourceKind.text);
+      expect(
+        [for (final c in overview.chapters) c.current],
+        [false, false, true],
+      );
+    });
+
+    test('its place is watched, from none to where the reader is', () async {
+      final book = await addBook();
+      final chapters = await addChapters(book, 1);
+      expect(await watchReadingPosition(db, book).first, isNull);
+
+      await saveReadingPosition(
+        db,
+        bookId: book,
+        chapterId: chapters[0],
+        progress: 0.6,
+        clock: clock,
+      );
+      expect((await watchReadingPosition(db, book).first)!.progress, 0.6);
+    });
+  });
+
   group("a tab's shelf", () {
     test('holds only books of its own kind', () async {
       // Listening and reading are separate tabs, and a novel on the audiobook shelf would be a novel

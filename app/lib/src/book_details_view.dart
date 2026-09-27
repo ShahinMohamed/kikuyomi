@@ -44,6 +44,7 @@ class BookDetailsView extends StatelessWidget {
     this.downloads = BookDownloads.none,
     this.chapterDownloads = const {},
     this.onDownload,
+    this.canDownload = true,
     this.onStopDownloading,
     this.onAddToLibrary,
     this.onOpenAtSource,
@@ -71,6 +72,10 @@ class BookDetailsView extends StatelessWidget {
   /// Asks for every file of the book that is not already here. Null where downloading makes no
   /// sense, as it does not for a book whose files are already on this device.
   final VoidCallback? onDownload;
+
+  /// Whether the book has anything to download at all. False for a book to read (ADR-0019), whose
+  /// chapters are read as they are opened, and which shows no download cell rather than a dead one.
+  final bool canDownload;
 
   /// Gives up on what is queued or running.
   final VoidCallback? onStopDownloading;
@@ -156,6 +161,7 @@ class BookDetailsView extends StatelessWidget {
                   _Header(book: book, covers: covers),
                   const SizedBox(height: 16),
                   _ActionStrip(
+                    canDownload: canDownload,
                     inLibrary: book.inLibrary,
                     finished: finished,
                     downloads: downloads,
@@ -911,6 +917,7 @@ class _MetaRow extends StatelessWidget {
 /// the listener's finger between one visit and the next.
 class _ActionStrip extends StatelessWidget {
   const _ActionStrip({
+    required this.canDownload,
     required this.inLibrary,
     required this.finished,
     required this.downloads,
@@ -925,6 +932,7 @@ class _ActionStrip extends StatelessWidget {
     required this.onOpenDownloadQueue,
   });
 
+  final bool canDownload;
   final bool inLibrary;
   final bool finished;
   final BookDownloads downloads;
@@ -948,7 +956,7 @@ class _ActionStrip extends StatelessWidget {
         active: inLibrary,
         onTap: onLibrary,
       ),
-      _downloadAction(),
+      if (canDownload) _downloadAction(),
       _Action(
         icon: finished ? Icons.done_all : Icons.check_circle_outline,
         label: finished ? 'Finished' : 'Mark finished',

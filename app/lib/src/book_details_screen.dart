@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:kikuyomi_source_api/kikuyomi_source_api.dart' show SourceKind;
 import 'package:kikuyomi_data/kikuyomi_data.dart'
     show
         BookOverview,
@@ -35,6 +36,11 @@ class BookDetailsScreen extends ConsumerWidget {
     final chapterDownloads =
         ref.watch(chapterDownloadsProvider(bookId)).value ?? const {};
     final book = overview.value;
+    // A book to read opens in the reader, and has nothing to download or play (ADR-0019).
+    final reading = book?.kind == SourceKind.text;
+    final readingPlace = reading
+        ? ref.watch(readingPositionProvider(bookId)).value
+        : null;
     return Scaffold(
       appBar: AppBar(
         actions: [
@@ -50,6 +56,12 @@ class BookDetailsScreen extends ConsumerWidget {
       // outlined buttons where it looked like one option among four.
       floatingActionButton: book == null
           ? null
+          : reading
+          ? FloatingActionButton.extended(
+              onPressed: () => ReaderRoute(bookId: bookId).push<void>(context),
+              icon: const Icon(Icons.menu_book),
+              label: Text(readingPlace == null ? 'Read' : 'Continue reading'),
+            )
           : FloatingActionButton.extended(
               onPressed: () => openBookInPlayer(
                 context,
@@ -75,13 +87,22 @@ class BookDetailsScreen extends ConsumerWidget {
                 ),
                 downloads: downloads,
                 chapterDownloads: chapterDownloads,
-                onDownload: () => _download(context, ref),
+                canDownload: !reading,
+                onDownload: reading ? null : () => _download(context, ref),
                 onStopDownloading: () => _stopDownloading(ref),
-                onPlayChapter: (chapterId) =>
-                    _playFrom(context, ref, chapterId),
-                onPlayFrom: (globalMs) => _playAt(context, ref, globalMs),
-                onDownloadChapters: (chapterIds) =>
-                    _downloadChapters(context, ref, chapterIds),
+                onPlayChapter: (chapterId) => reading
+                    ? ReaderRoute(
+                        bookId: bookId,
+                        chapterId: chapterId,
+                      ).push<void>(context)
+                    : _playFrom(context, ref, chapterId),
+                onPlayFrom: reading
+                    ? null
+                    : (globalMs) => _playAt(context, ref, globalMs),
+                onDownloadChapters: reading
+                    ? null
+                    : (chapterIds) =>
+                          _downloadChapters(context, ref, chapterIds),
                 onRefresh: book.canRefresh
                     ? () => _refresh(context, ref)
                     : null,

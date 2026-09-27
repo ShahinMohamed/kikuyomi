@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:kikuyomi_domain/kikuyomi_domain.dart';
+import 'package:kikuyomi_source_api/kikuyomi_source_api.dart' show SourceKind;
 
 import '../database/database.dart';
 import '../local/local_import.dart' show localSourceId;
@@ -29,9 +30,13 @@ final class BookOverview {
     this.status,
     this.webUrl,
     this.sourceName,
+    this.kind = SourceKind.audio,
   });
 
   final int bookId;
+
+  /// A book to listen to or a book to read (ADR-0019), which decides what opening it does.
+  final SourceKind kind;
   final String title;
 
   /// The name of the book's cover in the covers folder, or null for a book with no cover. `CoverFiles`
@@ -192,6 +197,7 @@ Stream<BookOverview?> watchBookOverview(KikuyomiDatabase db, int bookId) =>
       db.people,
       db.chapters,
       db.chapterSegments,
+      db.readingStates,
       db.mediaFiles,
       db.playbackStates,
       db.sources,
@@ -285,9 +291,20 @@ Future<BookOverview?> _loadBookOverview(KikuyomiDatabase db, int bookId) async {
     db.sources,
   )..where((s) => s.id.equals(book.sourceId))).getSingleOrNull();
 
+  // For a book to read, the chapter it is open at is the reader's, not the player's.
+  final reading = book.kind == SourceKind.text
+      ? await (db.select(
+          db.readingStates,
+        )..where((r) => r.bookId.equals(book.id))).getSingleOrNull()
+      : null;
+  final currentChapterId = book.kind == SourceKind.text
+      ? reading?.chapterId
+      : state?.chapterId;
+
   return BookOverview(
     bookId: book.id,
     sourceId: book.sourceId,
+    kind: book.kind,
     title: book.title,
     description: book.description,
     genres: book.genres,
@@ -306,7 +323,7 @@ Future<BookOverview?> _loadBookOverview(KikuyomiDatabase db, int bookId) async {
           title: chapter.title,
           durationMs: durationOf(chapter),
           listened: chapter.isListened,
-          current: state?.chapterId == chapter.id,
+          current: currentChapterId == chapter.id,
         ),
     ],
     markers: markers,

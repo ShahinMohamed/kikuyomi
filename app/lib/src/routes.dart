@@ -12,6 +12,8 @@ import 'library/categories_screen.dart';
 import 'library_screen.dart';
 import 'more_screen.dart';
 import 'player_screen.dart';
+import 'reading/reader_screen.dart';
+import 'reading/reading_screen.dart';
 import 'restore_screen.dart';
 import 'settings_screen.dart';
 import 'setup_gate.dart';
@@ -83,6 +85,8 @@ class SetupRoute extends GoRouteData with $SetupRoute {
   routes: [
     TypedGoRoute<BookRoute>(path: r'book/:bookId(\d+)'),
     TypedGoRoute<PlayerRoute>(path: 'player'),
+    TypedGoRoute<ReadingRoute>(path: 'reading'),
+    TypedGoRoute<ReaderRoute>(path: r'read/:bookId(\d+)'),
     TypedGoRoute<SettingsRoute>(
       path: 'settings',
       routes: [TypedGoRoute<RestoreRoute>(path: 'restore')],
@@ -127,6 +131,30 @@ class BookRoute extends GoRouteData with $BookRoute {
   @override
   Widget build(BuildContext context, GoRouterState state) =>
       BookDetailsScreen(bookId: bookId);
+}
+
+/// The Read tab: the books to read (ADR-0019).
+class ReadingRoute extends GoRouteData with $ReadingRoute {
+  const ReadingRoute();
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      const ReadingScreen();
+}
+
+/// The reader, open at a book: at [chapterId] from its start when given, and otherwise where the
+/// reader left it.
+class ReaderRoute extends GoRouteData with $ReaderRoute {
+  const ReaderRoute({required this.bookId, this.chapterId});
+
+  final int bookId;
+
+  /// A query parameter, since most ways in do not name one.
+  final int? chapterId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      ReaderScreen(bookId: bookId, chapterId: chapterId);
 }
 
 /// The player, showing the book the coordinator has open.

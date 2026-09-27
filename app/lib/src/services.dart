@@ -24,6 +24,7 @@ import 'package:kikuyomi_sources_builtin/kikuyomi_sources_builtin.dart';
 
 import 'app_version.dart';
 import 'book_files.dart';
+import 'reading/chapter_texts.dart';
 import 'sources/drift_extension_store.dart';
 import 'sources/extension_console.dart';
 import 'sources/extension_library.dart';
@@ -288,6 +289,26 @@ final class AppServices {
   final StreamAudioCache streamCache;
 
   final ImportFolder _importFolder;
+
+  /// What the chapters of books to read say (ADR-0019), from their EPUBs or their sources.
+  late final chapterTexts = ChapterTexts(
+    database,
+    mediaRoot: locations.mediaRoot,
+    openSource: openSource,
+  );
+
+  /// Records that the reader of [bookId] is [progress] of the way through [chapterId].
+  Future<void> saveReadingPlace({
+    required int bookId,
+    required int chapterId,
+    required double progress,
+  }) => saveReadingPosition(
+    database,
+    bookId: bookId,
+    chapterId: chapterId,
+    progress: progress,
+    clock: clock,
+  );
 
   /// The scan of the import folder under way, so that a second request joins it instead of racing
   /// it to add the same books.
