@@ -18,6 +18,7 @@ import 'package:kikuyomi_domain/kikuyomi_domain.dart';
 import 'package:kikuyomi_source_api/kikuyomi_source_api.dart' as api;
 
 import '../database/database.dart';
+import '../local/local_import.dart' show localSourceId;
 import '../merge/book_details.dart';
 import '../merge/chapter_sync.dart';
 import '../merge/credits.dart';
@@ -98,6 +99,34 @@ Future<void> registerSource(
 /// migrated", so the row outlives the extension and the app has to be able to read it to say so.
 Future<List<SourceRow>> readRegisteredSources(KikuyomiDatabase db) =>
     (db.select(db.sources)..orderBy([(s) => OrderingTerm.asc(s.name)])).get();
+
+/// Deletes the source rows that no longer serve any purpose, and says how many went.
+///
+/// §3.9 keeps a source row after its extension is removed so the library's books still point
+/// somewhere: they "point to a stub source until the extension returns or the books are migrated".
+/// That reason runs out when the last book from it goes. What is left then is a row naming an
+/// extension nobody has, with nothing pointing at it, sitting in the sources list for ever.
+///
+/// So: never the local source, never one of [keep] -- the sources of the extensions loaded right now
+/// -- and never one a book still names. Everything else is rubbish from an extension that was
+/// installed once and is not any more, which is exactly what a listener sees as a dead row they
+/// cannot get rid of.
+///
+/// Reinstalling the extension brings its source back, because registering one writes the row again.
+Future<int> pruneUnusedSources(
+  KikuyomiDatabase db, {
+  required Set<int> keep,
+}) async {
+  final used = await (db.selectOnly(
+    db.books,
+  )..addColumns([db.books.sourceId])).get();
+  final spoken = {
+    for (final row in used) row.read(db.books.sourceId)!,
+    ...keep,
+    localSourceId,
+  };
+  return (db.delete(db.sources)..where((s) => s.id.isNotIn(spoken))).go();
+}
 
 /// Writes what [details] and [chapters] say about a book of source [sourceId], and returns its id.
 ///

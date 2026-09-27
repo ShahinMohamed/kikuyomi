@@ -67,6 +67,94 @@ void main() {
             ..orderBy([(c) => OrderingTerm.asc(c.sourceIndex)]))
           .get();
 
+  group('forgetting a source nothing uses', () {
+    // §3.9 keeps a source row after its extension goes so the library's books still point
+    // somewhere. That reason runs out when the last of those books does, and what is left is a row
+    // naming an extension nobody has, which a listener sees as a dead entry they cannot remove.
+
+    Future<List<int>> sourceIds() async => [
+      for (final row in await db.select(db.sources).get()) row.id,
+    ];
+
+    Future<void> addStub(int id, String extensionId) => registerSource(
+      db,
+      id: id,
+      key: 'gone',
+      name: 'Gone',
+      lang: 'en',
+      extensionId: extensionId,
+    );
+
+    test('removes one with no books and no extension loaded', () async {
+      await addStub(99, 'com.example.gone');
+
+      final removed = await pruneUnusedSources(db, keep: {sourceId});
+
+      expect(removed, 1);
+      expect(await sourceIds(), isNot(contains(99)));
+    });
+
+    test('keeps one whose books are still in the library', () async {
+      // The whole reason §3.9 leaves the row behind. Taking it would leave those books pointing at
+      // nothing.
+      await addStub(99, 'com.example.gone');
+      await db
+          .into(db.books)
+          .insert(
+            BooksCompanion.insert(
+              sourceId: 99,
+              key: 'a-book',
+              title: 'A Book',
+              createdAt: clock.now(),
+              updatedAt: clock.now(),
+            ),
+          );
+
+      expect(await pruneUnusedSources(db, keep: {sourceId}), 0);
+      expect(await sourceIds(), contains(99));
+    });
+
+    test('keeps a book that was taken out of the library', () async {
+      // Out of the library is not gone: §4.4 keeps its progress, and adding it again must find its
+      // source still there.
+      await addStub(99, 'com.example.gone');
+      await db
+          .into(db.books)
+          .insert(
+            BooksCompanion.insert(
+              sourceId: 99,
+              key: 'a-book',
+              title: 'A Book',
+              inLibrary: const Value(false),
+              createdAt: clock.now(),
+              updatedAt: clock.now(),
+            ),
+          );
+
+      expect(await pruneUnusedSources(db, keep: {sourceId}), 0);
+    });
+
+    test('keeps the sources of the extensions loaded now', () async {
+      // An extension that is installed but has no books yet: its sources are what Browse lists.
+      expect(await pruneUnusedSources(db, keep: {sourceId}), 0);
+      expect(await sourceIds(), contains(sourceId));
+    });
+
+    test('never removes the local source', () async {
+      await registerSource(
+        db,
+        id: 1,
+        key: 'local',
+        name: 'Local files',
+        lang: 'und',
+      );
+
+      await pruneUnusedSources(db, keep: const {});
+
+      expect(await sourceIds(), contains(1));
+    });
+  });
+
   group('registering a source', () {
     test('keeps what the listener decided about one already known', () async {
       await (db.update(db.sources)..where((s) => s.id.equals(sourceId))).write(

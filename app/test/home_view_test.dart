@@ -64,6 +64,62 @@ Widget home({
 );
 
 void main() {
+  group('when many books are on the go', () {
+    // Ten of them filled three rows of cards above the library, which is most of a window spent on
+    // a list the listener was scrolling past.
+    List<ContinueListeningBook> many(int count) => [
+      for (var i = 0; i < count; i++) started(i + 1, 'Book $i'),
+    ];
+
+    /// A window wide enough for three cards of 320, so "one row" is a number this test knows.
+    void threeWide(WidgetTester tester) {
+      tester.view.physicalSize = const Size(1010, 1200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+    }
+
+    testWidgets('only a row of them is shown', (tester) async {
+      threeWide(tester);
+      await tester.pumpWidget(home(continueListening: many(10)));
+
+      expect(find.text('Book 0'), findsOneWidget);
+      expect(find.text('Book 2'), findsOneWidget);
+      expect(find.text('Book 3'), findsNothing);
+      expect(find.text('Show 7 more'), findsOneWidget);
+    });
+
+    testWidgets('the rest are one press away', (tester) async {
+      threeWide(tester);
+      await tester.pumpWidget(home(continueListening: many(10)));
+
+      await tester.tap(find.text('Show 7 more'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Book 9'), findsOneWidget);
+      expect(find.text('Show fewer'), findsOneWidget);
+    });
+
+    testWidgets('and can be put away again', (tester) async {
+      threeWide(tester);
+      await tester.pumpWidget(home(continueListening: many(10)));
+
+      await tester.tap(find.text('Show 7 more'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Show fewer'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Book 3'), findsNothing);
+    });
+
+    testWidgets('a row that fits is left alone', (tester) async {
+      threeWide(tester);
+      await tester.pumpWidget(home(continueListening: many(3)));
+
+      expect(find.text('Book 2'), findsOneWidget);
+      expect(find.textContaining('Show'), findsNothing);
+    });
+  });
+
   testWidgets('shows the books to continue above the library', (tester) async {
     await tester.pumpWidget(
       home(
