@@ -72,11 +72,11 @@ final sourceGatewayProvider = Provider<SourceGateway>(
   (ref) => AppSourceGateway(ref.watch(servicesProvider)),
 );
 
-/// The library, straight from the database. §2.6: screens watch Drift streams rather than holding
-/// copies, so an import appears without anything being refreshed.
-/// One tab's shelf: the books in the library of one kind (ADR-0019).
+/// One tab's shelf: the books in the library of one kind (ADR-0019), straight from the database.
+/// §2.6: screens watch Drift streams rather than holding copies, so an import appears without
+/// anything being refreshed.
 ///
-/// The Library tab asks for audio and the Reading tab for text. Separate streams rather than one
+/// The Listen tab asks for audio and the Read tab for text. Separate streams rather than one
 /// list filtered twice, so that turning a page does not rebuild the audiobooks.
 final shelfProvider = StreamProvider.family<List<BookRow>, SourceKind>(
   (ref, kind) => watchShelf(ref.watch(servicesProvider).database, kind),
@@ -120,6 +120,27 @@ final playerStateProvider = StreamProvider<PlayerState>((ref) {
 /// shelf keeps up while it plays.
 final continueListeningProvider = StreamProvider<List<ContinueListeningBook>>(
   (ref) => watchContinueListening(ref.watch(servicesProvider).database),
+);
+
+/// Continue Reading: the books to read that are open and not finished, most recently read first.
+final continueReadingProvider = StreamProvider<List<ContinueReadingBook>>(
+  (ref) => watchContinueReading(ref.watch(servicesProvider).database),
+);
+
+/// Where the reader of a book is, or null for a book never opened.
+final readingPositionProvider = StreamProvider.autoDispose
+    .family<ReadingStateRow?, int>(
+      (ref, bookId) =>
+          watchReadingPosition(ref.watch(servicesProvider).database, bookId),
+    );
+
+/// How large the reader draws text, as a multiple of the body size.
+final readerTextScaleProvider = StreamProvider<double>(
+  (ref) => ref
+      .watch(servicesProvider)
+      .settings
+      .watch(AppSettings.readerTextScale)
+      .map((scale) => scale ?? 1.0),
 );
 
 /// Whether backup setup is offered at start. The router redirects by it.

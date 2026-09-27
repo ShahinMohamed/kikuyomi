@@ -14,8 +14,12 @@ import 'routes.dart';
 /// and an app bar is the one part of a screen that changes as you move around, so a button in it is
 /// somewhere a listener has to find rather than somewhere they know. Both are things a listener
 /// goes to directly and often, which is what a tab is for. More keeps what is genuinely occasional.
+///
+/// Listen and Read are two shelves side by side, as Aniyomi puts anime and manga (ADR-0019). Short
+/// names, because six tabs share a phone's width.
 enum AppTab {
-  library('Library', Icons.library_books_outlined, Icons.library_books),
+  library('Listen', Icons.headphones_outlined, Icons.headphones),
+  reading('Read', Icons.menu_book_outlined, Icons.menu_book),
   history('History', Icons.history_outlined, Icons.history),
   browse('Browse', Icons.explore_outlined, Icons.explore),
   downloads('Downloads', Icons.download_outlined, Icons.download),
@@ -31,6 +35,7 @@ enum AppTab {
   /// the library rather than out of the app.
   String get location => switch (this) {
     AppTab.library => const HomeRoute().location,
+    AppTab.reading => const ReadingRoute().location,
     AppTab.history => const HistoryRoute().location,
     AppTab.browse => const BrowseRoute().location,
     AppTab.downloads => const DownloadsRoute().location,

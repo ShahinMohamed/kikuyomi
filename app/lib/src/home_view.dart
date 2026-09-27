@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:kikuyomi_data/kikuyomi_data.dart'
-    show BookRow, ContinueListeningBook, CoverFiles;
+    show BookRow, ContinueListeningBook, ContinueReadingBook, CoverFiles;
 import 'package:kikuyomi_design_system/kikuyomi_design_system.dart';
 
 import 'format.dart';
@@ -17,7 +17,8 @@ import 'format.dart';
 class HomeView extends StatelessWidget {
   const HomeView({
     super.key,
-    required this.continueListening,
+    this.continueListening = const [],
+    this.continueReading = const [],
     required this.library,
     required this.covers,
     required this.emptyMessage,
@@ -28,6 +29,10 @@ class HomeView extends StatelessWidget {
   });
 
   final List<ContinueListeningBook> continueListening;
+
+  /// The books being read, for the Read tab, which shows them where the Listen tab shows the books
+  /// being listened to (ADR-0019). A tab passes one list or the other.
+  final List<ContinueReadingBook> continueReading;
   final List<BookRow> library;
 
   /// Where the covers the books name are found.
@@ -54,7 +59,21 @@ class HomeView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final header = this.header;
-    if (continueListening.isEmpty && library.isEmpty) {
+    final continuing = [
+      for (final book in continueListening)
+        (
+          bookId: book.bookId,
+          card: (VoidCallback onTap) =>
+              ContinueListeningCard(book: book, covers: covers, onTap: onTap),
+        ),
+      for (final book in continueReading)
+        (
+          bookId: book.bookId,
+          card: (VoidCallback onTap) =>
+              ContinueReadingCard(book: book, covers: covers, onTap: onTap),
+        ),
+    ];
+    if (continuing.isEmpty && library.isEmpty) {
       final message = Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -73,16 +92,16 @@ class HomeView extends StatelessWidget {
     return CustomScrollView(
       slivers: [
         if (header != null) SliverToBoxAdapter(child: header),
-        if (continueListening.isNotEmpty && !_searching) ...[
-          const _SectionHeading('Continue listening'),
+        if (continuing.isNotEmpty && !_searching) ...[
+          _SectionHeading(
+            continueReading.isNotEmpty
+                ? 'Continue reading'
+                : 'Continue listening',
+          ),
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _Shelf(
-                books: continueListening,
-                covers: covers,
-                onResume: onResume,
-              ),
+              child: _Shelf(books: continuing, onResume: onResume),
             ),
           ),
         ],
@@ -209,6 +228,74 @@ class ContinueListeningCard extends StatelessWidget {
   }
 }
 
+/// A book on the Continue Reading shelf: where the reader is, and how far through the book.
+class ContinueReadingCard extends StatelessWidget {
+  const ContinueReadingCard({
+    super.key,
+    required this.book,
+    required this.covers,
+    required this.onTap,
+  });
+
+  final ContinueReadingBook book;
+
+  /// Where the book's cover is found.
+  final CoverFiles covers;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final byline = [?book.author, book.chapterTitle].join(' · ');
+    return Card(
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              BookCover(
+                file: covers.fileOf(book.coverFileName),
+                size: 64,
+                semanticLabel: 'Cover of ${book.title}',
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      book.title,
+                      style: theme.textTheme.titleMedium,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      byline,
+                      style: theme.textTheme.bodyMedium,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 8),
+                    LinearProgressIndicator(value: book.bookProgress),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Chapter ${book.chapterIndex + 1} of ${book.chapterCount}',
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// The books to continue, one to a row on a phone and several to a row on a wide window, so the
 /// shelf never needs scrolling sideways, which a mouse cannot do by dragging.
 /// Continue listening, one row of it.
@@ -217,14 +304,10 @@ class ContinueListeningCard extends StatelessWidget {
 /// the same reason the chapter list holds its own selection. `HomeView` stays a pure function of
 /// the library.
 class _Shelf extends StatefulWidget {
-  const _Shelf({
-    required this.books,
-    required this.covers,
-    required this.onResume,
-  });
+  const _Shelf({required this.books, required this.onResume});
 
-  final List<ContinueListeningBook> books;
-  final CoverFiles covers;
+  /// Each book on the go, with how to draw its card: a listening card or a reading one.
+  final List<({int bookId, Widget Function(VoidCallback onTap) card})> books;
   final ValueChanged<int> onResume;
 
   @override
@@ -270,11 +353,7 @@ class _ShelfState extends State<_Shelf> {
               for (final book in books.take(shown))
                 SizedBox(
                   width: cardWidth,
-                  child: ContinueListeningCard(
-                    book: book,
-                    covers: widget.covers,
-                    onTap: () => widget.onResume(book.bookId),
-                  ),
+                  child: book.card(() => widget.onResume(book.bookId)),
                 ),
             ],
           ),

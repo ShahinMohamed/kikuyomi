@@ -50,6 +50,16 @@ RouteBase get $homeRoute => GoRouteData.$route(
       factory: $PlayerRoute._fromState,
     ),
     GoRouteData.$route(
+      path: 'reading',
+      hasOverriddenOnExit: false,
+      factory: $ReadingRoute._fromState,
+    ),
+    GoRouteData.$route(
+      path: 'read/:bookId(\\d+)',
+      hasOverriddenOnExit: false,
+      factory: $ReaderRoute._fromState,
+    ),
+    GoRouteData.$route(
       path: 'settings',
       hasOverriddenOnExit: false,
       factory: $SettingsRoute._fromState,
@@ -170,6 +180,60 @@ mixin $PlayerRoute on GoRouteData {
 
   @override
   String get location => GoRouteData.$location('/player');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+mixin $ReadingRoute on GoRouteData {
+  static ReadingRoute _fromState(GoRouterState state) => const ReadingRoute();
+
+  @override
+  String get location => GoRouteData.$location('/reading');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+mixin $ReaderRoute on GoRouteData {
+  static ReaderRoute _fromState(GoRouterState state) => ReaderRoute(
+    bookId: int.parse(state.pathParameters['bookId']!),
+    chapterId: _$convertMapValue(
+      'chapter-id',
+      state.uri.queryParameters,
+      int.tryParse,
+    ),
+  );
+
+  ReaderRoute get _self => this as ReaderRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/read/${Uri.encodeComponent(_self.bookId.toString())}',
+    queryParams: {
+      if (_self.chapterId != null) 'chapter-id': _self.chapterId!.toString(),
+    },
+  );
 
   @override
   void go(BuildContext context) => context.go(location);
@@ -455,4 +519,13 @@ mixin $RepositoriesRoute on GoRouteData {
 
   @override
   void replace(BuildContext context) => context.replace(location);
+}
+
+T? _$convertMapValue<T>(
+  String key,
+  Map<String, String> map,
+  T? Function(String) converter,
+) {
+  final value = map[key];
+  return value == null ? null : converter(value);
 }

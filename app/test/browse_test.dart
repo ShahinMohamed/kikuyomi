@@ -574,7 +574,8 @@ void main() {
 
       expect(find.byType(NavigationBar), findsOneWidget);
       expect(find.byType(NavigationRail), findsNothing);
-      expect(find.text('Library'), findsOneWidget);
+      expect(find.text('Listen'), findsOneWidget);
+      expect(find.text('Read'), findsOneWidget);
       expect(find.text('Browse'), findsOneWidget);
     });
 

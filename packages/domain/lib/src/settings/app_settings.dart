@@ -117,6 +117,17 @@ abstract final class AppSettings {
     decode: _decodeFlag,
   );
 
+  /// How large the reader draws text, as a multiple of the theme's body size (ADR-0019). Not set
+  /// until the reader changes it.
+  ///
+  /// Not in backups yet, like the rest of the preferences. It belongs with the listening ones when
+  /// `proto/backup.proto` gains a message for them.
+  static const readerTextScale = Setting<double>(
+    'reader.textScale',
+    encode: _encodeNumber,
+    decode: _decodeScale,
+  );
+
   /// Every setting above. A store that has to be told its keys in advance, as `shared_preferences`'
   /// cached store does, is told these.
   /// Every setting above, for the stores that need to be told which keys exist.
@@ -136,6 +147,7 @@ abstract final class AppSettings {
     pinnedSources,
     recentSources,
     listenedBackfilled,
+    readerTextScale,
   ];
 }
 
@@ -174,3 +186,11 @@ BackupSetup? _decodeSetup(String stored) =>
     BackupSetup.values.asNameMap()[stored];
 
 String _encodeSort(LibrarySort sort) => sort.name;
+
+String _encodeNumber(double value) => '$value';
+
+/// A text scale, or null for anything that is not one a reader could have chosen.
+double? _decodeScale(String stored) => switch (double.tryParse(stored)) {
+  final scale? when scale >= 0.5 && scale <= 3 => scale,
+  _ => null,
+};

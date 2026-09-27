@@ -92,6 +92,14 @@ Future<ReadingStateRow?> readReadingPosition(KikuyomiDatabase db, int bookId) =>
       db.readingStates,
     )..where((r) => r.bookId.equals(bookId))).getSingleOrNull();
 
+/// Where the reader of [bookId] is, watched: null until it is first opened.
+Stream<ReadingStateRow?> watchReadingPosition(
+  KikuyomiDatabase db,
+  int bookId,
+) => (db.select(
+  db.readingStates,
+)..where((r) => r.bookId.equals(bookId))).watchSingleOrNull();
+
 /// The books in the library of [kind], newest added first, watched.
 ///
 /// The shelf of one tab. Listening and reading are separate tabs, so each asks for its own kind
