@@ -27,6 +27,7 @@ import 'book_files.dart';
 import 'sources/drift_extension_store.dart';
 import 'sources/extension_console.dart';
 import 'sources/extension_library.dart';
+import 'sources/first_run.dart';
 import 'sources/repository_library.dart';
 import 'sources/source_registry.dart';
 
@@ -111,6 +112,16 @@ final class AppServices {
       clock: clock,
       canInstallFromDropFolder: locations.importFolderIsVisible,
     );
+    // Everything the app ships with, put in place before anything asks for a source. It has to be
+    // here rather than in `SourceRegistry.start`: installing goes through `ExtensionLibrary`, which
+    // needs the registry that is now built, and the installs adopt themselves into it.
+    await seedOfficialRepository(
+      database: database,
+      settings: settings,
+      extensions: extensions,
+      console: console,
+    );
+
     // §3.8's door for a listener, beside ADR-0017's door for an author. Its fetches go through the
     // same transport everything else uses, under a client of their own, so a repository is rate
     // limited per host like a source and its cookies are nobody else's.

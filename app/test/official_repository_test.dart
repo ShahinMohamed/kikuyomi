@@ -14,6 +14,7 @@ import 'dart:io';
 
 import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kikuyomi/src/sources/first_run.dart';
 import 'package:kikuyomi_extension_manager/kikuyomi_extension_manager.dart';
 
 final _repository = Directory('../repository');
@@ -87,6 +88,30 @@ void main() {
       );
       expect(entry.package.sizeBytes, bytes.length);
     }
+  });
+
+  test('it is published where the app looks for it', () {
+    // `officialRepositoryUrl` is what a fresh install pins, and the builder writes the same address
+    // into every package URL. Nothing else holds them together, and a repository built for
+    // somewhere else would be pinned under this one's name.
+    for (final entry in readIndex().entries) {
+      expect(
+        entry.package.url,
+        startsWith(officialRepositoryUrl),
+        reason: '${entry.id} is served from somewhere else',
+      );
+    }
+  });
+
+  test('the copy the app ships is the one that is published', () {
+    // The app pins the key from its own asset so that it is not written into the code twice. That
+    // only works while the asset is the published document -- a rebuild that rotated the key and
+    // left the asset behind would pin a key nothing signs with.
+    expect(
+      File('assets/repository/repo.json').readAsStringSync(),
+      File('${_repository.path}/repo.json').readAsStringSync(),
+      reason: 'copy repository/repo.json over app/assets/repository/repo.json',
+    );
   });
 
   test('nothing is published revoked', () {

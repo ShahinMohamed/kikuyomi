@@ -107,7 +107,16 @@ flutter:
   # ES2020 file, exactly as an installed one is, so the loader that reads it is the loader an
   # installed one will use.
   assets:
+    # Every extension this project publishes, so a fresh install has all of them without a network.
+    # They are not "bundled" extensions in §3.9's sense: first run installs them from these assets
+    # and records them as coming from the official repository, so each updates from it afterwards.
     - assets/extensions/librivox/
+    - assets/extensions/internetarchive/
+    - assets/extensions/storynory/
+    - assets/extensions/podcasts/
+    # The repository's own `repo.json`, so its key is pinned from the asset rather than written into
+    # the code twice.
+    - assets/repository/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

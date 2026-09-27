@@ -226,8 +226,20 @@ void main() {
       );
     });
 
-    test('the extension inside the app cannot be rolled back', () async {
-      // Its code is part of the app. There is no earlier copy of it anywhere.
+    test('one whose code is part of the app cannot be rolled back', () async {
+      // There is no earlier copy of it anywhere to go back to.
+      await recordInstalledExtension(
+        db,
+        id: 'org.kikuyomi.librivox',
+        name: 'LibriVox',
+        version: '1.0.0',
+        versionCode: 1,
+        apiVersion: '1.0',
+        status: ExtensionStatus.active,
+        origin: ExtensionOrigin.bundled,
+        clock: clock,
+      );
+
       await expectLater(
         library.rollBackTo('org.kikuyomi.librivox', 1),
         throwsA(
@@ -249,29 +261,39 @@ void main() {
     });
   });
 
-  group('the extension that ships inside the app', () {
-    test('is listed, and cannot be removed', () async {
-      final bundled = summaryOf(await library.read(), 'org.kikuyomi.librivox');
+  group('an extension recorded as bundled', () {
+    // Nothing ships bundled any more: every extension the app carries is installed on first run and
+    // recorded as coming from the official repository, so it can be updated without a new app
+    // (`first_run.dart`). What is left are rows written by older builds, in libraries that already
+    // existed, and the guards that stop the app doing to them what it cannot. Seeding moves such a
+    // row onto the repository at the next start; until it does, these hold.
+    setUp(
+      () => recordInstalledExtension(
+        db,
+        id: 'org.kikuyomi.librivox',
+        name: 'LibriVox',
+        version: '1.0.0',
+        versionCode: 1,
+        apiVersion: '1.0',
+        status: ExtensionStatus.active,
+        origin: ExtensionOrigin.bundled,
+        clock: clock,
+      ),
+    );
 
-      expect(bundled, isNotNull);
-      expect(bundled!.isBundled, isTrue);
-      expect(bundled.isUnverified, isFalse, reason: 'its hashes were checked');
-      expect(bundled.canReload, isFalse);
-      expect(bundled.isRunnable, isTrue);
+    test('cannot be removed, because its code is part of the app', () async {
       await expectLater(
-        library.remove(bundled.id),
+        library.remove('org.kikuyomi.librivox'),
         throwsA(isA<ExtensionInstallException>()),
       );
     });
 
-    test('keeps the day it arrived when the app starts again', () async {
-      final first = summaryOf(await library.read(), 'org.kikuyomi.librivox')!;
-      clock.advance(const Duration(days: 2));
-      await registry.dispose();
-      await start();
+    test('is not offered a reload or a way back', () async {
+      final row = summaryOf(await library.read(), 'org.kikuyomi.librivox')!;
 
-      final again = summaryOf(await library.read(), 'org.kikuyomi.librivox')!;
-      expect(again.row.installedAt, first.row.installedAt);
+      expect(row.isBundled, isTrue);
+      expect(row.canReload, isFalse);
+      expect(row.canRollBack, isFalse);
     });
   });
 
@@ -430,7 +452,19 @@ void main() {
       );
     });
 
-    test('is not offered for the extension inside the app', () async {
+    test('is not offered for one whose code is part of the app', () async {
+      await recordInstalledExtension(
+        db,
+        id: 'org.kikuyomi.librivox',
+        name: 'LibriVox',
+        version: '1.0.0',
+        versionCode: 1,
+        apiVersion: '1.0',
+        status: ExtensionStatus.active,
+        origin: ExtensionOrigin.bundled,
+        clock: clock,
+      );
+
       await expectLater(
         library.reload('org.kikuyomi.librivox'),
         throwsA(
@@ -557,11 +591,10 @@ void main() {
 
     expect(
       counts,
-      [3, 2],
+      [2, 1],
       reason:
-          'Local, the bundled extension and the installed one; then, with the '
-          'installed one gone and no books left from it to keep a stub for, '
-          'Local and the bundled one',
+          'Local and the installed one; then, with it gone and no books left '
+          'from it to keep a stub for, Local alone',
     );
   });
 }

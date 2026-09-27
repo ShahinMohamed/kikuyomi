@@ -97,6 +97,17 @@ abstract final class AppSettings {
     decode: _decodeIds,
   );
 
+  /// Whether the extensions the app ships with have been installed, which happens once.
+  ///
+  /// The difference between a fresh install and a listener who removed an extension is invisible in
+  /// the extensions table -- both are a row that is not there -- so it has to be remembered here.
+  /// Without it, removing a shipped extension would be undone by the next restart.
+  static const shippedExtensionsSeeded = Setting<bool>(
+    'extensions.shippedSeeded',
+    encode: _encodeFlag,
+    decode: _decodeFlag,
+  );
+
   /// Whether chapters listened to before listened state was recorded (§4.5) have been recorded from
   /// the positions saved in them. Not set until that has been done, which happens once: after it,
   /// a chapter the listener marks not listened stays so, wherever its position is.
@@ -121,6 +132,7 @@ abstract final class AppSettings {
     backupDue,
     backupSetup,
     librarySort,
+    shippedExtensionsSeeded,
     pinnedSources,
     recentSources,
     listenedBackfilled,
