@@ -4,8 +4,8 @@
     {
       "id": "org.kikuyomi.internetarchive",
       "name": "Internet Archive",
-      "version": "1.0.1",
-      "versionCode": 2,
+      "version": "1.0.2",
+      "versionCode": 3,
       "apiVersion": "1.0",
       "minAppVersion": "1.0.0",
       "author": "Kikuyomi",
@@ -26,11 +26,11 @@
         }
       ],
       "package": {
-        "url": "https://raw.githubusercontent.com/kikuyomiapp/kikuyomi/HEAD/repository/packages/org.kikuyomi.internetarchive-2.zip",
-        "sha256": "a29983436ab85f6b227baa48484655a14a14c2834db4508c0b3349c96dd61973",
-        "size": 10039
+        "url": "https://raw.githubusercontent.com/kikuyomiapp/kikuyomi/HEAD/repository/packages/org.kikuyomi.internetarchive-3.zip",
+        "sha256": "785b683d96ebf152039c83b128b8a1fde8ebec8f3905adb08ef98d16b7378622",
+        "size": 10137
       },
-      "signature": "fBNZHiTHXpcEGuaoNaI8nOxS9UBhBlrFD/UoUcY26JdxxHG1ga9hADYApB7cOkAnUPLwOLtM2/VfAAHVyzC/DA==",
+      "signature": "AQh0I5tdr8LRxDf6VVZZjW2BMJVTBBSxZ5ojXNZHA1B8sm0Vyl9UthPfhXhf76jlAu8Vth3vK80NRfKZiTwcAA==",
       "revoked": false
     },
     {
@@ -70,8 +70,8 @@
     {
       "id": "org.kikuyomi.storynory",
       "name": "Storynory",
-      "version": "1.0.0",
-      "versionCode": 1,
+      "version": "1.0.1",
+      "versionCode": 2,
       "apiVersion": "1.0",
       "minAppVersion": "1.0.0",
       "author": "Kikuyomi",
@@ -91,11 +91,11 @@
         }
       ],
       "package": {
-        "url": "https://raw.githubusercontent.com/kikuyomiapp/kikuyomi/HEAD/repository/packages/org.kikuyomi.storynory-1.zip",
-        "sha256": "2bf538f64ac2764bf6485abf97a9c78f4efef4a521fd56cdfc1405f2265ccb22",
-        "size": 5421
+        "url": "https://raw.githubusercontent.com/kikuyomiapp/kikuyomi/HEAD/repository/packages/org.kikuyomi.storynory-2.zip",
+        "sha256": "f26895ce2d578594d9257286c76718374b8d9ef34a65778e5424e3559cb97617",
+        "size": 5764
       },
-      "signature": "4YPgaWPj8Ftr2MmeJl3XkMuIN3mYsMuGTIX1x/xnpGZ4pon6hQccu11OvjNb5kwM0c8pJ2asDtCWKG/vvhy6AA==",
+      "signature": "2d4w/QJfDnH9+/qqmPwL6GYN7dKpRurZUyWMcGnNHkz0Th+27nVG7XKnnTtsJxRQ40jJikt0LPmz6B6l50BLDQ==",
       "revoked": false
     }
   ]

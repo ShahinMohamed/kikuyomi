@@ -597,8 +597,11 @@ var internetarchive = {
       key: textOf(item.identifier) || textOf(bookKey),
       title: title,
       authors: listOf(item.creator),
-      // The Archive has no narrator field. Some items name a reader in `creator` alongside the
-      // author and there is no way to tell which is which, so nothing is claimed.
+      // Required by the contract, and empty because the Archive has no narrator field. Some items
+      // name a reader in `creator` beside the author with no way to tell which is which, so nothing
+      // is claimed — but the field is still sent, because "nobody is credited" and "this source
+      // forgot to answer" are different things and only one of them is true.
+      narrators: [],
       description: plainText(item.description),
       coverUrl: THUMBNAIL + encodeURIComponent(textOf(item.identifier) || textOf(bookKey)),
       genres: genresOf(item.subject),
