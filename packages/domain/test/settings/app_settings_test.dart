@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:kikuyomi_domain/kikuyomi_domain.dart';
 import 'package:test/test.dart';
 
@@ -6,6 +8,44 @@ T? roundTrip<T extends Object>(Setting<T> setting, T value) =>
     setting.decode(setting.encode(value));
 
 void main() {
+  test('every setting declared is in AppSettings.all', () {
+    // The list is maintained by hand, and leaving a setting out of it is silent at compile time and
+    // loud at runtime: `SharedPreferencesWithCache` is opened with these keys as its allow-list and
+    // throws for anything else, so the first read of a forgotten setting fails. That has happened
+    // twice -- `librarySort`, and then the two Browse added -- and each time it showed up as a
+    // screen doing nothing when tapped, which is a long way from the cause.
+    //
+    // Read from the source, because Dart cannot ask a class what it declares.
+    final source = File('lib/src/settings/app_settings.dart')
+        .readAsStringSync();
+    final declared = {
+      for (final match in RegExp(
+        r'static const (\w+) = Setting<',
+      ).allMatches(source))
+        match.group(1)!,
+    };
+    expect(declared, isNotEmpty, reason: 'nothing was found to check');
+
+    final listed = source.substring(
+      source.indexOf('static const all = <Setting<Object>>['),
+    );
+    final inAll = {
+      for (final match in RegExp(
+        r'^ {4}(\w+),',
+        multiLine: true,
+      ).allMatches(listed.substring(0, listed.indexOf('];'))))
+        match.group(1)!,
+    };
+
+    expect(
+      declared.difference(inAll),
+      isEmpty,
+      reason:
+          'these settings are declared but not in AppSettings.all, so reading '
+          'one throws rather than reading as unset',
+    );
+  });
+
   test('every setting has a key of its own', () {
     final keys = [for (final setting in AppSettings.all) setting.key];
     expect(keys.toSet(), hasLength(keys.length));

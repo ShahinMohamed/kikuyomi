@@ -75,7 +75,7 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen>
           SourcesView(
             // Watched, so a source installed on the other tab is here when the listener comes back.
             sources: ref.watch(sourceListProvider).value ?? const [],
-            icons: ref.watch(extensionIconsProvider),
+            extensions: ref.watch(extensionsByIdProvider),
             pinned: ref.watch(pinnedSourcesProvider).value ?? const [],
             recent: ref.watch(recentSourcesProvider).value ?? const [],
             onOpen: _open,

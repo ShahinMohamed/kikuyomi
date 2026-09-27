@@ -48,6 +48,7 @@ class BookDetailsView extends StatelessWidget {
     this.onAddToLibrary,
     this.onOpenAtSource,
     this.onPlayChapter,
+    this.onPlayFrom,
     this.onDownloadChapters,
     this.onRefresh,
     this.onOpenDownloadQueue,
@@ -88,6 +89,12 @@ class BookDetailsView extends StatelessWidget {
 
   /// Plays the book from the start of a chapter.
   final ValueChanged<int>? onPlayChapter;
+
+  /// Plays the book from a position in it, in milliseconds from the start.
+  ///
+  /// What an embedded marker needs. A marker is not a chapter and has no id: §4.5 presents the
+  /// markers of a single-file book as its chapters, and what identifies one is where it begins.
+  final ValueChanged<int>? onPlayFrom;
 
   /// Queues the files behind these chapters, in the order given.
   final ValueChanged<List<int>>? onDownloadChapters;
@@ -151,6 +158,12 @@ class BookDetailsView extends StatelessWidget {
                   : onAddToLibrary,
               onDownload: onDownload,
               onStopDownloading: onStopDownloading,
+              nextChapters: _nextChapters,
+              allChapters: [
+                for (final chapter in book.chapters) chapter.chapterId,
+              ],
+              onDownloadChapters: onDownloadChapters,
+              onOpenDownloadQueue: onOpenDownloadQueue,
               onFinished: () => finished
                   ? markBookNotFinished(context, listenedCommands)
                   : markBookFinishedWithUndo(context, listenedCommands),
@@ -195,59 +208,15 @@ class BookDetailsView extends StatelessWidget {
               ),
             ],
             const SizedBox(height: 24),
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    _chapterCount(),
-                    style: theme.textTheme.titleMedium,
-                  ),
-                ),
-                if (onDownloadChapters != null)
-                  _DownloadMenu(
-                    next: _nextChapters,
-                    all: [
-                      for (final chapter in book.chapters) chapter.chapterId,
-                    ],
-                    onDownloadChapters: onDownloadChapters!,
-                    onOpenDownloadQueue: onOpenDownloadQueue,
-                  ),
-              ],
+            _ChapterList(
+              book: book,
+              finished: finished,
+              chapterDownloads: chapterDownloads,
+              listenedCommands: listenedCommands,
+              onPlayChapter: onPlayChapter,
+              onPlayFrom: onPlayFrom,
+              onDownloadChapters: onDownloadChapters,
             ),
-            const SizedBox(height: 8),
-            // §4.5: a single file's embedded markers are its chapters as far as the listener is
-            // concerned, and the one chapter spanning the file would only repeat the book's title.
-            if (book.markers.isNotEmpty)
-              for (final marker in book.markers)
-                _EntryTile(
-                  title: marker.title,
-                  durationMs: marker.durationMs,
-                  listened: marker.listened,
-                  current: marker.current && !finished,
-                )
-            else
-              for (final chapter in book.chapters)
-                _EntryTile(
-                  title: chapter.title,
-                  durationMs: chapter.durationMs,
-                  listened: chapter.listened,
-                  current: chapter.current && !finished,
-                  download:
-                      chapterDownloads[chapter.chapterId] ??
-                      ChapterDownload.absent,
-                  onPlay: onPlayChapter == null
-                      ? null
-                      : () => onPlayChapter!(chapter.chapterId),
-                  onDownload: onDownloadChapters == null
-                      ? null
-                      : () => onDownloadChapters!([chapter.chapterId]),
-                  onMark: (listened) => markChapterListened(
-                    context,
-                    listenedCommands,
-                    chapterId: chapter.chapterId,
-                    listened: listened,
-                  ),
-                ),
           ],
         );
         // Pull to refresh, where there is a source to ask. This is the whole of the app's answer to
@@ -260,17 +229,6 @@ class BookDetailsView extends StatelessWidget {
             : RefreshIndicator(onRefresh: refresh, child: list);
       },
     );
-  }
-
-  /// How many entries the list below holds, as a heading rather than a bare word.
-  ///
-  /// The count is the useful part — it is how a listener judges at a glance whether a book is three
-  /// hours or sixty chapters — and it is what the heading in Mihon says too.
-  String _chapterCount() {
-    final count = book.markers.isNotEmpty
-        ? book.markers.length
-        : book.chapters.length;
-    return count == 1 ? '1 chapter' : '$count chapters';
   }
 
   Future<void> _confirmRemoval(BuildContext context) async {
@@ -299,6 +257,188 @@ class BookDetailsView extends StatelessWidget {
   }
 }
 
+/// A book's entries, and picking some of them out.
+///
+/// Stateful for one reason: holding a row selects it, and what is selected is nobody else's
+/// business. The screen above does not need to know, and keeping it here means the rest of the
+/// details page stays a pure function of the book.
+///
+/// §4.5: a single file's embedded markers are its chapters as far as the listener is concerned.
+/// A marker can be played from and cannot be downloaded or selected -- there is one file, and it is
+/// either here or it is not -- so those rows are plainer, deliberately.
+class _ChapterList extends StatefulWidget {
+  const _ChapterList({
+    required this.book,
+    required this.finished,
+    required this.chapterDownloads,
+    required this.listenedCommands,
+    required this.onPlayChapter,
+    required this.onPlayFrom,
+    required this.onDownloadChapters,
+  });
+
+  final BookOverview book;
+  final bool finished;
+  final Map<int, ChapterDownload> chapterDownloads;
+  final ListenedCommands listenedCommands;
+  final ValueChanged<int>? onPlayChapter;
+  final ValueChanged<int>? onPlayFrom;
+  final ValueChanged<List<int>>? onDownloadChapters;
+
+  @override
+  State<_ChapterList> createState() => _ChapterListState();
+}
+
+class _ChapterListState extends State<_ChapterList> {
+  final _selected = <int>{};
+
+  /// Whether the listener is picking chapters out rather than reading the list.
+  bool get _selecting => _selected.isNotEmpty;
+
+  void _toggle(int chapterId) => setState(() {
+    if (!_selected.remove(chapterId)) _selected.add(chapterId);
+  });
+
+  void _clear() => setState(_selected.clear);
+
+  void _selectAll() => setState(() {
+    _selected.addAll([
+      for (final chapter in widget.book.chapters) chapter.chapterId,
+    ]);
+  });
+
+  /// Queues what is selected, in the book's own order rather than the order they were tapped.
+  void _downloadSelected() {
+    final wanted = [
+      for (final chapter in widget.book.chapters)
+        if (_selected.contains(chapter.chapterId)) chapter.chapterId,
+    ];
+    _clear();
+    widget.onDownloadChapters?.call(wanted);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final book = widget.book;
+    final markers = book.markers;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (_selecting)
+          _SelectionBar(
+            count: _selected.length,
+            onDownload: widget.onDownloadChapters == null
+                ? null
+                : _downloadSelected,
+            onSelectAll: _selectAll,
+            onClear: _clear,
+          )
+        else
+          Text(_countLabel(), style: theme.textTheme.titleMedium),
+        const SizedBox(height: 8),
+        if (markers.isNotEmpty)
+          for (final marker in markers)
+            _EntryTile(
+              title: marker.title,
+              durationMs: marker.durationMs,
+              listened: marker.listened,
+              current: marker.current && !widget.finished,
+              // Playable, like a chapter row. Before this, a single-file book's rows did nothing at
+              // all when tapped, which looked exactly like the app being broken.
+              onPlay: widget.onPlayFrom == null
+                  ? null
+                  : () => widget.onPlayFrom!(marker.startMs),
+            )
+        else
+          for (final chapter in book.chapters)
+            _EntryTile(
+              title: chapter.title,
+              durationMs: chapter.durationMs,
+              listened: chapter.listened,
+              current: chapter.current && !widget.finished,
+              download:
+                  widget.chapterDownloads[chapter.chapterId] ??
+                  ChapterDownload.absent,
+              selected: _selected.contains(chapter.chapterId),
+              // While something is selected a tap adds to the selection instead of playing. Once
+              // you are choosing, you are choosing, and a stray tap must not start playback.
+              onPlay: _selecting
+                  ? () => _toggle(chapter.chapterId)
+                  : widget.onPlayChapter == null
+                  ? null
+                  : () => widget.onPlayChapter!(chapter.chapterId),
+              onSelect: widget.onDownloadChapters == null
+                  ? null
+                  : () => _toggle(chapter.chapterId),
+              onDownload: widget.onDownloadChapters == null
+                  ? null
+                  : () => widget.onDownloadChapters!([chapter.chapterId]),
+              onMark: (listened) => markChapterListened(
+                context,
+                widget.listenedCommands,
+                chapterId: chapter.chapterId,
+                listened: listened,
+              ),
+            ),
+      ],
+    );
+  }
+
+  /// How many entries the list below holds, as a heading rather than a bare word.
+  ///
+  /// The count is the useful part -- it is how a listener judges at a glance whether a book is three
+  /// hours or sixty chapters -- and it is what the heading in Mihon says too.
+  String _countLabel() {
+    final count = widget.book.markers.isNotEmpty
+        ? widget.book.markers.length
+        : widget.book.chapters.length;
+    return count == 1 ? '1 chapter' : '$count chapters';
+  }
+}
+
+/// What the chapter count turns into while chapters are picked out.
+class _SelectionBar extends StatelessWidget {
+  const _SelectionBar({
+    required this.count,
+    required this.onDownload,
+    required this.onSelectAll,
+    required this.onClear,
+  });
+
+  final int count;
+  final VoidCallback? onDownload;
+  final VoidCallback onSelectAll;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      IconButton(
+        icon: const Icon(Icons.close),
+        tooltip: 'Stop selecting',
+        onPressed: onClear,
+      ),
+      Expanded(
+        child: Text(
+          count == 1 ? '1 selected' : '$count selected',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+      ),
+      IconButton(
+        icon: const Icon(Icons.select_all),
+        tooltip: 'Select every chapter',
+        onPressed: onSelectAll,
+      ),
+      IconButton(
+        icon: const Icon(Icons.download_outlined),
+        tooltip: count == 1 ? 'Download 1 chapter' : 'Download $count chapters',
+        onPressed: onDownload,
+      ),
+    ],
+  );
+}
+
 /// One chapter, or embedded marker, in the list.
 class _EntryTile extends StatelessWidget {
   const _EntryTile({
@@ -307,7 +447,9 @@ class _EntryTile extends StatelessWidget {
     required this.listened,
     required this.current,
     this.download = ChapterDownload.absent,
+    this.selected = false,
     this.onPlay,
+    this.onSelect,
     this.onDownload,
     this.onMark,
   });
@@ -319,9 +461,15 @@ class _EntryTile extends StatelessWidget {
   /// Where this chapter's audio is (§5.2).
   final ChapterDownload download;
 
-  /// Plays the book from here. Null for a row that cannot be played from, which an embedded marker
-  /// on a book with no layout is.
+  /// Whether this row is one of the chapters picked out for a bulk action.
+  final bool selected;
+
+  /// Plays the book from here, or adds this row to the selection while one is running. Null for a
+  /// row that cannot be played from.
   final VoidCallback? onPlay;
+
+  /// Starts or extends a selection, on a long press. Null where there is nothing to select for.
+  final VoidCallback? onSelect;
 
   /// Queues this chapter's files. Null where there is nothing to fetch.
   final VoidCallback? onDownload;
@@ -340,11 +488,19 @@ class _EntryTile extends StatelessWidget {
     final length = duration == null ? null : Text(formatClock(duration));
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      selected: current,
+      // A picked row is marked by its tile, the way the row being played is. The two cannot be
+      // confused: only one row is ever current, and a selection has its own bar above the list.
+      selected: current || selected,
+      selectedTileColor: selected
+          ? Theme.of(context).colorScheme.primaryContainer
+          : null,
       onTap: onPlay,
+      onLongPress: onSelect,
       leading: SizedBox.square(
         dimension: 24,
-        child: current
+        child: selected
+            ? const Icon(Icons.check_circle, semanticLabel: 'Selected')
+            : current
             ? const Icon(Icons.graphic_eq, semanticLabel: 'Where you are')
             : listened
             ? Icon(
@@ -461,17 +617,22 @@ class _ChapterDownloadButton extends StatelessWidget {
       );
 }
 
-/// Downloading several chapters at once, from the chapter list's heading.
+/// Downloading several chapters at once, hung off the strip's Download cell.
 ///
 /// The counts are what a listener actually wants: enough for the commute, enough for the flight, or
 /// the lot. Each skips what is listened and what is already here, so "next 5" is five more rather
 /// than five it already had.
+///
+/// It lives on the Download button rather than beside the chapter count, because "download" is the
+/// word a listener is looking for and there should be one of it. An arrow above the list was a
+/// second control that did the same job and said less about what it was for.
 class _DownloadMenu extends StatelessWidget {
   const _DownloadMenu({
     required this.next,
     required this.all,
     required this.onDownloadChapters,
     required this.onOpenDownloadQueue,
+    required this.child,
   });
 
   final List<int> Function([int? count]) next;
@@ -482,13 +643,15 @@ class _DownloadMenu extends StatelessWidget {
   final ValueChanged<List<int>> onDownloadChapters;
   final VoidCallback? onOpenDownloadQueue;
 
+  /// What the menu hangs off: the strip's Download cell.
+  final Widget child;
+
   @override
   Widget build(BuildContext context) => PopupMenuButton<VoidCallback>(
-    // A plain arrow, not the strip's filled download icon. They sit a few rows apart and do
-    // different things -- the strip downloads the book, this picks how much of it -- and two of the
-    // same glyph would read as the same button twice.
-    icon: const Icon(Icons.arrow_downward),
     tooltip: 'Download chapters',
+    // No padding and no splash of its own: the cell it wraps draws all of that, and a menu button
+    // with its own ink would put a second ripple inside the first.
+    padding: EdgeInsets.zero,
     onSelected: (action) => action(),
     itemBuilder: (context) => [
       PopupMenuItem(
@@ -706,6 +869,10 @@ class _ActionStrip extends StatelessWidget {
     required this.onStopDownloading,
     required this.onFinished,
     required this.onOpenAtSource,
+    required this.nextChapters,
+    required this.allChapters,
+    required this.onDownloadChapters,
+    required this.onOpenDownloadQueue,
   });
 
   final bool inLibrary;
@@ -716,6 +883,10 @@ class _ActionStrip extends StatelessWidget {
   final VoidCallback? onStopDownloading;
   final VoidCallback onFinished;
   final VoidCallback? onOpenAtSource;
+  final List<int> Function([int? count]) nextChapters;
+  final List<int> allChapters;
+  final ValueChanged<List<int>>? onDownloadChapters;
+  final VoidCallback? onOpenDownloadQueue;
 
   @override
   Widget build(BuildContext context) => Row(
@@ -754,19 +925,39 @@ class _ActionStrip extends StatelessWidget {
         onTap: null,
       );
     }
-    if (downloads.isEmpty) {
+    // While bytes are moving, the one useful thing is to stop them. Not `isEmpty`: a book that is
+    // four chapters in and idle has tasks and is not complete, and it is exactly the book whose
+    // owner wants the menu to ask for ten more.
+    if (downloads.isWorking) {
       return _Action(
-        icon: Icons.download_outlined,
-        label: 'Download',
-        active: false,
-        onTap: onDownload,
+        icon: Icons.stop_circle_outlined,
+        label: 'Stop',
+        active: true,
+        onTap: onStopDownloading,
+      );
+    }
+    if (onDownloadChapters != null) {
+      // The whole book is one of the things this menu offers, so the cell opens the menu rather
+      // than being a second way to ask for the same thing.
+      return _DownloadMenu(
+        next: nextChapters,
+        all: allChapters,
+        onDownloadChapters: onDownloadChapters!,
+        onOpenDownloadQueue: onOpenDownloadQueue,
+        child: const _Action(
+          icon: Icons.download_outlined,
+          label: 'Download',
+          active: false,
+          // The menu above it takes the tap; this is what the cell looks like.
+          onTap: null,
+        ),
       );
     }
     return _Action(
-      icon: Icons.stop_circle_outlined,
-      label: 'Stop',
-      active: true,
-      onTap: onStopDownloading,
+      icon: Icons.download_outlined,
+      label: 'Download',
+      active: false,
+      onTap: onDownload,
     );
   }
 }
