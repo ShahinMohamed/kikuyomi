@@ -42,6 +42,23 @@ const threeChapters = [
   ),
 ];
 
+const twoMarkers = [
+  MarkerOverview(
+    title: 'First marker',
+    startMs: 0,
+    endMs: 60000,
+    listened: false,
+    current: true,
+  ),
+  MarkerOverview(
+    title: 'Second marker',
+    startMs: 60000,
+    endMs: 120000,
+    listened: false,
+    current: false,
+  ),
+];
+
 BookOverview book({
   BookProgress? progress,
   bool finished = false,
@@ -88,6 +105,7 @@ Widget details(
       covers: covers,
       chapterDownloads: chapterDownloads,
       onPlayChapter: (chapterId) => pressed?.add('play $chapterId'),
+      onPlayFrom: (globalMs) => pressed?.add('play at $globalMs'),
       onDownloadChapters: (chapterIds) =>
           pressed?.add('download ${chapterIds.join(', ')}'),
       onRefresh: onRefresh,
@@ -136,9 +154,15 @@ Finder iconIn(String title, IconData icon) => find.descendant(
   matching: find.byIcon(icon),
 );
 
-/// Opens the chapter list's download menu.
+/// Opens the download menu, which hangs off the strip's Download cell.
 Future<void> openDownloadMenu(WidgetTester tester) async {
   await tester.tap(find.byTooltip('Download chapters'));
+  await tester.pumpAndSettle();
+}
+
+/// Holds [title] down, which is how a chapter is picked out.
+Future<void> holdChapter(WidgetTester tester, String title) async {
+  await tester.longPress(find.text(title));
   await tester.pumpAndSettle();
 }
 
@@ -179,6 +203,149 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(pressed, isEmpty);
+    });
+  });
+
+  group('picking chapters out', () {
+    testWidgets('holding one starts a selection', (tester) async {
+      tallView(tester);
+      await tester.pumpWidget(details(book()));
+
+      await holdChapter(tester, 'Middle');
+
+      expect(find.text('1 selected'), findsOneWidget);
+      // The count it replaced is gone: the heading is the bar now.
+      expect(find.text('3 chapters'), findsNothing);
+    });
+
+    testWidgets('holding more adds to it', (tester) async {
+      tallView(tester);
+      await tester.pumpWidget(details(book()));
+
+      await holdChapter(tester, 'Middle');
+      await holdChapter(tester, 'End');
+
+      expect(find.text('2 selected'), findsOneWidget);
+    });
+
+    testWidgets('a tap adds instead of playing while selecting', (
+      tester,
+    ) async {
+      // Once you are choosing, you are choosing. A stray tap must not start playback.
+      tallView(tester);
+      final pressed = <String>[];
+      await tester.pumpWidget(details(book(), pressed));
+
+      await holdChapter(tester, 'Middle');
+      await tester.tap(find.text('End'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('2 selected'), findsOneWidget);
+      expect(pressed, isEmpty);
+    });
+
+    testWidgets('tapping a selected chapter takes it back out', (tester) async {
+      tallView(tester);
+      await tester.pumpWidget(details(book()));
+
+      await holdChapter(tester, 'Middle');
+      await holdChapter(tester, 'End');
+      await tester.tap(find.text('End'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('1 selected'), findsOneWidget);
+    });
+
+    testWidgets('downloading takes only what was picked, in book order', (
+      tester,
+    ) async {
+      tallView(tester);
+      final pressed = <String>[];
+      await tester.pumpWidget(details(book(), pressed));
+
+      // Held out of order on purpose: what is queued follows the book, not the taps.
+      await holdChapter(tester, 'End');
+      await holdChapter(tester, 'Opening');
+      await tester.tap(find.byTooltip('Download 2 chapters'));
+      await tester.pumpAndSettle();
+
+      expect(pressed, ['download 10, 12']);
+    });
+
+    testWidgets('and the list goes back to normal afterwards', (tester) async {
+      tallView(tester);
+      await tester.pumpWidget(details(book(), <String>[]));
+
+      await holdChapter(tester, 'Middle');
+      await tester.tap(find.byTooltip('Download 1 chapter'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('3 chapters'), findsOneWidget);
+    });
+
+    testWidgets('select all takes every chapter', (tester) async {
+      tallView(tester);
+      final pressed = <String>[];
+      await tester.pumpWidget(details(book(), pressed));
+
+      await holdChapter(tester, 'Middle');
+      await tester.tap(find.byTooltip('Select every chapter'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Download 3 chapters'));
+      await tester.pumpAndSettle();
+
+      expect(pressed, ['download 10, 11, 12']);
+    });
+
+    testWidgets('stopping leaves the chapters alone', (tester) async {
+      tallView(tester);
+      final pressed = <String>[];
+      await tester.pumpWidget(details(book(), pressed));
+
+      await holdChapter(tester, 'Middle');
+      await tester.tap(find.byTooltip('Stop selecting'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('3 chapters'), findsOneWidget);
+      expect(pressed, isEmpty);
+    });
+  });
+
+  group('a single file\'s embedded markers (§4.5)', () {
+    testWidgets('play from where the marker begins', (tester) async {
+      // They have no chapter id -- where one begins is what identifies it. Before this, every row
+      // of a single-file book did nothing at all when tapped, which looked like a broken app.
+      tallView(tester);
+      final pressed = <String>[];
+      await tester.pumpWidget(
+        details(book(chapters: const [], markers: twoMarkers), pressed),
+      );
+
+      await tester.tap(find.text('Second marker'));
+      await tester.pump();
+
+      expect(pressed, ['play at 60000']);
+    });
+
+    testWidgets('are not offered for download', (tester) async {
+      // One file: it is either here or it is not, and there is nothing per-marker to fetch.
+      tallView(tester);
+      await tester.pumpWidget(
+        details(book(chapters: const [], markers: twoMarkers)),
+      );
+
+      expect(find.textContaining('Download First marker'), findsNothing);
+    });
+
+    testWidgets('cannot be picked out', (tester) async {
+      tallView(tester);
+      await tester.pumpWidget(
+        details(book(chapters: const [], markers: twoMarkers)),
+      );
+
+      await holdChapter(tester, 'First marker');
+
+      expect(find.textContaining('selected'), findsNothing);
     });
   });
 

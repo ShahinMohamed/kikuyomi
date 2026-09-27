@@ -1,7 +1,7 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 
+import 'extensions_view.dart' show ExtensionIcon;
+import 'sources/extension_library.dart';
 import 'sources/source_registry.dart';
 
 /// The sources, grouped the way a listener looks for one (§2.6).
@@ -22,7 +22,7 @@ class SourcesView extends StatelessWidget {
     super.key,
     required this.sources,
     required this.onOpen,
-    this.icons = const {},
+    this.extensions = const {},
     this.pinned = const [],
     this.recent = const [],
     this.onTogglePin,
@@ -30,9 +30,9 @@ class SourcesView extends StatelessWidget {
 
   final List<SourceDescription> sources;
 
-  /// Where each extension's icon is on this device, by extension id. A source whose extension has
-  /// none falls back to a glyph.
-  final Map<String, String> icons;
+  /// The installed extensions by id, so a source can draw the icon of the one it came from. A
+  /// source whose extension is not here falls back to a glyph.
+  final Map<String, ExtensionSummary> extensions;
 
   /// Source ids the listener pinned, most recently pinned first.
   final List<int> pinned;
@@ -98,7 +98,9 @@ class SourcesView extends StatelessWidget {
 
   Widget _row(SourceDescription source) => _SourceTile(
     source: source,
-    iconPath: source.extensionId == null ? null : icons[source.extensionId],
+    extension: source.extensionId == null
+        ? null
+        : extensions[source.extensionId],
     pinned: pinned.contains(source.id),
     onOpen: () => onOpen(source),
     onTogglePin: onTogglePin == null ? null : () => onTogglePin!(source),
@@ -128,21 +130,21 @@ class _Heading extends StatelessWidget {
 class _SourceTile extends StatelessWidget {
   const _SourceTile({
     required this.source,
-    required this.iconPath,
+    required this.extension,
     required this.pinned,
     required this.onOpen,
     required this.onTogglePin,
   });
 
   final SourceDescription source;
-  final String? iconPath;
+  final ExtensionSummary? extension;
   final bool pinned;
   final VoidCallback onOpen;
   final VoidCallback? onTogglePin;
 
   @override
   Widget build(BuildContext context) => ListTile(
-    leading: _SourceIcon(source: source, iconPath: iconPath),
+    leading: _SourceIcon(source: source, extension: extension),
     title: Text(source.name),
     subtitle: Text(_describe(source)),
     trailing: onTogglePin == null || !source.canBrowse
@@ -155,35 +157,44 @@ class _SourceTile extends StatelessWidget {
     onTap: onOpen,
   );
 
-  static String _describe(SourceDescription source) => source.canBrowse
-      ? '${SourcesView._languageName(source.lang)} · ${source.extensionId}'
-      : 'Books you added from this device';
+  /// What the row says under the name, and the three cases are genuinely different.
+  ///
+  /// A source with no extension is the local one: books from this device. A source whose extension
+  /// *is* named but is not loaded is §3.9's stub -- the extension was removed, or it failed to
+  /// load -- and its books are still in the library pointing at it. Those two used to read the same,
+  /// which had stubs claiming to be local files and left no way to tell what had gone wrong.
+  static String _describe(SourceDescription source) {
+    final extensionId = source.extensionId;
+    if (extensionId == null) return 'Books you added from this device';
+    if (source.isMissing) return 'Extension not installed · $extensionId';
+    return '${SourcesView._languageName(source.lang)} · $extensionId';
+  }
 }
 
 /// A source's icon: its extension's, or a glyph for the ones that have none.
 ///
-/// The local files source is not an extension and never will have one, so its folder glyph is the
-/// right answer rather than a missing icon.
+/// Three glyphs, for three different things. The local files source is not an extension and never
+/// will have one, so a folder is the right answer rather than a missing icon. A source whose
+/// extension is not installed gets the crossed-out puzzle piece, because that is what is wrong with
+/// it. Anything else is a source whose extension simply ships no icon.
 class _SourceIcon extends StatelessWidget {
-  const _SourceIcon({required this.source, required this.iconPath});
+  const _SourceIcon({required this.source, required this.extension});
 
   final SourceDescription source;
-  final String? iconPath;
+  final ExtensionSummary? extension;
 
   @override
   Widget build(BuildContext context) {
-    final path = iconPath;
-    if (path == null) {
-      return Icon(source.canBrowse ? Icons.public : Icons.folder_outlined);
+    final installed = extension;
+    if (installed == null) {
+      return Icon(
+        source.extensionId == null
+            ? Icons.folder_outlined
+            : source.isMissing
+            ? Icons.extension_off_outlined
+            : Icons.public,
+      );
     }
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(6),
-      child: Image.file(
-        File(path),
-        width: 32,
-        height: 32,
-        errorBuilder: (context, _, _) => const Icon(Icons.public),
-      ),
-    );
+    return ExtensionIcon(extension: installed);
   }
 }

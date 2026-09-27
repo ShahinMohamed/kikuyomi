@@ -108,11 +108,21 @@ abstract final class AppSettings {
 
   /// Every setting above. A store that has to be told its keys in advance, as `shared_preferences`'
   /// cached store does, is told these.
+  /// Every setting above, for the stores that need to be told which keys exist.
+  ///
+  /// `SharedPreferencesWithCache` is opened with these as its allow-list, and it **throws** for a
+  /// key outside it. So a setting declared here and left out of this list does not quietly read as
+  /// unset -- it fails, and it fails on the first read, which is usually a screen doing nothing at
+  /// all. `app_settings_test.dart` reads this file and holds the two together, because the list is
+  /// maintained by hand and forgetting it is silent at compile time.
   static const all = <Setting<Object>>[
     backupFolder,
     lastBackupAt,
     backupDue,
     backupSetup,
+    librarySort,
+    pinnedSources,
+    recentSources,
     listenedBackfilled,
   ];
 }

@@ -274,16 +274,15 @@ final recentSourcesProvider = StreamProvider<List<int>>(
       .map((ids) => ids ?? const []),
 );
 
-/// Where each installed extension's icon is on this device, by extension id (§3.3).
+/// Every installed extension by its id, so a source's row can find the one it came from (§3.3).
 ///
-/// Derived from the extensions list rather than read from disk again: that list is already watched,
-/// already knows every install path, and already asked the disk. A source's row looks its icon up
-/// here by the extension it came from.
-final extensionIconsProvider = Provider<Map<String, String>>((ref) {
+/// Summaries rather than icon paths: the extension bundled with the app has no install path, and so
+/// no icon file, but it does have an icon -- an app asset. `ExtensionIcon` already knows how to
+/// choose between the two, and handing it the summary is what lets the sources list reuse that
+/// instead of a second, worse copy that only understood files.
+final extensionsByIdProvider = Provider<Map<String, ExtensionSummary>>((ref) {
   final extensions = ref.watch(extensionsProvider).value ?? const [];
-  return {
-    for (final extension in extensions) extension.id: ?extension.iconPath,
-  };
+  return {for (final extension in extensions) extension.id: extension};
 });
 
 /// The repositories the listener has added, watched, so the screen follows an add or a removal

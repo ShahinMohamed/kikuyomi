@@ -64,6 +64,7 @@ class BookDetailsScreen extends ConsumerWidget {
                 onStopDownloading: () => _stopDownloading(ref),
                 onPlayChapter: (chapterId) =>
                     _playFrom(context, ref, chapterId),
+                onPlayFrom: (globalMs) => _playAt(context, ref, globalMs),
                 onDownloadChapters: (chapterIds) =>
                     _downloadChapters(context, ref, chapterIds),
                 onRefresh: book.canRefresh
@@ -93,6 +94,30 @@ class BookDetailsScreen extends ConsumerWidget {
     try {
       await services.openBook(bookId);
       await services.coordinator.goToChapter(chapterId);
+      if (context.mounted) await const PlayerRoute().push<void>(context);
+    } catch (error) {
+      if (context.mounted) {
+        tellInSnackBar(
+          ScaffoldMessenger.of(context),
+          'Could not open the book: $error',
+        );
+      }
+    }
+  }
+
+  /// Opens the book and starts it [globalMs] into it, which is what an embedded marker names.
+  ///
+  /// §4.5 presents the markers of a single-file book as its chapters, and a marker has no id: where
+  /// it begins is what identifies it. So this seeks rather than asking for a chapter.
+  Future<void> _playAt(
+    BuildContext context,
+    WidgetRef ref,
+    int globalMs,
+  ) async {
+    final services = ref.read(servicesProvider);
+    try {
+      await services.openBook(bookId);
+      await services.coordinator.seekTo(globalMs);
       if (context.mounted) await const PlayerRoute().push<void>(context);
     } catch (error) {
       if (context.mounted) {

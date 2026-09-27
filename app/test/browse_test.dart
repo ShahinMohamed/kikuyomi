@@ -29,6 +29,17 @@ const librivox = SourceDescription(
   extensionId: 'org.kikuyomi.librivox',
 );
 
+/// A source whose extension is gone: §3.9's stub, which the library's books still point at.
+const orphan = SourceDescription(
+  id: 0x4f5250,
+  key: 'cosy',
+  name: 'Cozy Audiobooks',
+  lang: 'en',
+  capabilities: {},
+  extensionId: 'org.example.cosy',
+  isMissing: true,
+);
+
 const storynory = SourceDescription(
   id: 0x53544f,
   key: 'storynory',
@@ -118,6 +129,40 @@ void main() {
       );
 
       expect(find.textContaining('No sources yet'), findsOneWidget);
+    });
+
+    testWidgets('says when a source\'s extension is not installed', (
+      tester,
+    ) async {
+      // It used to read "Books you added from this device", the same as the local source, which
+      // had stubs claiming to be local files and left no way to tell what had gone wrong.
+      await tester.pumpWidget(
+        wrap(
+          Scaffold(
+            body: SourcesView(sources: const [orphan], onOpen: (_) {}),
+          ),
+        ),
+      );
+
+      expect(
+        find.text('Extension not installed · org.example.cosy'),
+        findsOneWidget,
+      );
+      expect(find.text('Books you added from this device'), findsNothing);
+      expect(find.byIcon(Icons.extension_off_outlined), findsOneWidget);
+    });
+
+    testWidgets('keeps the local source\'s own wording', (tester) async {
+      await tester.pumpWidget(
+        wrap(
+          Scaffold(
+            body: SourcesView(sources: const [local], onOpen: (_) {}),
+          ),
+        ),
+      );
+
+      expect(find.text('Books you added from this device'), findsOneWidget);
+      expect(find.byIcon(Icons.folder_outlined), findsOneWidget);
     });
 
     testWidgets('groups the sources by language', (tester) async {
