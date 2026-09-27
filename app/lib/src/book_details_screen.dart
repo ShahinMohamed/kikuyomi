@@ -26,6 +26,8 @@ class BookDetailsScreen extends ConsumerWidget {
     final overview = ref.watch(bookOverviewProvider(bookId));
     final downloads =
         ref.watch(bookDownloadsProvider(bookId)).value ?? BookDownloads.none;
+    final chapterDownloads =
+        ref.watch(chapterDownloadsProvider(bookId)).value ?? const {};
     final book = overview.value;
     return Scaffold(
       appBar: AppBar(),
@@ -57,14 +59,107 @@ class BookDetailsScreen extends ConsumerWidget {
                   ref.watch(servicesProvider),
                 ),
                 downloads: downloads,
+                chapterDownloads: chapterDownloads,
                 onDownload: () => _download(context, ref),
                 onStopDownloading: () => _stopDownloading(ref),
+                onPlayChapter: (chapterId) =>
+                    _playFrom(context, ref, chapterId),
+                onDownloadChapters: (chapterIds) =>
+                    _downloadChapters(context, ref, chapterIds),
+                onRefresh: book.canRefresh
+                    ? () => _refresh(context, ref)
+                    : null,
+                onOpenDownloadQueue: () =>
+                    const DownloadsRoute().push<void>(context),
               ),
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) =>
             Center(child: Text('Could not load the book: $error')),
       ),
     );
+  }
+
+  /// Opens the book and starts it at the beginning of [chapterId].
+  ///
+  /// Opening first and moving afterwards, rather than opening at a position: the book has to be
+  /// loaded before anything knows where that chapter begins, and the Timeline that answers is the
+  /// coordinator's own.
+  Future<void> _playFrom(
+    BuildContext context,
+    WidgetRef ref,
+    int chapterId,
+  ) async {
+    final services = ref.read(servicesProvider);
+    try {
+      await services.openBook(bookId);
+      await services.coordinator.goToChapter(chapterId);
+      if (context.mounted) await const PlayerRoute().push<void>(context);
+    } catch (error) {
+      if (context.mounted) {
+        tellInSnackBar(
+          ScaffoldMessenger.of(context),
+          'Could not open the book: $error',
+        );
+      }
+    }
+  }
+
+  /// Queues [chapterIds], and says what that came to in files.
+  ///
+  /// Files, not chapters, because that is what was queued: ten chapters of an M4B are one file, and
+  /// telling a listener ten downloads had started would have nine of them never appear.
+  Future<void> _downloadChapters(
+    BuildContext context,
+    WidgetRef ref,
+    List<int> chapterIds,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    if (chapterIds.isEmpty) {
+      tellInSnackBar(messenger, 'Nothing left to download');
+      return;
+    }
+    try {
+      final asked = await ref
+          .read(servicesProvider)
+          .downloadChapters(chapterIds);
+      if (asked.added > 0) {
+        tellInSnackBar(
+          messenger,
+          asked.added == 1
+              ? 'Downloading one file'
+              : 'Downloading ${asked.added} files',
+        );
+      } else if (asked.alreadyOnDevice > 0 && asked.alreadyQueued == 0) {
+        tellInSnackBar(messenger, 'Already on this device');
+      } else {
+        tellInSnackBar(messenger, 'Already downloading');
+      }
+    } catch (error) {
+      tellInSnackBar(messenger, 'Could not start the download: $error');
+    }
+  }
+
+  /// Asks the source for the book again, and says what changed.
+  ///
+  /// Pulled down on the book's own page, which is where a listener wonders whether a serial has
+  /// published since they last looked. Saying "no new chapters" matters as much as saying there
+  /// are: a refresh that answers nothing looks like a refresh that did not happen.
+  Future<void> _refresh(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final added = await ref
+          .read(servicesProvider)
+          .refreshBookFromSource(bookId);
+      tellInSnackBar(messenger, switch (added) {
+        0 => 'No new chapters',
+        1 => '1 new chapter',
+        _ => '$added new chapters',
+      });
+    } on StateError catch (error) {
+      tellInSnackBar(messenger, error.message);
+    } catch (error) {
+      tellInSnackBar(messenger, 'Could not refresh: $error');
+    }
   }
 
   /// Opens the book's page at its source in a browser.

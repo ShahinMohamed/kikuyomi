@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:kikuyomi_domain/kikuyomi_domain.dart';
 
 import '../database/database.dart';
+import '../local/local_import.dart' show localSourceId;
 import 'book_queries.dart';
 import 'watch_tables.dart';
 
@@ -12,6 +13,7 @@ import 'watch_tables.dart';
 final class BookOverview {
   const BookOverview({
     required this.bookId,
+    required this.sourceId,
     required this.title,
     required this.authors,
     required this.narrators,
@@ -84,6 +86,17 @@ final class BookOverview {
   /// Null when the source row has gone, which happens to a book whose extension was removed:
   /// §3.9 keeps the books and lets the source go, so this has to be missing rather than assumed.
   final String? sourceName;
+
+  /// Which source it came from, so a screen can tell a book with a source behind it from one added
+  /// off this device. Only the first of those has anything to be refreshed against.
+  final int sourceId;
+
+  /// Whether asking the source for this book again could tell us anything.
+  ///
+  /// False for a local book: the files are the truth for one of those, and there is no catalogue to
+  /// ask. A serial from a source is the opposite case, and the reason this exists -- a podcast that
+  /// publishes weekly has new chapters that nothing else in the app will notice.
+  bool get canRefresh => sourceId != localSourceId;
 }
 
 final class ChapterOverview {
@@ -274,6 +287,7 @@ Future<BookOverview?> _loadBookOverview(KikuyomiDatabase db, int bookId) async {
 
   return BookOverview(
     bookId: book.id,
+    sourceId: book.sourceId,
     title: book.title,
     description: book.description,
     genres: book.genres,

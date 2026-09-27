@@ -599,6 +599,65 @@ void main() {
       expect(engine.calls, isEmpty);
     });
 
+    group('going to a chapter a listener picked', () {
+      // The book's details screen lists chapters and a tap on one starts there. It gives an
+      // identity, not a position: only the Timeline knows what millisecond a chapter begins at, and
+      // it is the Timeline that has just been rebuilt if the book's layout changed.
+      test('moves to the start of that chapter', () async {
+        await openBook();
+
+        await coordinator.goToChapter(2);
+
+        expect(engine.lastSeek, q(1, 0));
+      });
+
+      test('works where a chapter starts inside a file', () async {
+        // The case a caller computing its own offset gets wrong: three chapters in one file, so the
+        // engine stays on item 0 and only the offset moves.
+        await openBook(timeline: oneFileBook());
+
+        await coordinator.goToChapter(3);
+
+        expect(engine.lastSeek, q(0, 400 * s));
+      });
+
+      test('going to the chapter already playing restarts it', () async {
+        await openBook();
+        await coordinator.seekTo(100 * s);
+
+        await coordinator.goToChapter(1);
+
+        expect(engine.lastSeek, q(0, 0));
+      });
+
+      test('a chapter this book does not have does nothing', () async {
+        // §4.4 keeps a chapter whose files could not be laid out, so a details screen can list one
+        // the Timeline has never heard of. A tap on it must not land somewhere arbitrary.
+        await openBook();
+        await coordinator.seekTo(100 * s);
+        engine.calls.clear();
+
+        await coordinator.goToChapter(99);
+
+        expect(engine.calls, isEmpty);
+      });
+
+      test('with no book open it does nothing', () async {
+        await coordinator.goToChapter(1);
+
+        expect(engine.calls, isEmpty);
+      });
+
+      test('the destination is saved at once', () async {
+        // Like every other seek: a listener who picks a chapter and closes the app has picked it.
+        await openBook();
+
+        await coordinator.goToChapter(2);
+
+        expect(store.progress.last.position, at(2, 0));
+      });
+    });
+
     test('previous chapter well into a chapter restarts it', () async {
       await openBook();
       await coordinator.seekTo(310 * s);

@@ -9,6 +9,7 @@ import 'package:kikuyomi_data/kikuyomi_data.dart'
     show
         BookOverview,
         BookProgress,
+        ChapterDownload,
         ChapterOverview,
         CoverFiles,
         MarkerOverview;
@@ -49,6 +50,7 @@ BookOverview book({
   List<MarkerOverview> markers = const [],
   String? cover,
 }) => BookOverview(
+  sourceId: 2,
   bookId: 1,
   title: 'A Book',
   authors: const ['An Author', 'Second Author'],
@@ -74,11 +76,22 @@ final elevenMinutesIn = BookProgress(
 ///
 /// Marking the book finished reports chapters 11 and 12 as the ones it marked, as it would for
 /// [threeChapters], where only Opening was listened.
-Widget details(BookOverview overview, [List<String>? pressed]) => MaterialApp(
+Widget details(
+  BookOverview overview, [
+  List<String>? pressed,
+  Map<int, ChapterDownload> chapterDownloads = const {},
+  Future<void> Function()? onRefresh,
+]) => MaterialApp(
   home: Scaffold(
     body: BookDetailsView(
       book: overview,
       covers: covers,
+      chapterDownloads: chapterDownloads,
+      onPlayChapter: (chapterId) => pressed?.add('play $chapterId'),
+      onDownloadChapters: (chapterIds) =>
+          pressed?.add('download ${chapterIds.join(', ')}'),
+      onRefresh: onRefresh,
+      onOpenDownloadQueue: () => pressed?.add('queue'),
       onRemove: () => pressed?.add('remove'),
       listenedCommands: ListenedCommands(
         markChapters: (chapterIds, listened) async {
@@ -123,7 +136,202 @@ Finder iconIn(String title, IconData icon) => find.descendant(
   matching: find.byIcon(icon),
 );
 
+/// Opens the chapter list's download menu.
+Future<void> openDownloadMenu(WidgetTester tester) async {
+  await tester.tap(find.byTooltip('Download chapters'));
+  await tester.pumpAndSettle();
+}
+
 void main() {
+  group('playing from a chapter', () {
+    testWidgets('tapping a chapter row asks to play from it', (tester) async {
+      tallView(tester);
+      final pressed = <String>[];
+      await tester.pumpWidget(details(book(), pressed));
+
+      await tester.tap(find.text('End'));
+      await tester.pump();
+
+      expect(pressed, ['play 12']);
+    });
+
+    testWidgets('tapping the row a listener is in restarts that chapter', (
+      tester,
+    ) async {
+      // Not a no-op: picking the chapter you are in is how a listener starts it again.
+      tallView(tester);
+      final pressed = <String>[];
+      await tester.pumpWidget(details(book(), pressed));
+
+      await tester.tap(find.text('Middle'));
+      await tester.pump();
+
+      expect(pressed, ['play 11']);
+    });
+
+    testWidgets('the options menu is not a tap on the row', (tester) async {
+      // They sit on the same row and do different things, so the menu must not also play.
+      tallView(tester);
+      final pressed = <String>[];
+      await tester.pumpWidget(details(book(), pressed));
+
+      await tester.tap(find.byTooltip('Options for End'));
+      await tester.pumpAndSettle();
+
+      expect(pressed, isEmpty);
+    });
+  });
+
+  group('downloading one chapter', () {
+    testWidgets('the arrow asks for that chapter alone', (tester) async {
+      tallView(tester);
+      final pressed = <String>[];
+      await tester.pumpWidget(details(book(), pressed));
+
+      await tester.tap(find.byTooltip('Download End'));
+      await tester.pump();
+
+      expect(pressed, ['download 12']);
+    });
+
+    testWidgets('a chapter already here offers nothing to press', (
+      tester,
+    ) async {
+      tallView(tester);
+      final pressed = <String>[];
+      await tester.pumpWidget(
+        details(book(), pressed, {12: ChapterDownload.here}),
+      );
+
+      expect(iconIn('End', Icons.download_done), findsOneWidget);
+      await tester.tap(find.byTooltip('End is downloaded'));
+      await tester.pump();
+      expect(pressed, isEmpty);
+    });
+
+    testWidgets('a chapter that failed offers another try', (tester) async {
+      tallView(tester);
+      final pressed = <String>[];
+      await tester.pumpWidget(
+        details(book(), pressed, {12: ChapterDownload.failed}),
+      );
+
+      await tester.tap(find.byTooltip('End did not download. Try again'));
+      await tester.pump();
+
+      expect(pressed, ['download 12']);
+    });
+
+    testWidgets('a chapter waiting says so rather than inviting a second ask', (
+      tester,
+    ) async {
+      tallView(tester);
+      final pressed = <String>[];
+      await tester.pumpWidget(
+        details(book(), pressed, {12: ChapterDownload.queued}),
+      );
+
+      expect(iconIn('End', Icons.hourglass_empty), findsOneWidget);
+      await tester.tap(find.byTooltip('End is waiting to download'));
+      await tester.pump();
+      expect(pressed, isEmpty);
+    });
+  });
+
+  group('downloading several chapters', () {
+    testWidgets('the next chapter is the first unlistened one', (tester) async {
+      // Opening is listened, so "next" starts at Middle rather than at the top of the list.
+      tallView(tester);
+      final pressed = <String>[];
+      await tester.pumpWidget(details(book(), pressed));
+
+      await openDownloadMenu(tester);
+      await tester.tap(find.text('Next chapter'));
+      await tester.pumpAndSettle();
+
+      expect(pressed, ['download 11']);
+    });
+
+    testWidgets('the next few skip what is already here', (tester) async {
+      // A listener asking for five wants five more, not five rows that were already green.
+      tallView(tester);
+      final pressed = <String>[];
+      await tester.pumpWidget(
+        details(book(), pressed, {11: ChapterDownload.here}),
+      );
+
+      await openDownloadMenu(tester);
+      await tester.tap(find.text('Next 5 chapters'));
+      await tester.pumpAndSettle();
+
+      expect(pressed, ['download 12']);
+    });
+
+    testWidgets('all unlistened leaves the listened ones alone', (
+      tester,
+    ) async {
+      tallView(tester);
+      final pressed = <String>[];
+      await tester.pumpWidget(details(book(), pressed));
+
+      await openDownloadMenu(tester);
+      await tester.tap(find.text('All unlistened chapters'));
+      await tester.pumpAndSettle();
+
+      expect(pressed, ['download 11, 12']);
+    });
+
+    testWidgets('all chapters means all of them, listened or not', (
+      tester,
+    ) async {
+      tallView(tester);
+      final pressed = <String>[];
+      await tester.pumpWidget(details(book(), pressed));
+
+      await openDownloadMenu(tester);
+      await tester.tap(find.text('All chapters'));
+      await tester.pumpAndSettle();
+
+      expect(pressed, ['download 10, 11, 12']);
+    });
+
+    testWidgets('the queue is reachable from the same menu', (tester) async {
+      tallView(tester);
+      final pressed = <String>[];
+      await tester.pumpWidget(details(book(), pressed));
+
+      await openDownloadMenu(tester);
+      await tester.tap(find.text('Download queue'));
+      await tester.pumpAndSettle();
+
+      expect(pressed, ['queue']);
+    });
+  });
+
+  group('refreshing from the source', () {
+    testWidgets('pulling the page down asks the source again', (tester) async {
+      tallView(tester);
+      var asked = 0;
+      await tester.pumpWidget(
+        details(book(), null, const {}, () async => asked++),
+      );
+
+      await tester.fling(find.text('A Book'), const Offset(0, 400), 1000);
+      await tester.pumpAndSettle();
+
+      expect(asked, 1);
+    });
+
+    testWidgets('a book with no source to ask does not offer it', (
+      tester,
+    ) async {
+      tallView(tester);
+      await tester.pumpWidget(details(book()));
+
+      expect(find.byType(RefreshIndicator), findsNothing);
+    });
+  });
+
   testWidgets('shows the title, credits, length and chapters', (tester) async {
     tallView(tester);
     await tester.pumpWidget(details(book()));
