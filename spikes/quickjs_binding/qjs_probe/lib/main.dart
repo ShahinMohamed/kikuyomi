@@ -1023,7 +1023,10 @@ Future<void> _runProtocolProbes() async {
         throw StateError('expected one book, got ${page.items.length}');
       }
       final book = page.items.single;
-      const expected = 'Moby-Dick|héllo|b2s=|ok|ba7816bf|whale|/book/12|1|1.0';
+      // The version the host reports, not a literal: it moved to 1.1 with text sources, and a
+      // probe that pinned the number would have failed on the emulator for the wrong reason.
+      final expected =
+          'Moby-Dick|héllo|b2s=|ok|ba7816bf|whale|/book/12|1|$apiVersion';
       if (book.title != expected) {
         throw StateError('expected "$expected", got "${book.title}"');
       }

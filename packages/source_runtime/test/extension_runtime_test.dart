@@ -22,7 +22,7 @@ void main() {
 
     expect(engine.evaluated, hasLength(3));
     expect(engine.evaluated[0], contains('__kikuyomiHostInfo'));
-    expect(engine.evaluated[0], contains('"apiVersion":"1.0"'));
+    expect(engine.evaluated[0], contains('"apiVersion":"$apiVersion"'));
     expect(engine.evaluated[0], contains('"appVersion":"1.2.3"'));
     expect(engine.evaluated[1], kikuyomiPrelude);
     expect(engine.evaluated[2], contains('__kikuyomiRuntime.setExtension'));

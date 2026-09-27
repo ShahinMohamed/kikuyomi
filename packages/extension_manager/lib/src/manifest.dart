@@ -98,6 +98,7 @@ final class ManifestSource {
     required this.name,
     required this.lang,
     required this.versionId,
+    this.kind = SourceKind.audio,
   });
 
   /// The key the extension exports this source under, and the app identifies it by.
@@ -112,6 +113,10 @@ final class ManifestSource {
   /// Bumped by the author only when this source's book and chapter keys stop being compatible
   /// (§3.7), which is what makes the source's id change and triggers a migration.
   final int versionId;
+
+  /// Books to listen to or books to read (1.1, ADR-0019). Absent means audio, which is every
+  /// source written against 1.0.
+  final SourceKind kind;
 
   /// The id §3.7 gives this source: the first 8 bytes of SHA-256 over
   /// `{extensionId}/{sourceKey}/{lang}/{versionId}`.
@@ -180,7 +185,7 @@ final class ExtensionManifest {
       contentRating: _contentRating(data),
       domains: _domains(data),
       capabilities: _capabilities(data),
-      sources: _sources(data),
+      sources: _sources(data, apiVersion: _apiVersion(data)),
       files: _files(data),
     );
   }
@@ -384,7 +389,10 @@ final class ExtensionManifest {
     return Set.unmodifiable(names);
   }
 
-  static List<ManifestSource> _sources(Map<String, Object?> data) {
+  static List<ManifestSource> _sources(
+    Map<String, Object?> data, {
+    required ApiVersion apiVersion,
+  }) {
     final value = data['sources'];
     if (value is! List || value.isEmpty) {
       throw ManifestException(
@@ -430,10 +438,44 @@ final class ExtensionManifest {
           name: _text(entry, 'name'),
           lang: lang,
           versionId: versionId,
+          kind: _kind(entry, i, apiVersion),
         ),
       );
     }
     return List.unmodifiable(sources);
+  }
+
+  /// A source's kind (1.1), refusing one this manifest's contract version cannot promise.
+  ///
+  /// `"text"` needs 1.1, and that is a rule rather than a formality. A 1.0 app ignores fields it does
+  /// not know, so it would read a text source as audio and call `resolveMedia` on something that
+  /// has none. Requiring 1.1 means such a source can never reach that app: the app refuses 1.1 as
+  /// needing a newer version before it reads a single source.
+  ///
+  /// A kind this build does not know is refused too, rather than read as audio. A later minor
+  /// version may add one, and an extension written for it should be told it needs a newer app, not
+  /// have its source played as something it is not.
+  static SourceKind _kind(
+    Map<String, Object?> entry,
+    int index,
+    ApiVersion apiVersion,
+  ) {
+    final value = entry['kind'];
+    if (value == null) return SourceKind.audio;
+    final kind = switch (value) {
+      'audio' => SourceKind.audio,
+      'text' => SourceKind.text,
+      _ => throw ManifestException(
+        'sources[$index].kind: ${_describe(value)}, and it is "audio" or "text"',
+      ),
+    };
+    if (kind == SourceKind.text && apiVersion < const ApiVersion(1, 1)) {
+      throw ManifestException(
+        'sources[$index].kind: "text" needs apiVersion "1.1" or later, and this '
+        'manifest targets "$apiVersion"',
+      );
+    }
+    return kind;
   }
 
   /// A BCP 47 tag, or `multi` for a catalogue that is not one language, as Mihon's `all` is.

@@ -7,8 +7,9 @@ import 'package:test/test.dart';
 void main() {
   group('the version this app implements', () {
     test('is the one the contract names', () {
-      expect(apiVersion, '1.0');
-      expect(ApiVersion.parse(apiVersion), const ApiVersion(1, 0));
+      // 1.1 adds text sources (ADR-0019).
+      expect(apiVersion, '1.1');
+      expect(ApiVersion.parse(apiVersion), const ApiVersion(1, 1));
     });
 
     test('is the newest one it supports', () {
@@ -79,6 +80,12 @@ void main() {
         supportedApiVersions.check(ApiVersion(major, minor));
 
     test('runs when it targets this version', () {
+      expect(check(1, 1), ApiCompatibility.supported);
+    });
+
+    test('still runs when it targets 1.0', () {
+      // The whole promise of a minor version. Every extension that exists targets 1.0, and adding
+      // text sources must not cost a single one of them.
       expect(check(1, 0), ApiCompatibility.supported);
     });
 
@@ -89,7 +96,7 @@ void main() {
     });
 
     test('needs a newer app when it targets a newer minor', () {
-      expect(check(1, 1), ApiCompatibility.needsNewerApp);
+      expect(check(1, 2), ApiCompatibility.needsNewerApp);
       expect(check(1, 99), ApiCompatibility.needsNewerApp);
     });
 

@@ -17,12 +17,99 @@ Map<String, Object?> _page(List<Object?> items) => {
 Future<JsSourceAdapter> _adapter(
   Map<String, FakeMethod> methods, {
   String sourceKey = 'librivox',
+  SourceKind kind = SourceKind.audio,
 }) async {
   final (runtime, _) = await loadFake(FakeExtension({sourceKey: methods}));
-  return JsSourceAdapter.open(runtime: runtime, sourceKey: sourceKey);
+  return JsSourceAdapter.open(
+    runtime: runtime,
+    sourceKey: sourceKey,
+    kind: kind,
+  );
 }
 
 void main() {
+  group('a text source (1.1)', () {
+    test('passes both keys and reads the chapter into blocks', () async {
+      var asked = <Object?>[];
+      final adapter = await _adapter({
+        'getChapterContent': (args) {
+          asked = args;
+          return {'html': '<p>It was <i>very</i> dark.</p>'};
+        },
+      }, kind: SourceKind.text);
+
+      final content = await adapter.getChapterContent(
+        const ChapterRef(bookKey: 'novel', chapterKey: 'c1'),
+      );
+
+      expect(asked, [
+        {'bookKey': 'novel', 'chapterKey': 'c1'},
+      ]);
+      expect(content.blocks, [
+        const ParagraphBlock([
+          TextRun('It was '),
+          TextRun('very', italic: true),
+          TextRun(' dark.'),
+        ]),
+      ]);
+    });
+
+    test('its markup is decoded, never passed through', () async {
+      // The one guarantee that matters: nothing a stranger wrote reaches the reader as markup.
+      final adapter = await _adapter({
+        'getChapterContent': (_) => {
+          'html': '<p>Hi</p><script>steal()</script><iframe src="x"></iframe>',
+        },
+      }, kind: SourceKind.text);
+
+      final content = await adapter.getChapterContent(
+        const ChapterRef(bookKey: 'novel', chapterKey: 'c1'),
+      );
+
+      expect(content.plainText, 'Hi');
+    });
+
+    test('has no audio to resolve', () async {
+      final adapter = await _adapter({}, kind: SourceKind.text);
+
+      expect(
+        () => adapter.resolveMedia(
+          const ChapterRef(bookKey: 'novel', chapterKey: 'c1'),
+          const ResolveContext(
+            purpose: ResolvePurpose.stream,
+            network: NetworkType.unknown,
+          ),
+        ),
+        throwsUnsupportedError,
+      );
+    });
+
+    test('an audio source has no text to read', () async {
+      final adapter = await _adapter({});
+
+      expect(adapter.kind, SourceKind.audio);
+      expect(
+        () => adapter.getChapterContent(
+          const ChapterRef(bookKey: 'b', chapterKey: 'c'),
+        ),
+        throwsUnsupportedError,
+      );
+    });
+
+    test('a result that is not a chapter fails as Parse', () async {
+      final adapter = await _adapter({
+        'getChapterContent': (_) => {'html': '<p>a</p>', 'text': 'a'},
+      }, kind: SourceKind.text);
+
+      await expectLater(
+        adapter.getChapterContent(
+          const ChapterRef(bookKey: 'n', chapterKey: 'c'),
+        ),
+        throwsA(isA<ParseException>()),
+      );
+    });
+  });
+
   group('capabilities', () {
     test('are the optional methods the source really has', () async {
       final adapter = await _adapter({

@@ -1,6 +1,7 @@
 /// The versioned contract that source extensions implement.
 ///
-/// The Dart mirror of SourceAPI 1.0 (`docs/source-api-1.0.md`, ADR-0016): the types a source hands
+/// The Dart mirror of SourceAPI 1.1 (`docs/source-api-1.0.md`, ADR-0016, and ADR-0019 for text): the
+/// types a source hands
 /// the app, the `ContentSource` interface both the JavaScript adapter and the built-in sources
 /// implement, the error kinds the app reacts to, the contract's limits, and the decoders that hold
 /// an extension's output to them.
@@ -21,6 +22,8 @@ export 'src/models/http_request.dart';
 export 'src/models/media.dart';
 export 'src/models/page_result.dart';
 export 'src/models/search.dart';
+export 'src/models/text.dart';
 export 'src/version.dart';
 export 'src/wire/decoder.dart';
 export 'src/wire/encoding.dart';
+export 'src/wire/html_content.dart';

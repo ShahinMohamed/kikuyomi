@@ -22,6 +22,8 @@ import '../models/http_request.dart';
 import '../models/media.dart';
 import '../models/page_result.dart';
 import '../models/search.dart';
+import '../models/text.dart';
+import 'html_content.dart';
 import 'reading.dart';
 
 /// Decodes one extension's results, against the domains that extension declared.
@@ -137,6 +139,75 @@ final class PlainDataDecoder {
       );
     }
     return chapters;
+  }
+
+  /// The result of `getChapterContent` (1.1): `{ html, baseUrl? }` or `{ text }`.
+  ///
+  /// HTML is turned into blocks here and nowhere else, so nothing downstream ever holds markup a
+  /// stranger wrote. An image is kept only when its address, resolved against `baseUrl` if the
+  /// source gave one, is on a host the source declared — the same rule as every other URL it hands
+  /// over. A relative address with no `baseUrl` to resolve it against names nothing, and is left out.
+  ChapterContent decodeChapterContent(Object? data) {
+    final content = Fields.of(data, '');
+    final markup = content['html'];
+    final text = content['text'];
+    if ((markup == null) == (text == null)) {
+      rejectAt(
+        '',
+        'expected exactly one of html and text, got '
+            '${markup == null ? 'neither' : 'both'}',
+      );
+    }
+    final body = (markup ?? text)!;
+    final field = markup != null ? 'html' : 'text';
+    if (body is! String) {
+      rejectAt(
+        content.pathOf(field),
+        'expected a string, got ${describe(body)}',
+      );
+    }
+    if (body.length > SourceLimits.maxChapterContentLength) {
+      rejectAt(
+        content.pathOf(field),
+        'is ${body.length} characters, and a chapter may be at most '
+        '${SourceLimits.maxChapterContentLength}',
+      );
+    }
+
+    final ChapterContent decoded;
+    if (markup != null) {
+      final base = _optionalUrl(content, 'baseUrl');
+      decoded = contentFromHtml(
+        body,
+        resolveImage: (src) {
+          final Uri resolved;
+          try {
+            resolved = base == null ? Uri.parse(src) : base.resolve(src);
+          } on FormatException {
+            return null;
+          }
+          if (!resolved.hasScheme) return null;
+          try {
+            return domains.checkUrl(resolved.toString());
+          } on FormatException {
+            // Not on a declared host. Left out rather than failing the chapter: one picture on a
+            // CDN the author forgot to declare should cost that picture, not the words around it.
+            return null;
+          }
+        },
+      );
+    } else {
+      decoded = contentFromText(body);
+    }
+
+    if (decoded.blocks.length > SourceLimits.maxContentBlocks) {
+      rejectAt(
+        content.pathOf(field),
+        'makes ${decoded.blocks.length} blocks, and a chapter may make at most '
+        '${SourceLimits.maxContentBlocks}',
+      );
+    }
+    return decoded;
   }
 
   /// The result of `resolveMedia`.

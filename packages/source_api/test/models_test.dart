@@ -10,7 +10,14 @@ final class EmptySource implements ContentSource {
   EmptySource(this.capabilities);
 
   @override
+  SourceKind get kind => SourceKind.audio;
+
+  @override
   final Set<SourceCapability> capabilities;
+
+  @override
+  Future<ChapterContent> getChapterContent(ChapterRef chapter) async =>
+      throw UnsupportedError('an audio source has no chapter text');
 
   @override
   Future<PageResult<BookSummary>> getPopular(int page) async =>

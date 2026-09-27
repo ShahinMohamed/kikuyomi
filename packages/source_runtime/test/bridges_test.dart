@@ -94,7 +94,7 @@ void main() {
 
       expect(facts.apiVersion, apiVersion);
       expect(facts.toPlainData(), {
-        'apiVersion': '1.0',
+        'apiVersion': apiVersion,
         'appVersion': '1.4.0',
         'features': ['ui.browser'],
       });

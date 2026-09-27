@@ -28,7 +28,10 @@ void main() {
   test('it targets a contract version this app implements', () async {
     final extension = await loadBundledExtension('librivox');
 
-    expect(extension.manifest.apiVersion.toString(), apiVersion);
+    // 1.0, not whatever the app implements. An audio source needs nothing 1.1 added, and
+    // targeting the oldest version that has what it needs is what lets it run on every app
+    // that could play it.
+    expect(extension.manifest.apiVersion.toString(), '1.0');
     expect(extension.manifest.compatibility(), ApiCompatibility.supported);
     expect(extension.manifest.runsOn(SoftwareVersion.parse('1.0.0')), isTrue);
   });

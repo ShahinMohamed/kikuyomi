@@ -1,4 +1,4 @@
-/// SourceAPI 1.0's `Source`, as the rest of the app sees every source.
+/// SourceAPI's `Source`, as the rest of the app sees every source.
 ///
 /// The JavaScript adapter in `source_runtime` implements [ContentSource] over QuickJS (§3.6), and
 /// built-in sources implement it natively: Local first, then Audiobookshelf and OPDS. The rest of
@@ -12,6 +12,7 @@ import 'models/http_request.dart';
 import 'models/media.dart';
 import 'models/page_result.dart';
 import 'models/search.dart';
+import 'models/text.dart';
 
 /// The optional methods of [ContentSource], which a source declares it has.
 enum SourceCapability {
@@ -42,6 +43,14 @@ enum SourceCapability {
 ///
 /// **Pages** are numbered from 1.
 abstract interface class ContentSource {
+  /// Whether this source offers books to listen to or books to read (1.1). Fixed for the life of the
+  /// source.
+  ///
+  /// It decides which of [resolveMedia] and [getChapterContent] the source has: an audio source has
+  /// only the first and a text source only the second. Calling the other is a programming error and
+  /// fails with [UnsupportedError], as calling an undeclared optional method does.
+  SourceKind get kind;
+
   /// The optional methods this source has. Fixed for the life of the source.
   Set<SourceCapability> get capabilities;
 
@@ -64,11 +73,14 @@ abstract interface class ContentSource {
   /// The book's chapters, in listening order. Their keys are unique within the book.
   Future<List<ChapterInfo>> getChapters(String bookKey);
 
-  /// Where the audio of [chapter] is, for [context].
+  /// Where the audio of [chapter] is, for [context]. Only when [kind] is [SourceKind.audio].
   Future<MediaResolution> resolveMedia(
     ChapterRef chapter,
     ResolveContext context,
   );
+
+  /// What [chapter] says (1.1). Only when [kind] is [SourceKind.text].
+  Future<ChapterContent> getChapterContent(ChapterRef chapter);
 
   /// How to fetch the cover at [url], with the headers or cookies it needs. Only when
   /// [capabilities] has [SourceCapability.imageRequest].
