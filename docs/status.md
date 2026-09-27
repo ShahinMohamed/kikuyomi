@@ -565,6 +565,33 @@ so a rotation and a takeover look identical.
 The app ships knowing only the official repository. Per `CLAUDE.md`, neither the app nor the docs
 list or recommend any other.
 
+**What it offers.** Four extensions: LibriVox (also bundled in the app), Internet Archive, Storynory
+and Podcasts. `packages/extension_manager/tool/build_repository.dart` packages and signs them, and
+`app/test/official_repository_test.dart` reads the committed result with the same code the app uses
+to read a fetched one -- so a change to the signing tool that the verifier does not follow fails a
+test rather than the first listener to open the screen.
+
+**The Podcasts extension is the odd one.** Every other source reads one site it was written for.
+This one reads a feed belonging to a stranger, chosen by the listener, and that changes two things.
+Its book key *is* the feed address, so a show needs nothing stored to be found again. And every URL
+it hands the app -- a cover, a show's homepage -- is filtered through its own copy of the allowlist
+first, because such a URL is checked against the declared domains and one on an undeclared host
+would fail the whole call; a feed's artwork can be anywhere at all.
+
+A listener adds a show through the search box, since SourceAPI 1.0 gives an extension no other way
+to be told anything: a feed address, an Apple Podcasts link, a Spotify show link, or a name to
+search Apple's public index for. A Spotify link is read for the show's *name* only, and everything
+after that comes from the podcast's own feed. Spotify's audio is encrypted and nothing here touches
+it; a show that exists only inside Spotify is not reachable and the search says so.
+
+The limit is the allowlist. It names sixty-three hosts -- the podcast platforms, their CDNs, and the
+measurement services publishers redirect their audio through -- and measured against Apple's index
+it reaches about 93% of shows, with every sampled show that passed that bar playing end to end. The
+rest are on domains of their own, which is the honest cost of a contract with no way to declare
+"anywhere". Lifting it needs a `source_api` capability meaning an extension may contact any host,
+with a permissions screen that has nothing specific to show; that is a contract decision, not an
+implementation one.
+
 ### Loose ends
 
 - The folder **picker** path has never been driven by the running app: installing on iOS goes through

@@ -1648,6 +1648,62 @@ final class _StorynoryFixtures implements HostBridge {
   }
 }
 
+/// The Podcasts source's recorded answers.
+///
+/// Four documents, because this source has four ways in: a feed, Apple's index by search, Apple's
+/// index by id, and a Spotify show page read for the show's name. A request for anything else fails
+/// loudly rather than quietly returning nothing, so a probe that meant to exercise one path and
+/// took another says so.
+final class _PodcastFixtures implements HostBridge {
+  _PodcastFixtures(this._feed, this._search, this._lookup, this._spotify);
+
+  static const feedUrl = 'https://anchor.fm/s/100622f90/podcast/rss';
+
+  static Future<_PodcastFixtures> load() async => _PodcastFixtures(
+    await rootBundle.loadString('assets/podcasts/fixtures/feed.xml'),
+    await rootBundle.loadString('assets/podcasts/fixtures/apple-search.json'),
+    await rootBundle.loadString('assets/podcasts/fixtures/apple-lookup.json'),
+    await rootBundle.loadString('assets/podcasts/fixtures/spotify-show.html'),
+  );
+
+  final String _feed;
+  final String _search;
+  final String _lookup;
+  final String _spotify;
+  final asked = <String>[];
+
+  @override
+  String get module => 'http';
+
+  @override
+  Future<Object?> call(String method, List<Object?> arguments) async {
+    if (method != 'fetch') throw HostCallException('there is no http.$method');
+    final request = arguments.objectAt(0, 'a request');
+    final url = '${request['url']}';
+    asked.add(url);
+
+    Object? body;
+    if (url == feedUrl) {
+      body = _feed;
+    } else if (url.startsWith('https://itunes.apple.com/search')) {
+      // Asked for as JSON, so it arrives decoded, the way the host bridge hands it over.
+      body = jsonDecode(_search);
+    } else if (url.startsWith('https://itunes.apple.com/lookup')) {
+      body = jsonDecode(_lookup);
+    } else if (url.startsWith('https://open.spotify.com/show/')) {
+      body = _spotify;
+    } else {
+      throw HostCallException('the probe has no fixture for $url');
+    }
+    return {
+      'status': 200,
+      'url': url,
+      'headers': const {'content-type': 'text/plain'},
+      'body': body,
+    };
+  }
+}
+
 /// Opens [extensionId]'s source over [bridge], with the manifest's own domains.
 Future<T> _withExtension<T>({
   required String asset,
@@ -1962,6 +2018,282 @@ Future<void> _runStorynoryProbes() async {
   });
 }
 
+Future<void> _runPodcastProbes() async {
+  // The manifest names sixty-three hosts. These are the ones the fixtures actually reach, plus the
+  // CloudFront wildcard the audio needs: a probe is not the place to restate a list the app's own
+  // test already holds against the manifest, and a shorter one makes it obvious which host each
+  // probe below depends on.
+  const domains = [
+    'anchor.fm',
+    '*.anchor.fm',
+    '*.cloudfront.net',
+    'itunes.apple.com',
+    '*.mzstatic.com',
+    'open.spotify.com',
+  ];
+
+  Future<T> withSource<T>(
+    Future<T> Function(JsSourceAdapter source, _PodcastFixtures http) body,
+  ) async {
+    final http = await _PodcastFixtures.load();
+    return _withExtension(
+      asset: 'assets/podcasts/main.js',
+      extensionId: 'org.kikuyomi.podcasts',
+      sourceKey: 'podcasts',
+      domains: domains,
+      http: http,
+      body: (source) => body(source, http),
+    );
+  }
+
+  await _probe('podcasts-loads', () async {
+    return withSource((source, http) async {
+      if (source.capabilities.isNotEmpty) {
+        throw StateError('capabilities are ${source.capabilities}');
+      }
+      return 'loaded, declaring nothing optional';
+    });
+  });
+
+  await _probe('podcasts-shelf-starts-empty', () async {
+    return withSource((source, http) async {
+      // Nothing has been opened, so there is nothing to show, and nothing to ask the network for
+      // either. A source that fetched something here would be fetching it for every listener who
+      // ever taps the tab.
+      final page = await source.getPopular(1);
+      if (page.items.isNotEmpty) {
+        throw StateError('a fresh shelf holds ${page.items.length}');
+      }
+      if (page.hasNextPage) throw StateError('an empty page has no next');
+      if (http.asked.isNotEmpty) {
+        throw StateError('an empty shelf cost ${http.asked}');
+      }
+      return 'empty, and free';
+    });
+  });
+
+  await _probe('podcasts-a-feed-address-is-a-search', () async {
+    return withSource((source, http) async {
+      final page = await source.search(
+        const SearchQuery(text: _PodcastFixtures.feedUrl),
+        1,
+      );
+      if (page.items.length != 1) {
+        throw StateError('found ${page.items.map((b) => b.title)}');
+      }
+      if (page.items.single.key != _PodcastFixtures.feedUrl) {
+        throw StateError('the key is not the feed: ${page.items.single.key}');
+      }
+      if (page.hasNextPage) throw StateError('one address is one answer');
+      if (http.asked.length != 1) {
+        throw StateError('reading one feed cost ${http.asked.length}');
+      }
+      return 'pasted an address, got ${page.items.single.title}';
+    });
+  });
+
+  await _probe('podcasts-search-by-name-uses-the-index', () async {
+    return withSource((source, http) async {
+      final page = await source.search(
+        const SearchQuery(text: 'web novel audio'),
+        1,
+      );
+      if (page.items.isEmpty) throw StateError('the index found nothing');
+      // Found without reading a single feed: the whole point of searching an index rather than
+      // fetching everything and looking through it.
+      if (http.asked.any((url) => url == _PodcastFixtures.feedUrl)) {
+        throw StateError('searching fetched a feed: ${http.asked}');
+      }
+      final found = page.items.first;
+      if (!found.key.startsWith('https://')) {
+        throw StateError('the key is not a feed address: ${found.key}');
+      }
+      return 'the index answered with ${found.title}';
+    });
+  });
+
+  await _probe('podcasts-an-apple-link-is-looked-up-by-id', () async {
+    return withSource((source, http) async {
+      final page = await source.search(
+        const SearchQuery(
+          text: 'https://podcasts.apple.com/us/podcast/web-novel-audio/id1772845594',
+        ),
+        1,
+      );
+      if (page.items.length != 1) {
+        throw StateError('found ${page.items.length}');
+      }
+      final asked = http.asked.single;
+      if (!asked.contains('lookup') || !asked.contains('1772845594')) {
+        throw StateError('asked $asked, which is not a lookup by id');
+      }
+      return 'looked up exactly: ${page.items.single.title}';
+    });
+  });
+
+  await _probe('podcasts-a-spotify-link-finds-the-feed', () async {
+    return withSource((source, http) async {
+      // Spotify publishes no feed address, so this is two steps: read the show's name off the
+      // public page, then find that name in a podcast index. Nothing here touches Spotify's audio,
+      // which is encrypted and not ours to decode.
+      final page = await source.search(
+        const SearchQuery(
+          text: 'https://open.spotify.com/show/7sRS4Y7wK8gS4Emp7qXskL',
+        ),
+        1,
+      );
+      if (page.items.isEmpty) throw StateError('nothing came back');
+      if (http.asked.length != 2) {
+        throw StateError('expected a page then an index, got ${http.asked}');
+      }
+      if (!http.asked.first.startsWith('https://open.spotify.com/')) {
+        throw StateError('did not read the page first: ${http.asked}');
+      }
+      if (!http.asked.last.contains('itunes.apple.com/search')) {
+        throw StateError('did not search the index: ${http.asked}');
+      }
+      return 'a Spotify link became a feed: ${page.items.first.key}';
+    });
+  });
+
+  await _probe('podcasts-book-details', () async {
+    return withSource((source, http) async {
+      final book = await source.getBookDetails(_PodcastFixtures.feedUrl);
+      if (book.narrators.isNotEmpty) {
+        throw StateError('narrators are ${book.narrators}');
+      }
+      if (book.genres.isEmpty) {
+        throw StateError('the feed names categories; genres are empty');
+      }
+      final description = book.description ?? '';
+      if (description.contains('<') || description.contains('CDATA')) {
+        throw StateError('the summary still holds markup: $description');
+      }
+      if (book.status != BookStatus.ongoing) {
+        throw StateError(
+          'a podcast without itunes:complete is ongoing, '
+          'not ${book.status}',
+        );
+      }
+      // The feed's <link> points at Patreon, which this extension never declared, and a URL it may
+      // not reach would fail the whole call if it were handed over.
+      if (book.webUrl != null) {
+        throw StateError('handed over an unreachable page: ${book.webUrl}');
+      }
+      return 'decoded, and the off-limits link was dropped';
+    });
+  });
+
+  await _probe('podcasts-chapters-run-oldest-first', () async {
+    return withSource((source, http) async {
+      final chapters = await source.getChapters(_PodcastFixtures.feedUrl);
+      if (chapters.length != 4) {
+        throw StateError(
+          'expected the fixture\'s four, got ${chapters.length}',
+        );
+      }
+      // A feed is written newest first and a serial is listened to from the start, so this is the
+      // one transformation this source makes that a listener would notice immediately if it broke.
+      var previous = 0;
+      for (final chapter in chapters) {
+        final at = chapter.publishedAt?.millisecondsSinceEpoch ?? 0;
+        if (at == 0) throw StateError('${chapter.title} has no date');
+        if (at < previous) {
+          throw StateError('${chapter.title} is out of order');
+        }
+        previous = at;
+      }
+      return 'four chapters, oldest first: ${chapters.first.title}';
+    });
+  });
+
+  await _probe('podcasts-resolve-media', () async {
+    return withSource((source, http) async {
+      final chapters = await source.getChapters(_PodcastFixtures.feedUrl);
+      final media = await source.resolveMedia(
+        ChapterRef(
+          bookKey: _PodcastFixtures.feedUrl,
+          chapterKey: chapters.first.key,
+        ),
+        const ResolveContext(
+          purpose: ResolvePurpose.stream,
+          network: NetworkType.unknown,
+        ),
+      );
+      final segment = media.segments.single;
+      if (segment.format != MediaFormat.mp3) {
+        throw StateError('format is ${segment.format}');
+      }
+      if (segment.request.url.host != 'anchor.fm') {
+        throw StateError('url is ${segment.request.url}');
+      }
+      return 'playable: ${segment.request.url.host}';
+    });
+  });
+
+  await _probe('podcasts-the-feed-is-read-once', () async {
+    return withSource((source, http) async {
+      // Opening a show, reading its chapters and resolving one is the ordinary path, and a four
+      // hundred episode feed is not a document to fetch three times for one tap.
+      await source.getBookDetails(_PodcastFixtures.feedUrl);
+      final chapters = await source.getChapters(_PodcastFixtures.feedUrl);
+      await source.resolveMedia(
+        ChapterRef(
+          bookKey: _PodcastFixtures.feedUrl,
+          chapterKey: chapters.first.key,
+        ),
+        const ResolveContext(
+          purpose: ResolvePurpose.stream,
+          network: NetworkType.unknown,
+        ),
+      );
+      final feeds = http.asked.where((url) => url == _PodcastFixtures.feedUrl);
+      if (feeds.length != 1) {
+        throw StateError('the feed was fetched ${feeds.length} times');
+      }
+      return 'three calls, one fetch';
+    });
+  });
+
+  await _probe('podcasts-opening-a-show-remembers-it', () async {
+    return withSource((source, http) async {
+      if ((await source.getPopular(1)).items.isNotEmpty) {
+        throw StateError('the shelf was not empty to begin with');
+      }
+      await source.getBookDetails(_PodcastFixtures.feedUrl);
+      final shelf = await source.getPopular(1);
+      if (shelf.items.length != 1) {
+        throw StateError('the shelf holds ${shelf.items.length}');
+      }
+      if (shelf.items.single.key != _PodcastFixtures.feedUrl) {
+        throw StateError('remembered ${shelf.items.single.key}');
+      }
+      return 'the shelf kept it: ${shelf.items.single.title}';
+    });
+  });
+
+  await _probe('podcasts-refuses-a-feed-it-may-not-fetch', () async {
+    return withSource((source, http) async {
+      // The extension checks the host itself, before the bridge does, so that the message names
+      // the host rather than the extension. A listener who pastes a feed from somewhere unusual
+      // needs to be told which host to ask for.
+      try {
+        await source.getBookDetails('https://example.org/feed.xml');
+      } on Object catch (error) {
+        final text = '$error';
+        if (!text.contains('example.org')) {
+          throw StateError('refused without naming the host: $text');
+        }
+        if (http.asked.isNotEmpty) {
+          throw StateError('it tried anyway: ${http.asked}');
+        }
+        return 'refused before asking, naming example.org';
+      }
+      throw StateError('a feed on an undeclared host was accepted');
+    });
+  });
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   _emit('QJS_PROBE INFO probe=spike-a-qjs-probe');
@@ -1984,6 +2316,7 @@ Future<void> main() async {
   await _runLibriVoxProbes();
   await _runArchiveProbes();
   await _runStorynoryProbes();
+  await _runPodcastProbes();
 
   _emit('QJS_PROBE DONE passed=$_passed failed=$_failed');
 

@@ -22,12 +22,16 @@ import 'package:crypto/crypto.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:kikuyomi_extension_manager/kikuyomi_extension_manager.dart';
 
+/// What the official repository calls itself, and where to read about it.
+const _defaultName = 'Kikuyomi official';
+const _defaultWebsite = 'https://github.com/kikuyomiapp/kikuyomi';
+
 const _usage = '''
 Builds a repository from a folder of extension folders.
 
   --extensions <dir>   where the extensions are (default ../../app/assets/extensions)
   --out <dir>          where to write the repository (default ../../repository)
-  --name <text>        what the repository calls itself
+  --name <text>        what the repository calls itself (default Kikuyomi official)
   --website <url>      where to read about it
   --base <url>         the HTTPS address the output will be served from, for package URLs
   --key <file>         the signing key (default <out>/../repository-signing-key.txt)
@@ -98,8 +102,12 @@ Future<void> main(List<String> arguments) async {
   await File('${out.path}/repo.json').writeAsString(
     _pretty({
       'formatVersion': repositoryFormatVersion,
-      'name': options['name'] ?? 'Kikuyomi',
-      if (options['website'] != null) 'website': options['website'],
+      // The official repository's own name and website are the defaults, so that a plain run
+      // reproduces the committed one. They were flags with thinner defaults, and rebuilding
+      // without them silently renamed the repository in `repo.json` -- a listener would have seen
+      // their trusted repository change its name for no reason they could see.
+      'name': options['name'] ?? _defaultName,
+      'website': options['website'] ?? _defaultWebsite,
       'publicKey': publicKeyBase64,
     }),
   );
