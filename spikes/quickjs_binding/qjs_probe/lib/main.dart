@@ -1882,13 +1882,21 @@ Future<void> _runStorynoryProbes() async {
   await _probe('storynory-search-reads-the-feed-once', () async {
     return withSource((source, http) async {
       final page = await source.search(const SearchQuery(text: 'magic'), 1);
-      if (page.items.length != 1) {
+      // Both of the fixture's stories whose titles hold the word, and neither of the two that do
+      // not: a search here narrows the feed rather than asking the site anything.
+      if (page.items.length != 2) {
         throw StateError('found ${page.items.map((b) => b.title)}');
+      }
+      if (page.items.any((b) => !b.title.toLowerCase().contains('magic'))) {
+        throw StateError(
+          'matched something else: ${page.items.map((b) => b.title)}',
+        );
       }
       if (http.asked.length != 1) {
         throw StateError('matching locally cost ${http.asked.length} requests');
       }
-      return 'matched in the feed already in hand: ${page.items.single.title}';
+      return 'matched in the feed already in hand: '
+          '${page.items.map((b) => b.title).join(', ')}';
     });
   });
 
