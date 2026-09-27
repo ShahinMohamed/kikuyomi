@@ -138,6 +138,10 @@ Future<int> pruneUnusedSources(
 ///
 /// The whole write is one transaction: a book is never half-refreshed, and nothing reading the
 /// library sees a chapter list mid-sync.
+///
+/// [kind] is the source's (ADR-0019). It is written when a book is first saved and never changed
+/// afterwards: a book does not stop being a novel because the extension that offered it was updated,
+/// and a refresh that flipped it would move a reader's book to the other tab.
 Future<SavedSourceBook> saveSourceBook(
   KikuyomiDatabase db, {
   required int sourceId,
@@ -145,6 +149,7 @@ Future<SavedSourceBook> saveSourceBook(
   required List<api.ChapterInfo> chapters,
   required Clock clock,
   bool addToLibrary = false,
+  api.SourceKind kind = api.SourceKind.audio,
 }) async {
   final now = clock.now();
   return db.transaction(() async {
@@ -170,6 +175,7 @@ Future<SavedSourceBook> saveSourceBook(
                 _companion(merge.details).copyWith(
                   sourceId: Value(sourceId),
                   key: Value(details.key),
+                  kind: Value(kind),
                   inLibrary: Value(addToLibrary),
                   dateAdded: Value(addToLibrary ? now : null),
                   detailsFetched: const Value(true),

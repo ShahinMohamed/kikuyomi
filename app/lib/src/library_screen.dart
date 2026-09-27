@@ -1,3 +1,4 @@
+import 'package:kikuyomi_source_api/kikuyomi_source_api.dart' show SourceKind;
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -84,7 +85,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final library = ref.watch(libraryProvider);
+    // Audiobooks only. Books to read have a tab of their own (ADR-0019).
+    final library = ref.watch(shelfProvider(SourceKind.audio));
     final sort = ref.watch(librarySortProvider).value ?? LibrarySort.fallback;
     final query = _search.text;
     final continueListening = ref.watch(continueListeningProvider);

@@ -4,6 +4,7 @@
 // has said. Both sort last rather than first, because "recently added" and "longest" putting an
 // unknown at the top says something untrue about it.
 
+import 'package:kikuyomi_source_api/kikuyomi_source_api.dart' show SourceKind;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kikuyomi/src/library/library_shelf.dart';
 import 'package:kikuyomi_data/kikuyomi_data.dart';
@@ -23,6 +24,7 @@ BookRow book({
 }) {
   final rowId = id ?? ++_nextId;
   return BookRow(
+    kind: SourceKind.audio,
     id: rowId,
     sourceId: 1,
     key: 'key-$rowId',

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:kikuyomi_source_api/kikuyomi_source_api.dart' show SourceKind;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kikuyomi/src/home_view.dart';
@@ -13,6 +14,7 @@ final added = DateTime.utc(2026, 9, 14);
 final covers = CoverFiles(Directory('covers'));
 
 BookRow inLibrary(int id, String title, {String? cover}) => BookRow(
+  kind: SourceKind.audio,
   id: id,
   sourceId: 1,
   key: 'book-$id',

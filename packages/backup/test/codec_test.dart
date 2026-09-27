@@ -6,6 +6,7 @@ import 'package:fixnum/fixnum.dart';
 import 'package:kikuyomi_backup/kikuyomi_backup.dart';
 import 'package:kikuyomi_backup/src/generated/backup.pb.dart' as pb;
 import 'package:kikuyomi_domain/kikuyomi_domain.dart';
+import 'package:kikuyomi_source_api/kikuyomi_source_api.dart' show SourceKind;
 import 'package:protobuf/protobuf.dart';
 import 'package:test/test.dart';
 
@@ -49,6 +50,19 @@ void main() {
       // A new field in backup.proto fails this until the fixture fills it and the codec writes it.
       final message = unwrap(encodeBackup(fullLibrary(), info: info));
       expect(unsetFields(message), isEmpty);
+    });
+
+    test('a backup of audiobooks alone stays readable by older builds', () {
+      // Only a book to read is something a version 2 reader would get wrong (ADR-0020).
+      final message = unwrap(encodeBackup(minimalLibrary(), info: info));
+      expect(message.minReaderVersion, backupMinReaderVersion);
+    });
+
+    test('a backup holding a book to read needs a reader that knows kinds', () {
+      // A version 2 reader skips `kind` and would restore the book as an audiobook, without a word.
+      final message = unwrap(encodeBackup(fullLibrary(), info: info));
+      expect(message.minReaderVersion, backupMinReaderVersionWithText);
+      expect(backupMinReaderVersionWithText, 3);
     });
 
     test('records the format versions and who wrote the backup, and when', () {
@@ -286,6 +300,46 @@ void main() {
         decoded.skipped.single,
         startsWith('the progress of book "A Book"'),
       );
+    });
+
+    test('a reading position in a chapter the backup lacks is left out', () {
+      final message = unwrap(encodeBackup(fullLibrary(), info: info));
+      message.books.single.readingState.chapterKey = 'missing';
+
+      final decoded = decodeBackup(wrap(message));
+      expect(decoded.library.books.single.reading, isNull);
+      expect(
+        decoded.skipped.single,
+        startsWith('the reading position of book "A Book"'),
+      );
+    });
+
+    test('a reading position outside its chapter is left out', () {
+      for (final progress in [-0.1, 1.5, double.nan, double.infinity]) {
+        final message = unwrap(encodeBackup(fullLibrary(), info: info));
+        message.books.single.readingState.progress = progress;
+
+        final decoded = decodeBackup(wrap(message));
+        expect(
+          decoded.library.books.single.reading,
+          isNull,
+          reason: '$progress',
+        );
+        expect(
+          decoded.skipped.single,
+          contains('is not a fraction of a chapter'),
+        );
+      }
+    });
+
+    test('a book from a backup older than kinds is an audiobook', () {
+      final message = unwrap(encodeBackup(fullLibrary(), info: info))
+        ..formatVersion = 2
+        ..minReaderVersion = 1;
+      message.books.single.clearKind();
+
+      final decoded = decodeBackup(wrap(message));
+      expect(decoded.library.books.single.kind, SourceKind.audio);
     });
 
     test(

@@ -15,6 +15,19 @@ import 'dart:convert' as $convert;
 import 'dart:core' as $core;
 import 'dart:typed_data' as $typed_data;
 
+@$core.Deprecated('Use bookKindDescriptor instead')
+const BookKind$json = {
+  '1': 'BookKind',
+  '2': [
+    {'1': 'BOOK_KIND_AUDIO', '2': 0},
+    {'1': 'BOOK_KIND_TEXT', '2': 1},
+  ],
+};
+
+/// Descriptor for `BookKind`. Decode as a `google.protobuf.EnumDescriptorProto`.
+final $typed_data.Uint8List bookKindDescriptor = $convert.base64Decode(
+    'CghCb29rS2luZBITCg9CT09LX0tJTkRfQVVESU8QABISCg5CT09LX0tJTkRfVEVYVBAB');
+
 @$core.Deprecated('Use contributorRoleDescriptor instead')
 const ContributorRole$json = {
   '1': 'ContributorRole',
@@ -358,6 +371,22 @@ const Book$json = {
       '10': 'bookmarks'
     },
     {'1': 'categories', '3': 33, '4': 3, '5': 9, '10': 'categories'},
+    {
+      '1': 'kind',
+      '3': 34,
+      '4': 1,
+      '5': 14,
+      '6': '.kikuyomi.backup.BookKind',
+      '10': 'kind'
+    },
+    {
+      '1': 'reading_state',
+      '3': 35,
+      '4': 1,
+      '5': 11,
+      '6': '.kikuyomi.backup.ReadingState',
+      '10': 'readingState'
+    },
   ],
   '8': [
     {'1': '_subtitle'},
@@ -406,12 +435,14 @@ final $typed_data.Uint8List bookDescriptor = $convert.base64Decode(
     'RhdGVSDXBsYXliYWNrU3RhdGUSUAoSbGlzdGVuaW5nX3Nlc3Npb25zGB8gAygLMiEua2lrdXlv'
     'bWkuYmFja3VwLkxpc3RlbmluZ1Nlc3Npb25SEWxpc3RlbmluZ1Nlc3Npb25zEjcKCWJvb2ttYX'
     'JrcxggIAMoCzIZLmtpa3V5b21pLmJhY2t1cC5Cb29rbWFya1IJYm9va21hcmtzEh4KCmNhdGVn'
-    'b3JpZXMYISADKAlSCmNhdGVnb3JpZXNCCwoJX3N1YnRpdGxlQg4KDF9kZXNjcmlwdGlvbkIMCg'
-    'pfY292ZXJfdXJsQg4KDF9zZXJpZXNfbmFtZUIPCg1fc2VyaWVzX2luZGV4QgsKCV9sYW5ndWFn'
-    'ZUIMCgpfcHVibGlzaGVyQhEKD19wdWJsaXNoZWRfZGF0ZUIHCgVfaXNibkILCglfYWJyaWRnZW'
-    'RCCQoHX3N0YXR1c0IRCg9fY29udGVudF9yYXRpbmdCFAoSX3RvdGFsX2R1cmF0aW9uX21zQgoK'
-    'CF93ZWJfdXJsQhMKEV9kYXRlX2FkZGVkX2F0X21zQhcKFV9sYXN0X3JlZnJlc2hlZF9hdF9tc0'
-    'IRCg9fcGxheWJhY2tfc3BlZWQ=');
+    'b3JpZXMYISADKAlSCmNhdGVnb3JpZXMSLQoEa2luZBgiIAEoDjIZLmtpa3V5b21pLmJhY2t1cC'
+    '5Cb29rS2luZFIEa2luZBJCCg1yZWFkaW5nX3N0YXRlGCMgASgLMh0ua2lrdXlvbWkuYmFja3Vw'
+    'LlJlYWRpbmdTdGF0ZVIMcmVhZGluZ1N0YXRlQgsKCV9zdWJ0aXRsZUIOCgxfZGVzY3JpcHRpb2'
+    '5CDAoKX2NvdmVyX3VybEIOCgxfc2VyaWVzX25hbWVCDwoNX3Nlcmllc19pbmRleEILCglfbGFu'
+    'Z3VhZ2VCDAoKX3B1Ymxpc2hlckIRCg9fcHVibGlzaGVkX2RhdGVCBwoFX2lzYm5CCwoJX2Ficm'
+    'lkZ2VkQgkKB19zdGF0dXNCEQoPX2NvbnRlbnRfcmF0aW5nQhQKEl90b3RhbF9kdXJhdGlvbl9t'
+    'c0IKCghfd2ViX3VybEITChFfZGF0ZV9hZGRlZF9hdF9tc0IXChVfbGFzdF9yZWZyZXNoZWRfYX'
+    'RfbXNCEQoPX3BsYXliYWNrX3NwZWVk');
 
 @$core.Deprecated('Use contributorDescriptor instead')
 const Contributor$json = {
@@ -681,6 +712,21 @@ final $typed_data.Uint8List playbackStateDescriptor = $convert.base64Decode(
     'B0ZXJfcG9zaXRpb25fbXMYAiABKANSEWNoYXB0ZXJQb3NpdGlvbk1zEiwKEmdsb2JhbF9wb3Np'
     'dGlvbl9tcxgDIAEoA1IQZ2xvYmFsUG9zaXRpb25NcxIiCg11cGRhdGVkX2F0X21zGAQgASgDUg'
     't1cGRhdGVkQXRNcxIbCglkZXZpY2VfaWQYBSABKAlSCGRldmljZUlk');
+
+@$core.Deprecated('Use readingStateDescriptor instead')
+const ReadingState$json = {
+  '1': 'ReadingState',
+  '2': [
+    {'1': 'chapter_key', '3': 1, '4': 1, '5': 9, '10': 'chapterKey'},
+    {'1': 'progress', '3': 2, '4': 1, '5': 1, '10': 'progress'},
+    {'1': 'updated_at_ms', '3': 3, '4': 1, '5': 3, '10': 'updatedAtMs'},
+  ],
+};
+
+/// Descriptor for `ReadingState`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List readingStateDescriptor = $convert.base64Decode(
+    'CgxSZWFkaW5nU3RhdGUSHwoLY2hhcHRlcl9rZXkYASABKAlSCmNoYXB0ZXJLZXkSGgoIcHJvZ3'
+    'Jlc3MYAiABKAFSCHByb2dyZXNzEiIKDXVwZGF0ZWRfYXRfbXMYAyABKANSC3VwZGF0ZWRBdE1z');
 
 @$core.Deprecated('Use listeningSessionDescriptor instead')
 const ListeningSession$json = {

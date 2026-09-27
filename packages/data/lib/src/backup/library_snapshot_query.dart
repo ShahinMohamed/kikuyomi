@@ -67,6 +67,10 @@ Future<LibrarySnapshot> readLibrarySnapshot(KikuyomiDatabase db) async {
     for (final state in await db.select(db.playbackStates).get())
       state.bookId: state,
   };
+  final readingByBook = {
+    for (final state in await db.select(db.readingStates).get())
+      state.bookId: state,
+  };
   final sessionsByBook = _groupBy(
     await db.select(db.listeningSessions).get(),
     (session) => session.bookId,
@@ -126,6 +130,7 @@ Future<LibrarySnapshot> readLibrarySnapshot(KikuyomiDatabase db) async {
         );
 
     final progress = progressByBook[book.id];
+    final reading = readingByBook[book.id];
 
     return BookSnapshot(
       sourceId: book.sourceId,
@@ -155,6 +160,7 @@ Future<LibrarySnapshot> readLibrarySnapshot(KikuyomiDatabase db) async {
       lastRefreshedAt: book.lastRefreshedAt,
       detailsFetched: book.detailsFetched,
       playbackSpeed: book.playbackSpeed,
+      kind: book.kind,
       createdAt: book.createdAt,
       updatedAt: book.updatedAt,
       mediaFiles: [
@@ -205,6 +211,13 @@ Future<LibrarySnapshot> readLibrarySnapshot(KikuyomiDatabase db) async {
               globalPositionMs: progress.globalPositionMs,
               updatedAt: progress.updatedAt,
               deviceId: progress.deviceId,
+            ),
+      reading: reading == null
+          ? null
+          : ReadingSnapshot(
+              chapterKey: chapterKeys[reading.chapterId]!,
+              progress: reading.progress,
+              updatedAt: reading.updatedAt,
             ),
       sessions: sessions,
       bookmarks: bookmarks,

@@ -19,6 +19,7 @@ import 'dart:typed_data';
 
 import 'package:fixnum/fixnum.dart';
 import 'package:kikuyomi_domain/kikuyomi_domain.dart';
+import 'package:kikuyomi_source_api/kikuyomi_source_api.dart' show SourceKind;
 import 'package:protobuf/protobuf.dart';
 
 import 'generated/backup.pb.dart' as pb;
@@ -29,7 +30,7 @@ import 'gzip_frame.dart';
 /// Raise it with every change to `proto/backup.proto` that a reader could care about, additive or
 /// not, including a change in what a field means. `proto/backup.proto` lists what each version
 /// changed.
-const backupFormatVersion = 2;
+const backupFormatVersion = 3;
 
 /// The first format version whose chapters' `is_listened` is recorded, and so to be restored as
 /// written (§4.5).
@@ -39,13 +40,20 @@ const backupFormatVersion = 2;
 /// from its positions instead; see `RestorePlan.listenedFromPositions`.
 const backupListenedRecordedSince = 2;
 
-/// The `min_reader_version` this build writes: the oldest format version whose readers still
-/// restore its backups correctly.
+/// The `min_reader_version` this build writes for a backup of audiobooks alone: the oldest format
+/// version whose readers still restore it correctly.
 ///
 /// Additive changes leave it alone, which is what keeps newer backups readable by older builds, as
 /// ADR-0008 requires. Raise it only for a change an older reader would get silently wrong by
 /// skipping fields it does not know. That should be rare enough to deserve its own ADR.
 const backupMinReaderVersion = 1;
+
+/// The `min_reader_version` of a backup holding a book to read (ADR-0020).
+///
+/// A reader before format version 3 skips `Book.kind` and restores such a book as an audiobook,
+/// which is exactly the silent mistake the field exists to prevent. So it is raised, but only for a
+/// backup where the mistake could happen: one of audiobooks alone stays readable by older builds.
+const backupMinReaderVersionWithText = 3;
 
 /// Who wrote a backup, and when.
 final class BackupInfo {
@@ -126,7 +134,9 @@ final class UnsupportedBackupVersionException extends BackupException {
 Uint8List encodeBackup(LibrarySnapshot library, {required BackupInfo info}) {
   final message = pb.Backup(
     formatVersion: backupFormatVersion,
-    minReaderVersion: backupMinReaderVersion,
+    minReaderVersion: library.books.any((book) => book.kind == SourceKind.text)
+        ? backupMinReaderVersionWithText
+        : backupMinReaderVersion,
     createdAtMs: _ms(info.createdAt),
     appVersion: info.appVersion,
     deviceId: info.deviceId,
@@ -376,6 +386,18 @@ pb.Book _encodeBook(BookSnapshot book) {
     lastRefreshedAtMs: _optionalMs(book.lastRefreshedAt),
     detailsFetched: book.detailsFetched,
     playbackSpeed: book.playbackSpeed,
+    kind: switch (book.kind) {
+      SourceKind.audio => pb.BookKind.BOOK_KIND_AUDIO,
+      SourceKind.text => pb.BookKind.BOOK_KIND_TEXT,
+    },
+    readingState: switch (book.reading) {
+      final reading? => pb.ReadingState(
+        chapterKey: reading.chapterKey,
+        progress: reading.progress,
+        updatedAtMs: _ms(reading.updatedAt),
+      ),
+      null => null,
+    },
     createdAtMs: _ms(book.createdAt),
     updatedAtMs: _ms(book.updatedAt),
     mediaFiles: book.mediaFiles.map(_encodeFile),
@@ -635,6 +657,15 @@ final class _Decoder {
       ).firstOrNull;
     }
 
+    ReadingSnapshot? reading;
+    if (book.hasReadingState()) {
+      reading = _each(
+        [book.readingState],
+        describe: (_) => 'the reading position of $what',
+        decode: (state) => _reading(state, chapterKeys),
+      ).firstOrNull;
+    }
+
     final sessions = _each(
       book.listeningSessions,
       describe: (_) => 'a listening session of $what',
@@ -668,11 +699,18 @@ final class _Decoder {
       lastRefreshedAt: lastRefreshedAt,
       detailsFetched: book.detailsFetched,
       playbackSpeed: playbackSpeed,
+      kind: switch (book.kind) {
+        pb.BookKind.BOOK_KIND_TEXT => SourceKind.text,
+        // A kind from a newer build arrives here as the default. A backup holding one names a
+        // `min_reader_version` this build cannot meet, and is refused before it is read.
+        _ => SourceKind.audio,
+      },
       createdAt: createdAt,
       updatedAt: updatedAt,
       mediaFiles: mediaFiles,
       chapters: chapters,
       progress: progress,
+      reading: reading,
       sessions: sessions,
       bookmarks: bookmarks,
       categories: List.unmodifiable(memberships),
@@ -780,6 +818,21 @@ final class _Decoder {
       globalPositionMs: _nonNegative(state.globalPositionMs, 'its position'),
       updatedAt: _time(state.updatedAtMs),
       deviceId: state.deviceId,
+    );
+  }
+
+  ReadingSnapshot _reading(pb.ReadingState state, Set<String> chapterKeys) {
+    if (!chapterKeys.contains(state.chapterKey)) {
+      throw _Skip('its chapter "${state.chapterKey}" is not in the backup');
+    }
+    // A place outside the chapter is not a place, and NaN compares false with everything.
+    if (!(state.progress >= 0 && state.progress <= 1)) {
+      throw _Skip('${state.progress} is not a fraction of a chapter');
+    }
+    return ReadingSnapshot(
+      chapterKey: state.chapterKey,
+      progress: state.progress,
+      updatedAt: _time(state.updatedAtMs),
     );
   }
 

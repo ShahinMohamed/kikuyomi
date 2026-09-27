@@ -2198,10 +2198,475 @@ i1.GeneratedColumn<String> _column_104(String aliasedName) =>
       type: i1.DriftSqlType.string,
       $customConstraints: 'NULL',
     );
+
+final class Schema5 extends i0.VersionedSchema {
+  Schema5({required super.database}) : super(version: 5);
+  @override
+  late final List<i1.DatabaseSchemaEntity> entities = [
+    sources,
+    books,
+    people,
+    bookPeople,
+    chapters,
+    mediaFiles,
+    chapterSegments,
+    playbackStates,
+    readingStates,
+    listeningSessions,
+    bookmarks,
+    categories,
+    bookCategories,
+    repositories,
+    extensions,
+    extensionPreferences,
+    downloadTasks,
+    booksLibrary,
+    chaptersOrder,
+    playbackStatesRecent,
+    readingStatesRecent,
+    listeningSessionsStarted,
+    downloadTasksPending,
+  ];
+  late final Shape0 sources = Shape0(
+    source: i0.VersionedTable(
+      entityName: 'sources',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY(id)'],
+      columns: [
+        _column_0,
+        _column_1,
+        _column_2,
+        _column_3,
+        _column_4,
+        _column_5,
+        _column_6,
+        _column_7,
+        _column_8,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape16 books = Shape16(
+    source: i0.VersionedTable(
+      entityName: 'books',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['UNIQUE(source_id, "key")'],
+      columns: [
+        _column_9,
+        _column_10,
+        _column_2,
+        _column_11,
+        _column_12,
+        _column_13,
+        _column_14,
+        _column_15,
+        _column_16,
+        _column_17,
+        _column_18,
+        _column_19,
+        _column_20,
+        _column_21,
+        _column_22,
+        _column_23,
+        _column_24,
+        _column_25,
+        _column_5,
+        _column_26,
+        _column_27,
+        _column_28,
+        _column_29,
+        _column_30,
+        _column_31,
+        _column_32,
+        _column_33,
+        _column_105,
+        _column_34,
+        _column_35,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape2 people = Shape2(
+    source: i0.VersionedTable(
+      entityName: 'people',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: [],
+      columns: [_column_9, _column_36],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape3 bookPeople = Shape3(
+    source: i0.VersionedTable(
+      entityName: 'book_people',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY(book_id, person_id, role)'],
+      columns: [_column_37, _column_38, _column_39, _column_40],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape4 chapters = Shape4(
+    source: i0.VersionedTable(
+      entityName: 'chapters',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['UNIQUE(book_id, "key")'],
+      columns: [
+        _column_9,
+        _column_37,
+        _column_2,
+        _column_11,
+        _column_41,
+        _column_42,
+        _column_43,
+        _column_44,
+        _column_45,
+        _column_46,
+        _column_47,
+        _column_48,
+        _column_34,
+        _column_35,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape5 mediaFiles = Shape5(
+    source: i0.VersionedTable(
+      entityName: 'media_files',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['UNIQUE(book_id, file_key)'],
+      columns: [
+        _column_9,
+        _column_37,
+        _column_49,
+        _column_50,
+        _column_43,
+        _column_51,
+        _column_52,
+        _column_53,
+        _column_54,
+        _column_55,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape6 chapterSegments = Shape6(
+    source: i0.VersionedTable(
+      entityName: 'chapter_segments',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY(chapter_id, ordinal)'],
+      columns: [_column_56, _column_40, _column_57, _column_58, _column_59],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape7 playbackStates = Shape7(
+    source: i0.VersionedTable(
+      entityName: 'playback_states',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY(book_id)'],
+      columns: [
+        _column_37,
+        _column_60,
+        _column_61,
+        _column_62,
+        _column_35,
+        _column_63,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape17 readingStates = Shape17(
+    source: i0.VersionedTable(
+      entityName: 'reading_states',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY(book_id)'],
+      columns: [_column_37, _column_60, _column_106, _column_35],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape8 listeningSessions = Shape8(
+    source: i0.VersionedTable(
+      entityName: 'listening_sessions',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: [],
+      columns: [
+        _column_9,
+        _column_37,
+        _column_64,
+        _column_65,
+        _column_66,
+        _column_67,
+        _column_68,
+        _column_69,
+        _column_63,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape9 bookmarks = Shape9(
+    source: i0.VersionedTable(
+      entityName: 'bookmarks',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: [],
+      columns: [
+        _column_9,
+        _column_37,
+        _column_60,
+        _column_70,
+        _column_71,
+        _column_72,
+        _column_34,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape10 categories = Shape10(
+    source: i0.VersionedTable(
+      entityName: 'categories',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: [],
+      columns: [_column_9, _column_3, _column_73, _column_74],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape11 bookCategories = Shape11(
+    source: i0.VersionedTable(
+      entityName: 'book_categories',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY(book_id, category_id)'],
+      columns: [_column_37, _column_75],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape15 repositories = Shape15(
+    source: i0.VersionedTable(
+      entityName: 'repositories',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['UNIQUE(url)'],
+      columns: [
+        _column_9,
+        _column_100,
+        _column_3,
+        _column_101,
+        _column_102,
+        _column_103,
+        _column_104,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape12 extensions = Shape12(
+    source: i0.VersionedTable(
+      entityName: 'extensions',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY(id)'],
+      columns: [
+        _column_76,
+        _column_3,
+        _column_77,
+        _column_78,
+        _column_79,
+        _column_80,
+        _column_81,
+        _column_82,
+        _column_83,
+        _column_84,
+        _column_85,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape13 extensionPreferences = Shape13(
+    source: i0.VersionedTable(
+      entityName: 'extension_preferences',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY(extension_id, "key")'],
+      columns: [_column_86, _column_2, _column_87],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape14 downloadTasks = Shape14(
+    source: i0.VersionedTable(
+      entityName: 'download_tasks',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['UNIQUE(media_file_id)'],
+      columns: [
+        _column_9,
+        _column_88,
+        _column_89,
+        _column_90,
+        _column_91,
+        _column_92,
+        _column_93,
+        _column_94,
+        _column_95,
+        _column_96,
+        _column_97,
+        _column_98,
+        _column_99,
+        _column_34,
+        _column_35,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  final i1.Index booksLibrary = i1.Index(
+    'books_library',
+    'CREATE INDEX books_library ON books (in_library, date_added)',
+  );
+  final i1.Index chaptersOrder = i1.Index(
+    'chapters_order',
+    'CREATE INDEX chapters_order ON chapters (book_id, source_index)',
+  );
+  final i1.Index playbackStatesRecent = i1.Index(
+    'playback_states_recent',
+    'CREATE INDEX playback_states_recent ON playback_states (updated_at)',
+  );
+  final i1.Index readingStatesRecent = i1.Index(
+    'reading_states_recent',
+    'CREATE INDEX reading_states_recent ON reading_states (updated_at)',
+  );
+  final i1.Index listeningSessionsStarted = i1.Index(
+    'listening_sessions_started',
+    'CREATE INDEX listening_sessions_started ON listening_sessions (started_at)',
+  );
+  final i1.Index downloadTasksPending = i1.Index(
+    'download_tasks_pending',
+    'CREATE INDEX download_tasks_pending ON download_tasks (state, priority)',
+  );
+}
+
+class Shape16 extends i0.VersionedTable {
+  Shape16({required super.source, required super.alias}) : super.aliased();
+  i1.GeneratedColumn<int> get id =>
+      columnsByName['id']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<int> get sourceId =>
+      columnsByName['source_id']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<String> get key =>
+      columnsByName['key']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get title =>
+      columnsByName['title']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get subtitle =>
+      columnsByName['subtitle']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get description =>
+      columnsByName['description']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get coverUrl =>
+      columnsByName['cover_url']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get coverLocalPath =>
+      columnsByName['cover_local_path']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get coverUpdatedAt =>
+      columnsByName['cover_updated_at']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get seriesName =>
+      columnsByName['series_name']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<double> get seriesIndex =>
+      columnsByName['series_index']! as i1.GeneratedColumn<double>;
+  i1.GeneratedColumn<String> get genres =>
+      columnsByName['genres']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get language =>
+      columnsByName['language']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get publisher =>
+      columnsByName['publisher']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get publishedDate =>
+      columnsByName['published_date']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get isbn =>
+      columnsByName['isbn']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<int> get abridged =>
+      columnsByName['abridged']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<String> get status =>
+      columnsByName['status']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get contentRating =>
+      columnsByName['content_rating']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<int> get totalDurationMs =>
+      columnsByName['total_duration_ms']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<String> get webUrl =>
+      columnsByName['web_url']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<int> get inLibrary =>
+      columnsByName['in_library']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<String> get dateAdded =>
+      columnsByName['date_added']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get lastRefreshedAt =>
+      columnsByName['last_refreshed_at']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<int> get detailsFetched =>
+      columnsByName['details_fetched']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<String> get userOverrides =>
+      columnsByName['user_overrides']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<double> get playbackSpeed =>
+      columnsByName['playback_speed']! as i1.GeneratedColumn<double>;
+  i1.GeneratedColumn<String> get kind =>
+      columnsByName['kind']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get createdAt =>
+      columnsByName['created_at']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get updatedAt =>
+      columnsByName['updated_at']! as i1.GeneratedColumn<String>;
+}
+
+i1.GeneratedColumn<String> _column_105(String aliasedName) =>
+    i1.GeneratedColumn<String>(
+      'kind',
+      aliasedName,
+      false,
+      type: i1.DriftSqlType.string,
+      $customConstraints: 'NOT NULL DEFAULT \'audio\'',
+      defaultValue: const i1.CustomExpression('\'audio\''),
+    );
+
+class Shape17 extends i0.VersionedTable {
+  Shape17({required super.source, required super.alias}) : super.aliased();
+  i1.GeneratedColumn<int> get bookId =>
+      columnsByName['book_id']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<int> get chapterId =>
+      columnsByName['chapter_id']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<double> get progress =>
+      columnsByName['progress']! as i1.GeneratedColumn<double>;
+  i1.GeneratedColumn<String> get updatedAt =>
+      columnsByName['updated_at']! as i1.GeneratedColumn<String>;
+}
+
+i1.GeneratedColumn<double> _column_106(String aliasedName) =>
+    i1.GeneratedColumn<double>(
+      'progress',
+      aliasedName,
+      false,
+      type: i1.DriftSqlType.double,
+      $customConstraints: 'NOT NULL',
+    );
 i0.MigrationStepWithVersion migrationSteps({
   required Future<void> Function(i1.Migrator m, Schema2 schema) from1To2,
   required Future<void> Function(i1.Migrator m, Schema3 schema) from2To3,
   required Future<void> Function(i1.Migrator m, Schema4 schema) from3To4,
+  required Future<void> Function(i1.Migrator m, Schema5 schema) from4To5,
 }) {
   return (currentVersion, database) async {
     switch (currentVersion) {
@@ -2220,6 +2685,11 @@ i0.MigrationStepWithVersion migrationSteps({
         final migrator = i1.Migrator(database, schema);
         await from3To4(migrator, schema);
         return 4;
+      case 4:
+        final schema = Schema5(database: database);
+        final migrator = i1.Migrator(database, schema);
+        await from4To5(migrator, schema);
+        return 5;
       default:
         throw ArgumentError.value('Unknown migration from $currentVersion');
     }
@@ -2230,10 +2700,12 @@ i1.OnUpgrade stepByStep({
   required Future<void> Function(i1.Migrator m, Schema2 schema) from1To2,
   required Future<void> Function(i1.Migrator m, Schema3 schema) from2To3,
   required Future<void> Function(i1.Migrator m, Schema4 schema) from3To4,
+  required Future<void> Function(i1.Migrator m, Schema5 schema) from4To5,
 }) => i0.VersionedSchema.stepByStepHelper(
   step: migrationSteps(
     from1To2: from1To2,
     from2To3: from2To3,
     from3To4: from3To4,
+    from4To5: from4To5,
   ),
 );

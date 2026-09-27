@@ -21,6 +21,9 @@ dependencies:
   fixnum: ^1.1.0
   kikuyomi_domain:
     path: ../domain
+  # SourceKind, which a book in a backup carries (ADR-0019).
+  kikuyomi_source_api:
+    path: ../source_api
   # Runtime for the code generated from proto/backup.proto (ADR-0008). Pure Dart, so it runs on
   # Android, iOS and Windows alike.
   protobuf: ^6.1.0

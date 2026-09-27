@@ -517,6 +517,9 @@ final class AppServices {
       chapters: chapters,
       clock: clock,
       addToLibrary: true,
+      // The source's kind, which is what puts a novel on the Reading shelf rather than beside the
+      // audiobooks. A stub has no manifest to say, and every stub predates reading, so audio.
+      kind: sources.describe(sourceId)?.kind ?? api.SourceKind.audio,
     );
     unawaited(
       lookForMissingCovers(

@@ -7,8 +7,11 @@
 /// survives a restart, and `extension_preference`, so that what an extension stores does too.
 ///
 /// Version 3 adds `download_task`, the queue that makes a book playable with no network (§5.2).
-/// `repository` follows with the repository door, and `smart_collection` and the `book_fts`
-/// full-text index in Phase 4.
+/// Version 4 adds `repository`, for the repository door.
+///
+/// Version 5 makes room for reading (ADR-0019): `book.kind`, and `reading_state`. One model with a
+/// kind rather than a parallel set of tables, which is §1.2's lesson from Aniyomi taken literally.
+/// `smart_collection` and the `book_fts` full-text index follow in Phase 4.
 ///
 /// Row classes are named `…Row`. §4.1 keeps database records, domain entities and extension DTOs as
 /// three separate types, and the suffix keeps a record from being mistaken for an entity.
@@ -16,6 +19,7 @@ library;
 
 import 'package:drift/drift.dart';
 import 'package:kikuyomi_domain/kikuyomi_domain.dart';
+import 'package:kikuyomi_source_api/kikuyomi_source_api.dart' show SourceKind;
 
 import 'converters.dart';
 
@@ -85,6 +89,15 @@ class Books extends Table {
 
   /// §4.3: playback speed is remembered per book.
   RealColumn get playbackSpeed => real().nullable()();
+
+  /// A book to listen to or a book to read (version 5, ADR-0019).
+  ///
+  /// On the book and not taken from its source, because the Local source offers both: a folder of
+  /// audio files and an EPUB are both books from this device. Every book that existed before
+  /// version 5 is audio, which is what the default says, so the migration writes nothing.
+  TextColumn get kind =>
+      textEnum<SourceKind>().withDefault(const Constant('audio'))();
+
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
 
@@ -223,6 +236,35 @@ class PlaybackStates extends Table {
   IntColumn get globalPositionMs => integer()();
   DateTimeColumn get updatedAt => dateTime()();
   TextColumn get deviceId => text()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {bookId};
+}
+
+/// One row per book being read: where the reader is (version 5, ADR-0019).
+///
+/// Its own table rather than `playback_state`'s, whose columns are shaped for audio — a global
+/// position derived from a Timeline, a speed, a device's queue — and would mean nothing for half its
+/// rows. The shapes are otherwise the same on purpose: one row per book, and a chapter the database
+/// refuses to lose while it holds someone's place.
+@DataClassName('ReadingStateRow')
+@TableIndex(name: 'reading_states_recent', columns: {#updatedAt})
+class ReadingStates extends Table {
+  IntColumn get bookId =>
+      integer().references(Books, #id, onDelete: KeyAction.cascade)();
+
+  /// Not cascading, for `playback_state`'s reason: the database refuses to delete a chapter that holds
+  /// a reader's place. A sync never deletes one anyway — a chapter a source drops is marked
+  /// `removed_from_source` — so this only ever stops a mistake.
+  IntColumn get chapterId => integer().references(Chapters, #id)();
+
+  /// How far through the chapter, from 0 at its start to 1 at its end.
+  ///
+  /// A fraction rather than characters or pixels, because it has to survive the reader changing the
+  /// font size or turning the phone round, and neither of those should move anyone's place.
+  RealColumn get progress => real()();
+
+  DateTimeColumn get updatedAt => dateTime()();
 
   @override
   Set<Column<Object>> get primaryKey => {bookId};

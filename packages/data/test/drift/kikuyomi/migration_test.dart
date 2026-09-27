@@ -12,11 +12,14 @@ import 'package:drift/drift.dart';
 import 'package:drift_dev/api/migrations_native.dart';
 import 'package:kikuyomi_data/kikuyomi_data.dart';
 import 'package:kikuyomi_domain/kikuyomi_domain.dart';
+import 'package:kikuyomi_source_api/kikuyomi_source_api.dart' show SourceKind;
 import 'package:test/test.dart';
 
 import 'generated/schema.dart';
 import 'generated/schema_v1.dart' as v1;
 import 'generated/schema_v2.dart' as v2;
+import 'generated/schema_v4.dart' as v4;
+import 'generated/schema_v5.dart' as v5;
 
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -310,6 +313,131 @@ void main() {
           ),
       throwsA(anything),
       reason: 'one address is one repository',
+    );
+  });
+
+  test('upgrading to version 5 leaves every book an audiobook', () async {
+    // Version 5 adds `book.kind` with a default of audio, which is what every book written before it
+    // is. The column must arrive filled in without the migration writing a single row, and nothing
+    // else about the book may move. Carried through with real values in every column a listener
+    // would notice.
+    final source = v4.SourcesData(
+      id: 7,
+      extensionId: 'org.example.librivox',
+      key: 'librivox',
+      name: 'LibriVox',
+      lang: 'en',
+      isEnabled: 1,
+      isPinned: 0,
+    );
+    final book = v4.BooksData(
+      id: 1,
+      sourceId: 7,
+      key: 'a-book',
+      title: 'A Book',
+      genres: '["Fiction"]',
+      inLibrary: 1,
+      detailsFetched: 1,
+      userOverrides: '[]',
+      playbackSpeed: 1.25,
+      createdAt: _at,
+      updatedAt: _at,
+    );
+
+    await verifier.testWithDataIntegrity(
+      oldVersion: 4,
+      newVersion: 5,
+      createOld: v4.DatabaseAtV4.new,
+      createNew: v5.DatabaseAtV5.new,
+      openTestedDatabase: KikuyomiDatabase.new,
+      createItems: (batch, db) {
+        batch.insert(db.sources, source);
+        batch.insert(db.books, book);
+      },
+      validateItems: (db) async {
+        final migrated = await db.select(db.books).getSingle();
+        expect(migrated.kind, 'audio');
+        expect(migrated.title, book.title);
+        expect(migrated.playbackSpeed, 1.25);
+        expect(migrated.inLibrary, 1);
+        expect(migrated.createdAt, _at);
+        expect(
+          await db.select(db.readingStates).get(),
+          isEmpty,
+          reason: 'nobody has read anything yet',
+        );
+      },
+    );
+  });
+
+  test("an upgraded library can hold a reader's place", () async {
+    // Version 5's other half, used for real: a book to read, a chapter, and where the reader is in
+    // it, with the connection's foreign keys on.
+    final schema = await verifier.schemaAt(1);
+    final db = KikuyomiDatabase(schema.newConnection());
+    addTearDown(db.close);
+    await verifier.migrateAndValidate(db, 5);
+
+    await db
+        .into(db.sources)
+        .insert(
+          const SourcesCompanion(
+            id: Value(9),
+            key: Value('novels'),
+            name: Value('Novels'),
+            lang: Value('en'),
+          ),
+        );
+    final book = await db
+        .into(db.books)
+        .insert(
+          BooksCompanion.insert(
+            sourceId: 9,
+            key: 'a-novel',
+            title: 'A Novel',
+            kind: const Value(SourceKind.text),
+            createdAt: _when,
+            updatedAt: _when,
+          ),
+        );
+    final chapter = await db
+        .into(db.chapters)
+        .insert(
+          ChaptersCompanion.insert(
+            bookId: book,
+            key: 'c1',
+            title: 'Chapter 1',
+            sourceIndex: 0,
+            createdAt: _when,
+            updatedAt: _when,
+          ),
+        );
+    await db
+        .into(db.readingStates)
+        .insert(
+          ReadingStatesCompanion.insert(
+            bookId: Value(book),
+            chapterId: chapter,
+            progress: 0.4,
+            updatedAt: _when,
+          ),
+        );
+
+    final stored = await db.select(db.readingStates).getSingle();
+    expect(stored.progress, 0.4);
+    expect((await db.select(db.books).getSingle()).kind, SourceKind.text);
+
+    await expectLater(
+      (db.delete(db.chapters)..where((c) => c.id.equals(chapter))).go(),
+      throwsA(anything),
+      reason: "a chapter holding a reader's place is not deleted from under it",
+    );
+
+    await (db.delete(db.books)..where((b) => b.id.equals(book))).go();
+    expect(
+      await db.select(db.readingStates).get(),
+      isEmpty,
+      reason: 'the place goes with the book',
     );
   });
 }

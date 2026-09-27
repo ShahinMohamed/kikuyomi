@@ -19,6 +19,8 @@
 /// afterwards.
 library;
 
+import 'package:kikuyomi_source_api/kikuyomi_source_api.dart' show SourceKind;
+
 import '../library/book_field.dart';
 import '../library/contributor_role.dart';
 import '../timeline/timeline_input.dart';
@@ -213,9 +215,11 @@ final class BookSnapshot {
     this.lastRefreshedAt,
     this.detailsFetched = false,
     this.playbackSpeed,
+    this.kind = SourceKind.audio,
     this.mediaFiles = const [],
     this.chapters = const [],
     this.progress,
+    this.reading,
     this.sessions = const [],
     this.bookmarks = const [],
     this.categories = const [],
@@ -239,6 +243,9 @@ final class BookSnapshot {
   /// §4.3: playback speed is remembered per book. Null when it was never changed.
   final double? playbackSpeed;
 
+  /// A book to listen to or a book to read (ADR-0019).
+  final SourceKind kind;
+
   final DateTime createdAt;
   final DateTime updatedAt;
   final List<MediaFileSnapshot> mediaFiles;
@@ -247,6 +254,9 @@ final class BookSnapshot {
   /// Where the book is up to, or null if it was never started.
   final ProgressSnapshot? progress;
 
+  /// Where the reader of a book to read is up to, or null if it was never opened.
+  final ReadingSnapshot? reading;
+
   final List<SessionSnapshot> sessions;
   final List<BookmarkSnapshot> bookmarks;
 
@@ -254,9 +264,11 @@ final class BookSnapshot {
   final List<String> categories;
 
   /// Whether the book holds anything of the user's beyond its place in the library: progress,
-  /// listening history, bookmarks, a started or listened chapter, or membership of a category.
+  /// a reading position, listening history, bookmarks, a started or listened chapter, or membership
+  /// of a category.
   bool get carriesUserData =>
       progress != null ||
+      reading != null ||
       sessions.isNotEmpty ||
       bookmarks.isNotEmpty ||
       categories.isNotEmpty ||
@@ -376,6 +388,23 @@ final class ProgressSnapshot {
 
   final DateTime updatedAt;
   final String deviceId;
+}
+
+/// Where the reader of a book is up to: §4.3's `reading_state` (ADR-0019).
+final class ReadingSnapshot {
+  const ReadingSnapshot({
+    required this.chapterKey,
+    required this.progress,
+    required this.updatedAt,
+  });
+
+  /// The [ChapterSnapshot.key] of a chapter of the same book.
+  final String chapterKey;
+
+  /// How far through the chapter, from 0 to 1.
+  final double progress;
+
+  final DateTime updatedAt;
 }
 
 /// One stretch of listening, for history and statistics.

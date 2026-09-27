@@ -2,6 +2,7 @@
 
 import 'package:kikuyomi_backup/kikuyomi_backup.dart';
 import 'package:kikuyomi_domain/kikuyomi_domain.dart';
+import 'package:kikuyomi_source_api/kikuyomi_source_api.dart' show SourceKind;
 
 final t0 = DateTime.utc(2026, 9, 1, 12);
 
@@ -70,6 +71,10 @@ LibrarySnapshot fullLibrary() => LibrarySnapshot(
       lastRefreshedAt: at(3),
       detailsFetched: true,
       playbackSpeed: 1.25,
+      // Text, because audio is the format's default and would not show up as written. A book to
+      // read has no use for playback progress, but the format has no rule against both, and this
+      // library's job is to fill every field.
+      kind: SourceKind.text,
       createdAt: at(4),
       updatedAt: at(5),
       mediaFiles: [
@@ -112,6 +117,11 @@ LibrarySnapshot fullLibrary() => LibrarySnapshot(
         globalPositionMs: 12345,
         updatedAt: at(11),
         deviceId: 'this-pc',
+      ),
+      reading: ReadingSnapshot(
+        chapterKey: 'one',
+        progress: 0.375,
+        updatedAt: at(15),
       ),
       sessions: [
         SessionSnapshot(

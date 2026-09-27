@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:kikuyomi_domain/kikuyomi_domain.dart';
+import 'package:kikuyomi_source_api/kikuyomi_source_api.dart' show SourceKind;
 
 import 'converters.dart';
 import 'database.steps.dart';
@@ -18,6 +19,7 @@ part 'database.g.dart';
     MediaFiles,
     ChapterSegments,
     PlaybackStates,
+    ReadingStates,
     ListeningSessions,
     Bookmarks,
     Categories,
@@ -34,7 +36,7 @@ class KikuyomiDatabase extends _$KikuyomiDatabase {
   KikuyomiDatabase(super.executor);
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -62,6 +64,14 @@ class KikuyomiDatabase extends _$KikuyomiDatabase {
       // is nothing to move into it.
       from3To4: (m, schema) async {
         await m.createTable(schema.repositories);
+      },
+      // Version 5 makes room for reading (ADR-0019). Every book written by an earlier version is an
+      // audiobook, which is what `kind`'s default says, so adding the column rewrites nothing; and
+      // nobody has read anything yet, so the new table starts empty.
+      from4To5: (m, schema) async {
+        await m.addColumn(schema.books, schema.books.kind);
+        await m.createTable(schema.readingStates);
+        await m.createIndex(schema.readingStatesRecent);
       },
     ),
     beforeOpen: (details) async {
