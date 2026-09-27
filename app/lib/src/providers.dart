@@ -256,6 +256,36 @@ final librarySortProvider = StreamProvider<LibrarySort>(
       .map((sort) => sort ?? LibrarySort.fallback),
 );
 
+/// The sources pinned to the top of Browse, watched, so pinning one moves it at once.
+final pinnedSourcesProvider = StreamProvider<List<int>>(
+  (ref) => ref
+      .watch(servicesProvider)
+      .settings
+      .watch(AppSettings.pinnedSources)
+      .map((ids) => ids ?? const []),
+);
+
+/// The sources most recently browsed, most recent first.
+final recentSourcesProvider = StreamProvider<List<int>>(
+  (ref) => ref
+      .watch(servicesProvider)
+      .settings
+      .watch(AppSettings.recentSources)
+      .map((ids) => ids ?? const []),
+);
+
+/// Where each installed extension's icon is on this device, by extension id (§3.3).
+///
+/// Derived from the extensions list rather than read from disk again: that list is already watched,
+/// already knows every install path, and already asked the disk. A source's row looks its icon up
+/// here by the extension it came from.
+final extensionIconsProvider = Provider<Map<String, String>>((ref) {
+  final extensions = ref.watch(extensionsProvider).value ?? const [];
+  return {
+    for (final extension in extensions) extension.id: ?extension.iconPath,
+  };
+});
+
 /// The repositories the listener has added, watched, so the screen follows an add or a removal
 /// (§3.8). What each one offers is not here: a listing is fetched rather than stored.
 final repositoriesProvider = StreamProvider<List<RepositoryRow>>(

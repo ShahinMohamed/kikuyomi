@@ -53,16 +53,33 @@ final class _Files implements ExtensionFiles {
   }
 }
 
-_Files inMemory({String? manifest, String? main}) => _Files({
+/// Stands in for a PNG. Nothing here decodes it: a package's icon is bytes to this code, and what
+/// draws it is a widget.
+const iconBytes = 'PNG-ish bytes';
+
+_Files inMemory({String? manifest, String? main, String? icon}) => _Files({
   if (manifest != null) 'manifest.json': manifest,
   if (main != null) 'main.js': main,
+  if (icon != null) 'icon.png': icon,
 });
+
+/// A manifest that names [code] and an icon, which is what a published package looks like.
+Map<String, Object?> manifestWithIcon({String icon = iconBytes}) =>
+    manifestData(
+      changed: {
+        'files': {
+          'main.js': sha256OfExtensionFile(utf8.encode(code)),
+          'icon.png': sha256OfExtensionFile(utf8.encode(icon)),
+        },
+      },
+    );
 
 /// Writes a package into [folder] and returns it.
 Future<Directory> writePackage(
   Directory folder, {
   String? manifest,
   String? main = code,
+  String? icon,
 }) async {
   await folder.create(recursive: true);
   if (manifest != null) {
@@ -72,6 +89,10 @@ Future<Directory> writePackage(
   if (main != null) {
     await File('${folder.path}${Platform.pathSeparator}main.js')
         .writeAsString(main);
+  }
+  if (icon != null) {
+    await File('${folder.path}${Platform.pathSeparator}icon.png')
+        .writeAsString(icon);
   }
   return folder;
 }
@@ -238,6 +259,84 @@ void main() {
     );
   });
 
+  group("a package's icon (§3.3)", () {
+    test('is read when the package has one', () async {
+      final package = await readExtensionPackage(
+        inMemory(
+          manifest: jsonEncode(manifestWithIcon()),
+          main: code,
+          icon: iconBytes,
+        ),
+        checkHashes: true,
+      );
+
+      expect(utf8.decode(package.icon!), iconBytes);
+    });
+
+    test('is absent, not a failure, when there is none', () async {
+      // An author has code long before they have artwork, and refusing to install over a missing
+      // icon would be refusing the install they make most.
+      final package = await readExtensionPackage(
+        inMemory(manifest: jsonEncode(manifestData()), main: code),
+        checkHashes: true,
+      );
+
+      expect(package.icon, isNull);
+    });
+
+    test('is not read for its hash when hashes are not checked', () async {
+      // A folder an author is editing: the manifest names the icon they had before their last save.
+      final package = await readExtensionPackage(
+        inMemory(
+          manifest: jsonEncode(manifestWithIcon()),
+          main: code,
+          icon: 'something else entirely',
+        ),
+        checkHashes: false,
+      );
+
+      expect(utf8.decode(package.icon!), 'something else entirely');
+    });
+
+    test('is refused when its bytes are not the ones named', () async {
+      // The same claim about `main.js` would be refused, and for the same reason: a package saying
+      // it contains a file it does not is a package that was tampered with or built wrong.
+      await expectLater(
+        readExtensionPackage(
+          inMemory(
+            manifest: jsonEncode(manifestWithIcon()),
+            main: code,
+            icon: 'not the icon that was published',
+          ),
+          checkHashes: true,
+        ),
+        throwsA(
+          isA<ExtensionPackageException>().having(
+            (e) => e.message,
+            'message',
+            contains('icon.png'),
+          ),
+        ),
+      );
+    });
+
+    test('is refused when the manifest names one the package lacks', () async {
+      await expectLater(
+        readExtensionPackage(
+          inMemory(manifest: jsonEncode(manifestWithIcon()), main: code),
+          checkHashes: true,
+        ),
+        throwsA(
+          isA<ExtensionPackageException>().having(
+            (e) => e.message,
+            'message',
+            contains('has none'),
+          ),
+        ),
+      );
+    });
+  });
+
   group('installing', () {
     late ExtensionInstallFolder installs;
 
@@ -270,6 +369,31 @@ void main() {
       );
       expect(installed.code, code);
       expect(installed.manifest.version.toString(), '1.4.0');
+    });
+
+    test('keeps the icon beside the code, so a list can draw it', () async {
+      final package = await readExtensionPackage(
+        DirectoryExtensionFiles(
+          await writePackage(
+            at('source'),
+            manifest: jsonEncode(manifestWithIcon()),
+            icon: iconBytes,
+          ),
+        ),
+        checkHashes: true,
+      );
+
+      final installPath = await installs.write(package);
+
+      expect(installs.iconAt(installPath)?.readAsStringSync(), iconBytes);
+    });
+
+    test('an extension with no icon leaves no file to find', () async {
+      final package = await packageIn(at('source'));
+
+      final installPath = await installs.write(package);
+
+      expect(installs.iconAt(installPath), isNull);
     });
 
     test('the copy outlives the folder it came from', () async {

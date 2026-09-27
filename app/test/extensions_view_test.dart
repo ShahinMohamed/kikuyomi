@@ -51,6 +51,7 @@ void main() {
   late List<String> removed;
   late List<String> updated;
   late List<String> rolledBack;
+  late int checked;
   late List<String?> consoles;
   late int pickerAsked;
   late int dropFolderAsked;
@@ -60,6 +61,7 @@ void main() {
     removed = [];
     updated = [];
     rolledBack = [];
+    checked = 0;
     consoles = [];
     pickerAsked = 0;
     dropFolderAsked = 0;
@@ -73,6 +75,7 @@ void main() {
     bool canChooseFolder = true,
     String? dropFolderName,
     String? busyWith,
+    bool checking = false,
   }) => tester.pumpWidget(
     MaterialApp(
       home: Scaffold(
@@ -90,6 +93,8 @@ void main() {
           onUpdate: (e) => updated.add(e.id),
           onRollBack: (e) => rolledBack.add(e.id),
           onOpenConsole: consoles.add,
+          onCheckForUpdates: () => checked++,
+          checking: checking,
         ),
       ),
     ),

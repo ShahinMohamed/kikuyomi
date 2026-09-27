@@ -1,83 +1,125 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kikuyomi_domain/kikuyomi_domain.dart';
 
 import 'app_shell.dart';
+import 'extensions_screen.dart';
 import 'providers.dart';
 import 'routes.dart';
 import 'sources/source_registry.dart';
+import 'sources_view.dart';
 
-/// Browse: every source the app knows of (§2.6).
+/// Browse: the sources you can read from, and the extensions they come from (§2.6, §3.9).
 ///
-/// The list is read from manifests alone, so opening this screen runs no extension code (§3.6).
-class BrowseScreen extends ConsumerWidget {
+/// Two tabs, because they are two different questions. Sources is "where shall I look for something
+/// to listen to", which is what a listener opens Browse for. Extensions is "what is installed", which
+/// is housekeeping — and it used to be a button in this screen's app bar, which made the thing you
+/// want most and the thing you want rarely look equally important.
+///
+/// The list of sources is read from manifests alone, so opening this screen runs no extension code
+/// (§3.6).
+class BrowseScreen extends ConsumerStatefulWidget {
   const BrowseScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) => AppShell(
-    tab: AppTab.browse,
-    appBar: AppBar(
-      title: const Text('Browse'),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.extension_outlined),
-          tooltip: 'Extensions',
-          onPressed: () => const ExtensionsRoute().push<void>(context),
-        ),
-      ],
-    ),
-    body: SourcesView(
-      // Watched, so a source installed on the Extensions screen is here when the listener comes back.
-      sources: ref.watch(sourceListProvider).value ?? const [],
-      onOpen: (source) => source.canBrowse
-          ? SourceRoute(sourceId: source.id).push<void>(context)
-          : const HomeRoute().go(context),
-    ),
-  );
+  ConsumerState<BrowseScreen> createState() => _BrowseScreenState();
 }
 
-/// The sources, as a list to choose from.
-///
-/// Fed with descriptions rather than watching the registry, so it can be tested without one.
-class SourcesView extends StatelessWidget {
-  const SourcesView({super.key, required this.sources, required this.onOpen});
+class _BrowseScreenState extends ConsumerState<BrowseScreen>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabs = TabController(length: 2, vsync: this)
+    ..addListener(() => setState(() {}));
 
-  final List<SourceDescription> sources;
-  final ValueChanged<SourceDescription> onOpen;
+  @override
+  void dispose() {
+    _tabs.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    if (sources.isEmpty) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(24),
-          child: Text(
-            'No sources yet. Extensions you install will appear here.',
-            textAlign: TextAlign.center,
-          ),
+    final onExtensions = _tabs.index == 1;
+    return AppShell(
+      tab: AppTab.browse,
+      appBar: AppBar(
+        title: const Text('Browse'),
+        // The actions belong to whichever tab is showing. Repositories and the console are about
+        // extensions and mean nothing beside a list of sources.
+        actions: onExtensions
+            ? [
+                IconButton(
+                  icon: const Icon(Icons.cloud_outlined),
+                  tooltip: 'Repositories',
+                  onPressed: () =>
+                      const RepositoriesRoute().push<void>(context),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.terminal),
+                  tooltip: 'Console',
+                  onPressed: () =>
+                      const ExtensionConsoleRoute().push<void>(context),
+                ),
+              ]
+            : const [],
+        bottom: TabBar(
+          controller: _tabs,
+          tabs: const [
+            Tab(text: 'Sources'),
+            Tab(text: 'Extensions'),
+          ],
         ),
-      );
-    }
-    return ListView.builder(
-      itemCount: sources.length,
-      itemBuilder: (context, index) {
-        final source = sources[index];
-        return ListTile(
-          leading: Icon(
-            source.canBrowse ? Icons.public : Icons.folder_outlined,
+      ),
+      body: TabBarView(
+        controller: _tabs,
+        children: [
+          SourcesView(
+            // Watched, so a source installed on the other tab is here when the listener comes back.
+            sources: ref.watch(sourceListProvider).value ?? const [],
+            icons: ref.watch(extensionIconsProvider),
+            pinned: ref.watch(pinnedSourcesProvider).value ?? const [],
+            recent: ref.watch(recentSourcesProvider).value ?? const [],
+            onOpen: _open,
+            onTogglePin: _togglePin,
           ),
-          title: Text(source.name),
-          subtitle: Text(_describe(source)),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () => onOpen(source),
-        );
-      },
+          const ExtensionsPanel(),
+        ],
+      ),
     );
   }
 
-  static String _describe(SourceDescription source) => source.canBrowse
-      ? '${_language(source.lang)} · ${source.extensionId}'
-      : 'Books you added from this device';
+  /// Opens a source, and remembers that it was the last one used.
+  ///
+  /// Recorded here rather than in the source's own screen: what this list wants to know is which
+  /// sources the listener reaches for, and reaching for one is this tap.
+  Future<void> _open(SourceDescription source) async {
+    if (!source.canBrowse) {
+      const HomeRoute().go(context);
+      return;
+    }
+    await _remember(source.id);
+    if (mounted) SourceRoute(sourceId: source.id).push<void>(context);
+  }
 
-  static String _language(String lang) =>
-      lang == 'multi' ? 'Several languages' : lang.toUpperCase();
+  Future<void> _remember(int sourceId) async {
+    final settings = ref.read(servicesProvider).settings;
+    final kept = settings.read(AppSettings.recentSources) ?? const <int>[];
+    // Most recent first, and short: this is a shortcut to the two or three a listener actually
+    // uses, not a record of everywhere they have been.
+    final next = [sourceId, ...kept.where((id) => id != sourceId)].take(4);
+    await settings.write(AppSettings.recentSources, next.toList());
+  }
+
+  Future<void> _togglePin(SourceDescription source) async {
+    final settings = ref.read(servicesProvider).settings;
+    final kept = settings.read(AppSettings.pinnedSources) ?? const <int>[];
+    await settings.write(
+      AppSettings.pinnedSources,
+      kept.contains(source.id)
+          ? [
+              for (final id in kept)
+                if (id != source.id) id,
+            ]
+          : [source.id, ...kept],
+    );
+  }
 }

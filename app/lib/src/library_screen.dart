@@ -146,30 +146,20 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 ],
               ),
             ],
-            IconButton(
-              tooltip: 'Downloads',
-              icon: const Icon(Icons.download_outlined),
-              onPressed: () => const DownloadsRoute().push<void>(context),
-            ),
-            PopupMenuButton<VoidCallback>(
-              tooltip: 'More',
-              onSelected: (action) => action(),
-              itemBuilder: (context) => [
-                if (locations.importFolderIsVisible)
+            // Downloads, History and Settings have left this bar: the first two are tabs of their
+            // own and the third is under More. What is left is the one action that belongs to the
+            // library itself, and it only appears where there is a folder to look in.
+            if (locations.importFolderIsVisible)
+              PopupMenuButton<VoidCallback>(
+                tooltip: 'More',
+                onSelected: (action) => action(),
+                itemBuilder: (context) => [
                   PopupMenuItem(
                     value: () => _lookForNewBooks(context, ref),
                     child: const Text('Look for new books'),
                   ),
-                PopupMenuItem(
-                  value: () => const HistoryRoute().push<void>(context),
-                  child: const Text('History'),
-                ),
-                PopupMenuItem(
-                  value: () => const SettingsRoute().push<void>(context),
-                  child: const Text('Settings'),
-                ),
-              ],
-            ),
+                ],
+              ),
           ],
         ),
         floatingActionButton: FloatingActionButton.extended(

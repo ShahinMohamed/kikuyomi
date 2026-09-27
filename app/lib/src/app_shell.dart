@@ -3,14 +3,23 @@ import 'package:go_router/go_router.dart';
 
 import 'routes.dart';
 
-/// The tabs of §2.6's adaptive shell, as far as there is one.
+/// The tabs of §2.6's adaptive shell.
 ///
-/// §2.6 has four — Library, Home, Browse and More — with Continue Listening on Home and Settings
-/// under More. Two exist so far: the library, which is still Home and Library in one screen, and
-/// Browse. Settings stays where it is, in the library's app bar, until More has more than it in it.
+/// §2.6 asks for Library, Home, Browse and More. What is here is those, with Home still folded into
+/// Library — Continue Listening sits at the top of the shelf — and with History and Downloads given
+/// tabs of their own rather than living under More.
+///
+/// That is a departure from the design and a deliberate one. Both were reached through the
+/// library's app bar, which is the wrong place for them twice over: they are not about the library,
+/// and an app bar is the one part of a screen that changes as you move around, so a button in it is
+/// somewhere a listener has to find rather than somewhere they know. Both are things a listener
+/// goes to directly and often, which is what a tab is for. More keeps what is genuinely occasional.
 enum AppTab {
   library('Library', Icons.library_books_outlined, Icons.library_books),
-  browse('Browse', Icons.explore_outlined, Icons.explore);
+  history('History', Icons.history_outlined, Icons.history),
+  browse('Browse', Icons.explore_outlined, Icons.explore),
+  downloads('Downloads', Icons.download_outlined, Icons.download),
+  more('More', Icons.more_horiz_outlined, Icons.more_horiz);
 
   const AppTab(this.label, this.icon, this.selectedIcon);
 
@@ -18,11 +27,14 @@ enum AppTab {
   final IconData icon;
   final IconData selectedIcon;
 
-  /// Where the tab goes. Browse sits under the home, so leaving it goes back to the library rather
-  /// than out of the app.
+  /// Where the tab goes. Every tab but the library sits under the home, so leaving one goes back to
+  /// the library rather than out of the app.
   String get location => switch (this) {
     AppTab.library => const HomeRoute().location,
+    AppTab.history => const HistoryRoute().location,
     AppTab.browse => const BrowseRoute().location,
+    AppTab.downloads => const DownloadsRoute().location,
+    AppTab.more => const MoreRoute().location,
   };
 }
 

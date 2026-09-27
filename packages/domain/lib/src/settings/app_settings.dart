@@ -70,6 +70,33 @@ abstract final class AppSettings {
     decode: LibrarySort.byName,
   );
 
+  /// The sources the listener has pinned to the top of Browse, most recently pinned first.
+  ///
+  /// By §3.7 source id, which is derived from the extension, the source key, the language and the
+  /// version id. That is exactly the right key: it survives a reinstall of the same extension, and
+  /// it changes when the source's identity does -- at which point a pin for what it used to be
+  /// should stop applying.
+  ///
+  /// An id here that no source has is ignored rather than cleaned up. An extension being reinstalled
+  /// should bring its pin back with it, which it cannot do if the pin was thrown away the first time
+  /// Browse was opened without it.
+  static const pinnedSources = Setting<List<int>>(
+    'browse.pinnedSources',
+    encode: _encodeIds,
+    decode: _decodeIds,
+  );
+
+  /// The sources most recently browsed, most recent first, so Browse can offer them first.
+  ///
+  /// Kept short by whoever writes it. This is a convenience and not history: what a listener
+  /// actually listened to is the library's, and this is only about which of a dozen sources they
+  /// reach for.
+  static const recentSources = Setting<List<int>>(
+    'browse.recentSources',
+    encode: _encodeIds,
+    decode: _decodeIds,
+  );
+
   /// Whether chapters listened to before listened state was recorded (§4.5) have been recorded from
   /// the positions saved in them. Not set until that has been done, which happens once: after it,
   /// a chapter the listener marks not listened stays so, wherever its position is.
@@ -91,6 +118,17 @@ abstract final class AppSettings {
 }
 
 String _text(String value) => value;
+
+String _encodeIds(List<int> ids) => ids.join(',');
+
+/// Ids as stored, dropping anything that is not one.
+///
+/// A value half this build can read is worth reading: a pin list with one unreadable entry should
+/// keep the other five rather than silently unpinning everything.
+List<int> _decodeIds(String stored) => [
+  for (final part in stored.split(','))
+    if (int.tryParse(part.trim()) case final id?) id,
+];
 
 String _encodeTime(DateTime time) => '${time.millisecondsSinceEpoch}';
 

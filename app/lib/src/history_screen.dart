@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kikuyomi_data/kikuyomi_data.dart';
 
+import 'app_shell.dart';
 import 'history_view.dart';
 import 'providers.dart';
 import 'routes.dart';
@@ -9,8 +10,10 @@ import 'snack_bars.dart';
 
 /// History: what has been listened to and when (§6.4).
 ///
-/// Reached from the library's app bar, with Downloads and Settings, because §2.6's More tab is where
-/// all three belong and it does not exist yet. The four tabs stay as the design has them.
+/// A tab of its own. It was reached through the library's app bar, which is the wrong place for it
+/// twice over: it is not about the library, and an app bar changes as you move around, so a button
+/// in one is somewhere to be found rather than somewhere known. What a listener has been listening
+/// to is something they come back to directly.
 ///
 /// Everything is watched, so a stretch recorded while the screen is open appears without a refresh
 /// (§2.5). Deleting is the only thing it does besides show, and it offers the two scopes a listener
@@ -23,7 +26,8 @@ class HistoryScreen extends ConsumerWidget {
     final history = ref.watch(listeningHistoryProvider);
     final covers = ref.watch(servicesProvider).covers;
 
-    return Scaffold(
+    return AppShell(
+      tab: AppTab.history,
       appBar: AppBar(
         title: const Text('History'),
         actions: [

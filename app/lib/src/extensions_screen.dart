@@ -14,19 +14,40 @@ import 'snack_bars.dart';
 import 'sources/extension_library.dart';
 import 'sources/repository_library.dart';
 
-/// Extensions: what is installed, what each one has produced, and installing or removing one (§3.9).
+/// Extensions on a screen of its own, reached from More.
 ///
-/// Reached from Browse, because an extension is where a source comes from and Browse is where sources
-/// are. Everything it shows is watched, so an install or a removal appears without anything being
-/// refreshed (§2.5).
-class ExtensionsScreen extends ConsumerStatefulWidget {
+/// Browse's Extensions tab is where a listener normally finds this; the screen exists so that More
+/// has somewhere to point, and so a deep link to [ExtensionsRoute] still lands somewhere. Both show
+/// the same [ExtensionsPanel].
+class ExtensionsScreen extends StatelessWidget {
   const ExtensionsScreen({super.key});
 
   @override
-  ConsumerState<ExtensionsScreen> createState() => _ExtensionsScreenState();
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('Extensions')),
+    body: const ExtensionsPanel(),
+  );
 }
 
-class _ExtensionsScreenState extends ConsumerState<ExtensionsScreen> {
+/// The extensions list and everything that can be done with it (§3.9).
+///
+/// A panel rather than a screen, because it is shown in two places: Browse's Extensions tab, which
+/// is where a listener looks for one, and the standalone Extensions screen reached from More. Both
+/// need the same state -- which extension is being worked on, and what the last update check found
+/// -- so there is one implementation of it and not two that drift.
+///
+/// Checking for updates is an action inside the list rather than an icon in an app bar. It reads
+/// every repository the listener has added, so it must not happen because a screen opened; and the
+/// app bar above it belongs to whichever of the two places is showing the panel, which would mean
+/// the same button living in two bars.
+class ExtensionsPanel extends ConsumerStatefulWidget {
+  const ExtensionsPanel({super.key});
+
+  @override
+  ConsumerState<ExtensionsPanel> createState() => _ExtensionsPanelState();
+}
+
+class _ExtensionsPanelState extends ConsumerState<ExtensionsPanel> {
   /// Which extension is being worked on, so that two taps cannot install the same folder twice. The
   /// empty string while a folder is being picked, when no extension is known yet.
   String? _busyWith;
@@ -55,53 +76,27 @@ class _ExtensionsScreenState extends ConsumerState<ExtensionsScreen> {
       }
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Extensions'),
-        actions: [
-          IconButton(
-            icon: _checking
-                ? const SizedBox.square(
-                    dimension: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.update),
-            tooltip: 'Check for updates',
-            onPressed: _checking ? null : _checkForUpdates,
-          ),
-          IconButton(
-            icon: const Icon(Icons.cloud_outlined),
-            tooltip: 'Repositories',
-            onPressed: () => const RepositoriesRoute().push<void>(context),
-          ),
-          IconButton(
-            icon: const Icon(Icons.terminal),
-            tooltip: 'Console',
-            onPressed: () => const ExtensionConsoleRoute().push<void>(context),
-          ),
-        ],
-      ),
-      body: ExtensionsView(
-        extensions: extensions,
-        problems: problems,
-        updates: {
-          for (final update in _updates.values)
-            update.id: update.offeredVersion,
-        },
-        canChooseFolder: library.canChooseFolder,
-        dropFolderName: library.canInstallFromDropFolder
-            ? library.dropFolderName
-            : null,
-        busyWith: _busyWith,
-        onInstallFromFolder: _installFromPickedFolder,
-        onInstallFromDropFolder: _installFromDropFolder,
-        onReload: _reload,
-        onRemove: _remove,
-        onUpdate: _update,
-        onRollBack: _rollBack,
-        onOpenConsole: (extensionId) =>
-            ExtensionConsoleRoute(extensionId: extensionId).push<void>(context),
-      ),
+    return ExtensionsView(
+      extensions: extensions,
+      problems: problems,
+      updates: {
+        for (final update in _updates.values) update.id: update.offeredVersion,
+      },
+      canChooseFolder: library.canChooseFolder,
+      dropFolderName: library.canInstallFromDropFolder
+          ? library.dropFolderName
+          : null,
+      busyWith: _busyWith,
+      onInstallFromFolder: _installFromPickedFolder,
+      onInstallFromDropFolder: _installFromDropFolder,
+      onReload: _reload,
+      onRemove: _remove,
+      onUpdate: _update,
+      onRollBack: _rollBack,
+      onOpenConsole: (extensionId) =>
+          ExtensionConsoleRoute(extensionId: extensionId).push<void>(context),
+      onCheckForUpdates: _checking ? null : _checkForUpdates,
+      checking: _checking,
     );
   }
 
