@@ -1,0 +1,19 @@
+{
+  "resultCount": 1,
+  "results": [
+    {
+      "wrapperType": "track",
+      "collectionName": "Web Novel Audio",
+      "artistName": "Audio Creations",
+      "feedUrl": "https://anchor.fm/s/100622f90/podcast/rss",
+      "artworkUrl600": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts211/v4/1c/94/09/1c9409d8-dcda-6774-c45f-cf8209386f06/mza_11373820563849245833.jpg/600x600bb.jpg",
+      "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts211/v4/1c/94/09/1c9409d8-dcda-6774-c45f-cf8209386f06/mza_11373820563849245833.jpg/100x100bb.jpg",
+      "trackCount": 419,
+      "genres": [
+        "Books",
+        "Podcasts",
+        "Arts"
+      ]
+    }
+  ]
+}

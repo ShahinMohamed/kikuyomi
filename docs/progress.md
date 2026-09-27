@@ -69,7 +69,9 @@ Not met — the app has never been run on Android at all.
 - [x] Extension-backed details and chapters
 - [x] Streaming, with re-resolve when an address goes stale
 - [x] A LibriVox extension, bundled with the app
-- [x] An Internet Archive extension, and a Storynory one
+- [x] An Internet Archive extension, a Storynory one, and a Podcasts one that plays any show from
+      the podcast hosts it declares -- pasted as a feed address, an Apple Podcasts link or a
+      Spotify show link, or found by name through Apple's public index
 - [x] An official repository for them to live in, built and signed by
       `packages/extension_manager/tool/build_repository.dart`
 - [ ] GitHub Releases for Android and Windows
