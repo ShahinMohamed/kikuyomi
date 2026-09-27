@@ -78,6 +78,10 @@ dev_dependencies:
     sdk: flutter
   kikuyomi_test_support:
     path: ../packages/test_support
+  # Ed25519, so the update-check tests can sign a repository index the way a repository operator
+  # does. The app only ever verifies; signing is a test's job here, which is why this is a dev
+  # dependency. Gohilla, Apache-2.0, pure Dart.
+  cryptography: ^2.7.0
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

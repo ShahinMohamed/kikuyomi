@@ -73,6 +73,32 @@ final class ExtensionInstallFolder {
   Directory _folderAt(String installPath) =>
       Directory('${root.path}$_slash${installPath.replaceAll('/', _slash)}');
 
+  /// Every version of [extensionId] kept on disk, newest first.
+  ///
+  /// This is what §3.9's "versioned directory" was for. An update is written beside the version in
+  /// use rather than over it, so the one that worked yesterday is still there, and rolling back is
+  /// reading a folder rather than downloading anything -- which matters exactly when it is needed,
+  /// since an extension is most often rolled back because something has stopped working and a
+  /// listener may well be offline.
+  ///
+  /// Folders left behind by an install that was cut short are skipped: they carry
+  /// [partialFileSuffix] and hold half an extension. So is anything whose name is not a version
+  /// code, because this folder belongs to the app and a name that is not one did not come from here.
+  Future<List<int>> versionsOf(String extensionId) async {
+    final folder = Directory('${root.path}$_slash$extensionId');
+    if (!await folder.exists()) return const [];
+    final versions = <int>[];
+    await for (final entry in folder.list(followLinks: false)) {
+      if (entry is! Directory) continue;
+      final name = entry.path.split(RegExp(r'[\\/]')).last;
+      if (name.endsWith(partialFileSuffix)) continue;
+      final version = int.tryParse(name);
+      if (version != null) versions.add(version);
+    }
+    versions.sort((a, b) => b.compareTo(a));
+    return versions;
+  }
+
   /// Deletes every version of [extensionId]: what uninstalling removes.
   ///
   /// §3.9: uninstalling removes the code, and nothing else. The listener's data — the library books

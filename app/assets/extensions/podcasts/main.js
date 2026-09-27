@@ -29,9 +29,25 @@
 //     Apple's index — a best-effort match, since Spotify publishes no feed address;
 //   - anything else, searched for by name in Apple's public podcast index.
 //
-// Opening a show remembers it, so `getPopular` is the shelf of shows this listener has opened
-// rather than a chart nobody computed. Nothing is lost if that store is cleared: a book's key *is*
-// its feed address, so every book already knows where to find itself.
+// Opening a show remembers it, and the shelf of shows a listener has opened is the first thing the
+// browse screen shows. Nothing is lost if that store is cleared: a book's key *is* its feed
+// address, so every book already knows where to find itself.
+//
+// ## What a listener sees before they have added anything
+//
+// A shelf is empty the first time, and a source whose front page is empty looks broken. So browsing
+// goes on to the podcast charts: page one is the shelf and then Fiction, and each page after it is
+// another chart -- Drama, Science Fiction, Comedy Fiction, Arts, Kids & Family. Those are the
+// genres an audiobook actually turns up in. The general chart is not among them, because the shows
+// at the top of it are news and true crime and this is not a news app.
+//
+// A chart gives Apple's numeric ids and not feed addresses, so each page costs two requests: the
+// chart, then one batch lookup that turns every id on it into a feed. The chart's own order is
+// kept, because that order is the recommendation.
+//
+// The endpoint behind this is Apple's old RSS generator, which still answers and is not promised
+// to. If it stops, browsing falls back to searching the index for the words audiobooks are
+// published under, which is worse than a chart and much better than the empty screen this replaces.
 //
 // ## Spotify links work; Spotify audio does not
 //
@@ -70,6 +86,47 @@
 /** Apple's public podcast index: no key, no account, and it gives feed addresses outright. */
 var APPLE_SEARCH = 'https://itunes.apple.com/search';
 var APPLE_LOOKUP = 'https://itunes.apple.com/lookup';
+
+/**
+ * The charts browsing walks through, in order, one per page.
+ *
+ * Fiction first: it is where serialised novels and full-cast readings actually sit, and its top
+ * entries are the likes of "Sherlock Holmes Short Stories" and "The Sleepy Bookshelf". Books brings
+ * "Selected Shorts" and "The New Yorker: Fiction" along with the shows that only talk about books,
+ * and Kids & Family brings the read-aloud ones.
+ *
+ * The numbers are Apple's and were checked one at a time rather than taken from a list: this
+ * endpoint answers an unknown genre with the general chart instead of an error, so a wrong number
+ * does not fail, it quietly serves news and true crime. Arts was here until 1482 turned out to be
+ * Books.
+ *
+ * `us` because the chart endpoint wants a country and the contract gives an extension no way to ask
+ * which one the listener is in -- `host` carries the app's version and nothing about locale. It is
+ * the largest catalogue of the two dozen on offer, and every show it names is reachable from
+ * anywhere, since what is fetched afterwards is the show's own feed.
+ */
+var CHART_COUNTRY = 'us';
+var CHARTS = [
+  { genre: 1483, name: 'Fiction' },
+  { genre: 1484, name: 'Drama' },
+  { genre: 1485, name: 'Science Fiction' },
+  { genre: 1486, name: 'Comedy Fiction' },
+  { genre: 1482, name: 'Books' },
+  { genre: 1305, name: 'Kids & Family' }
+];
+
+/** How many shows are taken off each chart. */
+var CHART_SIZE = 30;
+
+/** What browsing falls back to if the chart endpoint ever stops answering. */
+var FALLBACK_TERMS = [
+  'audiobook',
+  'audio drama',
+  'classic literature read aloud',
+  'full cast audio fiction',
+  'bedtime stories',
+  'serialized novel'
+];
 
 /** How many shows a page of search results holds. */
 var PAGE_SIZE = 20;
@@ -600,10 +657,122 @@ async function appleShows(url) {
       key: feed,
       title: textOf(found.collectionName) || textOf(found.trackName) || 'A podcast',
       authors: [textOf(found.artistName)].filter(Boolean),
-      coverUrl: offerable(textOf(found.artworkUrl600) || textOf(found.artworkUrl100))
+      coverUrl: offerable(textOf(found.artworkUrl600) || textOf(found.artworkUrl100)),
+      // Only so a chart can be put back into its own order. The app never sees it: `BookSummary`
+      // ignores fields it does not know, and the key a book is remembered by is its feed.
+      appleId: textOf(found.collectionId)
     });
   }
   return shows;
+}
+
+/**
+ * One chart, as shows with feed addresses.
+ *
+ * Two requests and no more. The chart names shows by Apple's id; one batch lookup turns the whole
+ * page of them into feeds at once, because thirty lookups would be thirty requests for one screen.
+ *
+ * Anything the lookup has no feed for is dropped rather than shown. A chart entry with no feed is a
+ * show that is not distributed as a podcast -- an exclusive, usually -- and offering one that
+ * cannot be opened is worse than a shorter list.
+ */
+async function chart(genre) {
+  var url = 'https://itunes.apple.com/' + CHART_COUNTRY + '/rss/toppodcasts/limit=' +
+    CHART_SIZE + '/genre=' + genre + '/json';
+  var body = await getJson(url, 'the podcast chart');
+  var entries = body.feed && body.feed.entry;
+  if (!Array.isArray(entries)) return [];
+
+  var ids = [];
+  for (var i = 0; i < entries.length; i++) {
+    var id = entries[i] && entries[i].id && entries[i].id.attributes &&
+      entries[i].id.attributes['im:id'];
+    if (id && ids.indexOf(id) < 0) ids.push(id);
+  }
+  if (!ids.length) return [];
+
+  var found = await appleShows(
+    APPLE_LOOKUP + '?entity=podcast&id=' + ids.join(',')
+  );
+  // The lookup answers in its own order; the chart's order is the recommendation, so it is the one
+  // kept. Indexed first so this stays one pass rather than a scan per entry.
+  var byId = {};
+  for (var j = 0; j < found.length; j++) byId[found[j].appleId] = found[j];
+  var shows = [];
+  for (var k = 0; k < ids.length; k++) {
+    var show = byId[ids[k]];
+    if (!show) continue;
+    // Without the id it was ordered by. The decoder would ignore it, but a summary that carries a
+    // field only this file understands invites someone to start depending on it.
+    shows.push({
+      key: show.key,
+      title: show.title,
+      authors: show.authors,
+      coverUrl: show.coverUrl
+    });
+  }
+  return shows;
+}
+
+/**
+ * Charts, kept for half an hour.
+ *
+ * A chart is recomputed daily at most, and a listener paging back and forth should not be asking
+ * Apple for the same list every time they do.
+ */
+var CHART_CACHE_MS = 30 * 60 * 1000;
+var charts = {};
+
+async function chartPage(index) {
+  var wanted = CHARTS[index];
+  if (!wanted) return [];
+  var now = Date.now();
+  var cached = charts[wanted.genre];
+  if (cached && now - cached.at < CHART_CACHE_MS) return cached.value;
+
+  var shows;
+  try {
+    shows = await chart(wanted.genre);
+  } catch (error) {
+    kikuyomi.log.warn('the ' + wanted.name + ' chart could not be read: ' + error);
+    shows = [];
+  }
+  if (!shows.length) shows = await fallbackPage(index);
+
+  charts[wanted.genre] = { at: now, value: shows };
+  return shows;
+}
+
+/**
+ * What to offer when a chart gives nothing.
+ *
+ * Searching the index for one of the phrases audiobooks are published under. It is a worse list
+ * than a chart -- nothing orders it by how many people listen -- and it keeps the screen useful if
+ * Apple ever retires the chart endpoint, which is old enough that it might.
+ */
+async function fallbackPage(index) {
+  var term = FALLBACK_TERMS[index % FALLBACK_TERMS.length];
+  try {
+    return await appleShows(
+      APPLE_SEARCH + '?media=podcast&limit=' + CHART_SIZE +
+        '&term=' + encodeURIComponent(term)
+    );
+  } catch (error) {
+    kikuyomi.log.warn('discovery is unavailable: ' + error);
+    return [];
+  }
+}
+
+/** [shows] with anything already in [seen] removed, and [seen] grown to match. */
+function withoutRepeats(shows, seen) {
+  var kept = [];
+  for (var i = 0; i < shows.length; i++) {
+    var key = shows[i] && shows[i].key;
+    if (!key || seen[key]) continue;
+    seen[key] = true;
+    kept.push(shows[i]);
+  }
+  return kept;
 }
 
 function summaryOf(found) {
@@ -627,9 +796,14 @@ function pageOf(shows, page) {
 
 var podcasts = {
   async getPopular(page) {
-    // Nothing here ranks anything, and inventing a chart would be a lie. What a listener wants on
-    // this screen is the shows they already follow.
-    return pageOf(await shelf(), page);
+    // Page one is what you already follow, then the first chart underneath it; every page after is
+    // another chart. A listener with an empty shelf gets recommendations straight away, and one who
+    // has added shows still sees them first.
+    var seen = {};
+    var shows = [];
+    if (page === 1) shows = withoutRepeats(await shelf(), seen);
+    shows = shows.concat(withoutRepeats(await chartPage(page - 1), seen));
+    return { items: shows, hasNextPage: page < CHARTS.length };
   },
 
   async search(query, page) {

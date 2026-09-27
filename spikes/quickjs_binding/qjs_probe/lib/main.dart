@@ -1655,21 +1655,43 @@ final class _StorynoryFixtures implements HostBridge {
 /// loudly rather than quietly returning nothing, so a probe that meant to exercise one path and
 /// took another says so.
 final class _PodcastFixtures implements HostBridge {
-  _PodcastFixtures(this._feed, this._search, this._lookup, this._spotify);
+  _PodcastFixtures(
+    this._feed,
+    this._search,
+    this._lookup,
+    this._spotify,
+    this._chart,
+    this._chartLookup,
+  );
 
   static const feedUrl = 'https://anchor.fm/s/100622f90/podcast/rss';
+
+  /// The Fiction chart's own order, which is the order the extension must hand back. The last of
+  /// them is the one the lookup has no feed for, and is expected to disappear.
+  static const chartOrder = [
+    'Table Read',
+    'Sherlock Holmes Short Stories',
+    'The Adventure Zone',
+    'The NoSleep Podcast',
+    'The Sleepy Bookshelf',
+    'Six Minutes',
+  ];
 
   static Future<_PodcastFixtures> load() async => _PodcastFixtures(
     await rootBundle.loadString('assets/podcasts/fixtures/feed.xml'),
     await rootBundle.loadString('assets/podcasts/fixtures/apple-search.json'),
     await rootBundle.loadString('assets/podcasts/fixtures/apple-lookup.json'),
     await rootBundle.loadString('assets/podcasts/fixtures/spotify-show.html'),
+    await rootBundle.loadString('assets/podcasts/fixtures/chart-fiction.json'),
+    await rootBundle.loadString('assets/podcasts/fixtures/chart-lookup.json'),
   );
 
   final String _feed;
   final String _search;
   final String _lookup;
   final String _spotify;
+  final String _chart;
+  final String _chartLookup;
   final asked = <String>[];
 
   @override
@@ -1689,7 +1711,14 @@ final class _PodcastFixtures implements HostBridge {
       // Asked for as JSON, so it arrives decoded, the way the host bridge hands it over.
       body = jsonDecode(_search);
     } else if (url.startsWith('https://itunes.apple.com/lookup')) {
-      body = jsonDecode(_lookup);
+      // One id is a link being resolved; a list of them is a chart being turned into feeds. The
+      // two answer differently, and telling them apart by the comma is what the extension's own
+      // two call sites amount to.
+      body = jsonDecode(url.contains(',') ? _chartLookup : _lookup);
+    } else if (url.contains('/rss/toppodcasts/')) {
+      // Every genre answers with the same chart. Which genre was asked for is the extension's
+      // business; that a page is a chart at all is this probe's.
+      body = jsonDecode(_chart);
     } else if (url.startsWith('https://open.spotify.com/show/')) {
       body = _spotify;
     } else {
@@ -2055,20 +2084,77 @@ Future<void> _runPodcastProbes() async {
     });
   });
 
-  await _probe('podcasts-shelf-starts-empty', () async {
+  await _probe('podcasts-recommends-before-anything-is-added', () async {
     return withSource((source, http) async {
-      // Nothing has been opened, so there is nothing to show, and nothing to ask the network for
-      // either. A source that fetched something here would be fetching it for every listener who
-      // ever taps the tab.
+      // The screen a listener sees the first time they open this source. It used to be blank,
+      // because the shelf is the shows you have opened and you have opened none: a source whose
+      // front page is empty looks broken, however correct it is.
       final page = await source.getPopular(1);
-      if (page.items.isNotEmpty) {
-        throw StateError('a fresh shelf holds ${page.items.length}');
+      if (page.items.isEmpty) {
+        throw StateError('nothing to recommend on a first run');
       }
-      if (page.hasNextPage) throw StateError('an empty page has no next');
-      if (http.asked.isNotEmpty) {
-        throw StateError('an empty shelf cost ${http.asked}');
+      if (!page.hasNextPage) {
+        throw StateError('there are more charts after the first');
       }
-      return 'empty, and free';
+      // The chart, then one batch lookup turning the whole page of ids into feeds. Thirty lookups
+      // would be thirty requests for one screen.
+      if (http.asked.length != 2) {
+        throw StateError('a page of recommendations cost ${http.asked}');
+      }
+      return 'recommended ${page.items.length}: ${page.items.first.title}';
+    });
+  });
+
+  await _probe('podcasts-a-chart-keeps-its-own-order', () async {
+    return withSource((source, http) async {
+      // The order is the recommendation. The lookup answers in an order of its own -- the fixture
+      // reverses it on purpose -- so handing back what the lookup said would look fine and be
+      // backwards.
+      final page = await source.getPopular(1);
+      final titles = [for (final item in page.items) item.title];
+      final expected = _PodcastFixtures.chartOrder.sublist(
+        0,
+        _PodcastFixtures.chartOrder.length - 1,
+      );
+      if (titles.join('|') != expected.join('|')) {
+        throw StateError('got $titles, wanted $expected');
+      }
+      return 'the chart order survived the lookup';
+    });
+  });
+
+  await _probe('podcasts-a-chart-entry-with-no-feed-is-dropped', () async {
+    return withSource((source, http) async {
+      // A show Apple charts but does not distribute as a podcast has no feed to open. Offering it
+      // would be offering something that fails the moment it is tapped.
+      final page = await source.getPopular(1);
+      final titles = [for (final item in page.items) item.title];
+      if (titles.contains(_PodcastFixtures.chartOrder.last)) {
+        throw StateError('offered a show with no feed: $titles');
+      }
+      if (titles.length != _PodcastFixtures.chartOrder.length - 1) {
+        throw StateError('expected one fewer than the chart, got $titles');
+      }
+      return 'dropped the one that cannot be opened';
+    });
+  });
+
+  await _probe('podcasts-browsing-runs-out-of-charts', () async {
+    return withSource((source, http) async {
+      // Paging has to stop somewhere, and an infinite list of the same chart is worse than a short
+      // honest one.
+      var page = 1;
+      while (page < 20) {
+        final result = await source.getPopular(page);
+        if (!result.hasNextPage) break;
+        page += 1;
+      }
+      if (page >= 20) throw StateError('browsing never ended');
+      final past = await source.getPopular(page + 1);
+      if (past.items.isNotEmpty) {
+        throw StateError('there is a page past the last one');
+      }
+      return 'ends after $page pages';
     });
   });
 
@@ -2255,20 +2341,30 @@ Future<void> _runPodcastProbes() async {
     });
   });
 
-  await _probe('podcasts-opening-a-show-remembers-it', () async {
+  await _probe('podcasts-opening-a-show-puts-it-first', () async {
     return withSource((source, http) async {
-      if ((await source.getPopular(1)).items.isNotEmpty) {
-        throw StateError('the shelf was not empty to begin with');
+      final before = await source.getPopular(1);
+      if (before.items.any((b) => b.key == _PodcastFixtures.feedUrl)) {
+        throw StateError('the show was already there');
       }
+
       await source.getBookDetails(_PodcastFixtures.feedUrl);
-      final shelf = await source.getPopular(1);
-      if (shelf.items.length != 1) {
-        throw StateError('the shelf holds ${shelf.items.length}');
+      final after = await source.getPopular(1);
+
+      // First, above the recommendations. What you already follow is what you came for.
+      if (after.items.first.key != _PodcastFixtures.feedUrl) {
+        throw StateError('page one starts with ${after.items.first.key}');
       }
-      if (shelf.items.single.key != _PodcastFixtures.feedUrl) {
-        throw StateError('remembered ${shelf.items.single.key}');
+      if (after.items.length != before.items.length + 1) {
+        throw StateError(
+          'the page went from ${before.items.length} to ${after.items.length}',
+        );
       }
-      return 'the shelf kept it: ${shelf.items.single.title}';
+      final keys = [for (final item in after.items) item.key];
+      if (keys.toSet().length != keys.length) {
+        throw StateError('a show is listed twice');
+      }
+      return 'kept, and shown first: ${after.items.first.title}';
     });
   });
 

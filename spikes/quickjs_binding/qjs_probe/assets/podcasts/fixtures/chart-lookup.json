@@ -1,0 +1,52 @@
+{
+  "resultCount": 6,
+  "results": [
+    {
+      "wrapperType": "track",
+      "collectionId": 1348470106,
+      "collectionName": "Six Minutes",
+      "artistName": "GZM Shows",
+      "artworkUrl600": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts221/v4/dc/86/87/dc86876b-75a5-3dcc-dfc7-93c00d5d73df/mza_11649606284826288390.jpeg/600x600bb.jpg"
+    },
+    {
+      "wrapperType": "track",
+      "collectionId": 1573623902,
+      "collectionName": "The Sleepy Bookshelf",
+      "artistName": "Slumber Studios",
+      "feedUrl": "https://feeds.simplecast.com/x7Iwqf_H",
+      "artworkUrl600": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts221/v4/14/9c/09/149c0952-fb65-5508-a991-44222118ffdc/mza_9385381836876857943.jpg/600x600bb.jpg"
+    },
+    {
+      "wrapperType": "track",
+      "collectionId": 444083093,
+      "collectionName": "The NoSleep Podcast",
+      "artistName": "Creative Reason Media",
+      "feedUrl": "https://audioboom.com/channels/5101646.rss",
+      "artworkUrl600": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts126/v4/cd/bb/90/cdbb90fb-0110-74ab-39ec-0e564dbbba30/mza_16674526559908986622.jpg/600x600bb.jpg"
+    },
+    {
+      "wrapperType": "track",
+      "collectionId": 947899573,
+      "collectionName": "The Adventure Zone",
+      "artistName": "The McElroys",
+      "feedUrl": "https://feeds.simplecast.com/cYQVc__c",
+      "artworkUrl600": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts221/v4/7a/79/9c/7a799c02-f861-0fa1-dcb8-a3feb4e98f0a/mza_7068107524389734183.jpg/600x600bb.jpg"
+    },
+    {
+      "wrapperType": "track",
+      "collectionId": 1784284807,
+      "collectionName": "Sherlock Holmes Short Stories",
+      "artistName": "NOISER",
+      "feedUrl": "https://feeds.megaphone.fm/NSR5430340583",
+      "artworkUrl600": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts221/v4/b3/75/d5/b375d53e-bc60-b527-86e4-a7d7b1bf0d03/mza_4918920429805582688.jpeg/600x600bb.jpg"
+    },
+    {
+      "wrapperType": "track",
+      "collectionId": 1673590083,
+      "collectionName": "Table Read",
+      "artistName": "iHeartPodcasts",
+      "feedUrl": "https://rss.pdrl.fm/a7a12f/www.omnycontent.com/d/playlist/e73c998e-6e60-432f-8610-ae210140c5b1/d8b1cc95-e70d-4788-a035-b46401326b84/0ca9c2ee-158a-40ea-aa81-b46401326b8f/podcast.rss",
+      "artworkUrl600": "https://is1-ssl.mzstatic.com/image/thumb/Podcasts221/v4/e0/0e/9a/e00e9adb-3071-dc18-66da-3d89c0ff6de7/mza_16214105267689526916.jpg/600x600bb.jpg"
+    }
+  ]
+}

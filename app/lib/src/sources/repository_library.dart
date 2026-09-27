@@ -54,6 +54,77 @@ final class RepositoryOffer {
   int get offers => index.offered.length;
 }
 
+/// What a refresh found an installed extension's entry saying (§3.8).
+enum UpdateKind {
+  /// The repository offers a higher `versionCode` than the one installed.
+  newer,
+
+  /// The installed version is marked withdrawn, and should stop running.
+  withdrawn,
+
+  /// It was withdrawn and is not any more, so it may run again.
+  ///
+  /// The counterpart of [withdrawn], and the reason it exists is that without it a version pulled
+  /// back and then reinstated would stay disabled for ever, with nothing in the app able to say
+  /// otherwise -- the listener's only way out being to remove the extension and install it again.
+  restored,
+}
+
+/// One installed extension, and what its repository now says about it.
+final class ExtensionUpdate {
+  const ExtensionUpdate({
+    required this.installed,
+    required this.repository,
+    required this.entry,
+    required this.kind,
+  });
+
+  /// The row as it stands, before anything is done about it.
+  final ExtensionRow installed;
+
+  /// The repository it came from, which is the one asked. Another repository offering the same id
+  /// is not consulted: an extension is updated by whoever published the copy that is installed, so
+  /// that adding a second repository can never quietly replace code from the first.
+  final RepositoryRow repository;
+
+  /// What that repository's index says about it now.
+  final RepositoryEntry entry;
+
+  final UpdateKind kind;
+
+  String get id => installed.id;
+
+  /// What the listener would be moving to, for a button that has to say so.
+  String get offeredVersion => '${entry.manifest.version}';
+}
+
+/// What one pass over every repository found.
+final class UpdateCheck {
+  const UpdateCheck({required this.found, required this.unreachable});
+
+  static const nothing = UpdateCheck(found: [], unreachable: {});
+
+  /// Everything worth acting on, in no particular order.
+  final List<ExtensionUpdate> found;
+
+  /// The repositories that could not be read, by name, and why.
+  ///
+  /// A check across a dozen repositories must not fail because one host is down: what it found is
+  /// still worth having, and what it could not reach is worth saying rather than hiding.
+  final Map<String, String> unreachable;
+
+  List<ExtensionUpdate> get updates => _of(UpdateKind.newer);
+  List<ExtensionUpdate> get withdrawn => _of(UpdateKind.withdrawn);
+  List<ExtensionUpdate> get restored => _of(UpdateKind.restored);
+
+  bool get isEmpty => found.isEmpty;
+
+  List<ExtensionUpdate> _of(UpdateKind kind) => [
+    for (final one in found)
+      if (one.kind == kind) one,
+  ];
+}
+
 /// The repositories, and what can be done with them.
 final class RepositoryLibrary {
   RepositoryLibrary({
@@ -172,6 +243,73 @@ final class RepositoryLibrary {
     publicKey: repository.publicKey,
     description: '${entry.manifest.name} ${entry.manifest.version}',
   );
+
+  /// Reads every repository again and says what has changed about what is installed (§3.8).
+  ///
+  /// This only looks. Nothing is downloaded, nothing is written, and no extension is disabled here:
+  /// acting on what it found is `ExtensionLibrary`'s, which owns the rows and the running sources.
+  /// Keeping the two apart means a check can be run to show a listener what is waiting without
+  /// anything happening behind their back.
+  ///
+  /// A repository that will not answer is recorded and skipped. One host being down is not a reason
+  /// to tell a listener nothing about the other eleven.
+  Future<UpdateCheck> checkForUpdates() async {
+    final repositories = await readRepositories(_database);
+    if (repositories.isEmpty) return UpdateCheck.nothing;
+    final installed = await readInstalledExtensions(_database);
+
+    final found = <ExtensionUpdate>[];
+    final unreachable = <String, String>{};
+
+    for (final repository in repositories) {
+      final RepositoryIndex index;
+      try {
+        index = await refresh(repository);
+      } on RepositoryException catch (error) {
+        unreachable[repository.name] = error.message;
+        continue;
+      }
+
+      for (final row in installed) {
+        if (row.origin != ExtensionOrigin.repository) continue;
+        if (row.originHandle != repository.url) continue;
+        final entry = index.entryFor(row.id);
+        if (entry == null) continue;
+
+        final kind = _whatChanged(row, entry);
+        if (kind == null) continue;
+        found.add(
+          ExtensionUpdate(
+            installed: row,
+            repository: repository,
+            entry: entry,
+            kind: kind,
+          ),
+        );
+      }
+    }
+    return UpdateCheck(found: found, unreachable: unreachable);
+  }
+
+  /// What [entry] says about [row], or null when it says nothing new.
+  ///
+  /// The version numbers matter more than they look. `revoked` marks *a version*, not an extension,
+  /// so a withdrawn entry newer than what is installed is a warning about a version this listener
+  /// never had, and acting on it would disable working code for no reason.
+  static UpdateKind? _whatChanged(ExtensionRow row, RepositoryEntry entry) {
+    final offered = entry.manifest.versionCode;
+    final isWithdrawn = row.status == ExtensionStatus.revoked;
+
+    if (entry.revoked) {
+      // Only the version in use. A newer one being pulled says nothing about this one.
+      if (offered != row.versionCode || isWithdrawn) return null;
+      return UpdateKind.withdrawn;
+    }
+    if (isWithdrawn && offered == row.versionCode) return UpdateKind.restored;
+    // An offered version *lower* than the installed one is not an update. A repository may roll its
+    // listing back, and following it down would be an install nobody asked for.
+    return offered > row.versionCode ? UpdateKind.newer : null;
+  }
 
   /// Forgets [repository]. Extensions installed from it stay installed (§3.9); what is lost is
   /// updates.

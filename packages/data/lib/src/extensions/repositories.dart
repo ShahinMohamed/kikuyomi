@@ -22,6 +22,12 @@ Stream<List<RepositoryRow>> watchRepositories(KikuyomiDatabase db) =>
       db.repositories,
     )..orderBy([(r) => OrderingTerm.asc(r.id)])).watch();
 
+/// Every repository, once, for a job that is not watching a screen -- an update check reads the
+/// list, works through it and is done.
+Future<List<RepositoryRow>> readRepositories(KikuyomiDatabase db) => (db.select(
+  db.repositories,
+)..orderBy([(r) => OrderingTerm.asc(r.id)])).get();
+
 /// The repository at [url], or null when it has not been added.
 Future<RepositoryRow?> readRepositoryAt(KikuyomiDatabase db, String url) =>
     (db.select(

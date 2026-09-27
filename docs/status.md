@@ -533,8 +533,8 @@ Installing from a URL, as Mihon does (§3.8, §3.9).
    `github.com/user/repo` URL and working out the raw one, as Mihon does.
 3. ~~Managing a list of repositories, browsing one, installing, uninstalling~~ — **built and used
    for real**: the official repository was added on Windows and all three extensions installed from
-   it. Updating is not done.
-4. Update checks against the index.
+   it.
+4. ~~Update checks against the index~~ — **built**. See below.
 
 **Trust.** Settled by ADR-0018, against an earlier proposal recorded here to ship unsigned. §3.8 had
 already decided: an Ed25519 key in `repo.json`, pinned on first use, with every package verified.
@@ -592,6 +592,41 @@ rest are on domains of their own, which is the honest cost of a contract with no
 with a permissions screen that has nothing specific to show; that is a contract decision, not an
 implementation one.
 
+### Updates, withdrawals and going back
+
+A check is an action, not something opening the Extensions screen does. It reads every repository
+the listener has added, which is a handful of requests, and doing that because a screen opened would
+make opening it expensive and tie the number of requests to how often somebody looked.
+
+What it finds splits into what the app does and what it offers. **Withdrawals and reinstatements are
+applied, not offered**, because neither is a choice: a version its publisher has pulled should stop
+running whether or not the listener presses anything, and one that has been put back should run
+again for the same reason. **An update is offered**, because it is new code, and new code waits to
+be asked for.
+
+Most of the care is in what the check refuses to do, and each refusal has a test. An offered version
+*lower* than the installed one is not an update, because a repository may roll its listing back and
+following it down would be an install nobody asked for. `revoked` marks a version rather than an
+extension, so an entry withdrawn at a version this listener never had changes nothing. A folder
+install is never updated from a repository, so an extension an author is editing cannot be replaced
+by whatever a repository happens to publish under the same id. And another repository offering the
+same id is not consulted: an extension is updated by whoever published the copy that is installed,
+so adding a second repository can never quietly replace code from the first. A repository that will
+not answer is named and skipped rather than failing the whole check.
+
+The check itself only looks — it writes nothing and disables nothing. Applying what it found is
+`ExtensionLibrary`'s, which owns the rows and the running sources, so a check can be run to show a
+listener what is waiting with nothing happening behind their back.
+
+**Rolling back** is the other half, and it is what §3.9's versioned directory was always for. An
+update is written into a folder of its own rather than over the last one, so every version that ever
+installed is still on disk, and going back reads a folder rather than downloading anything. That
+matters exactly when it is needed: an extension is rolled back because something has stopped
+working, and the listener may well be offline. Every kept version is offered, not only the one
+before, because an extension can be broken for two releases running. Rolling back is not pinning —
+the row goes back to the older version code, so the repository offers the newer one again at the
+next check, which is what a listener waiting for a fix wants.
+
 ### Loose ends
 
 - The folder **picker** path has never been driven by the running app: installing on iOS goes through
@@ -600,7 +635,9 @@ implementation one.
 - An extension installed from a **folder** is still never verified, and `untrusted` is the right
   answer for one (ADR-0017). `active` now means something: it is what a repository install gets, and
   only after its signature checked against the pinned key.
-- Nothing rolls back to an earlier installed version, although the versioned directory keeps one.
+- Nothing prunes old versions. Every version ever installed stays on disk so it can be rolled back
+  to, and nothing deletes one except uninstalling, which takes them all. An extension is tens of
+  kilobytes, so this is a long way from urgent, and it is still a directory that only grows.
 - A backup does not carry which extensions a library wants; it waits for the repository door and a
   backup format version of its own (`backupLeavesOut` names the tables and says why).
 - Browse grid covers bypass the app's HTTP client.

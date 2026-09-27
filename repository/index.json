@@ -70,8 +70,8 @@
     {
       "id": "org.kikuyomi.podcasts",
       "name": "Podcasts",
-      "version": "1.0.0",
-      "versionCode": 1,
+      "version": "1.0.1",
+      "versionCode": 2,
       "apiVersion": "1.0",
       "minAppVersion": "1.0.0",
       "author": "Kikuyomi",
@@ -151,11 +151,11 @@
         }
       ],
       "package": {
-        "url": "https://raw.githubusercontent.com/kikuyomiapp/kikuyomi/HEAD/repository/packages/org.kikuyomi.podcasts-1.zip",
-        "sha256": "497e21ab62b623bade63b76ff771253c25124069df8ff9f12e3b35551bbf9bc2",
-        "size": 11696
+        "url": "https://raw.githubusercontent.com/kikuyomiapp/kikuyomi/HEAD/repository/packages/org.kikuyomi.podcasts-2.zip",
+        "sha256": "bdf01538d51613be546ed66875fc7f658e4923b3782c38ddefbc3f6a12645305",
+        "size": 14304
       },
-      "signature": "iQX03voO8s7j2o+QOhZOeS9h0JypzQAk3icO1C2oL0joYdsQTP3RKphJ3GEGdhiZ79/VCC/JCNgzIWaxJ9NqCA==",
+      "signature": "/IPb9xixSfDX0j+/LjQg5IKJzdLMh8se+vPD4YOki/bfz+/D4qlqolsL3xVYWe1u+WiOW0U05HNx8hLfF7jtBw==",
       "revoked": false
     },
     {
