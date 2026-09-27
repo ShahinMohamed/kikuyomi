@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"
+  xmlns:atom="http://www.w3.org/2005/Atom"
+  xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">
+  <channel>
+    <title>Storynory - Audio Stories For Kids</title>
+    <link>https://www.storynory.com/</link>
+    <description><![CDATA[Audio stories for kids.]]></description>
+    <language>en-gb</language>
+    <lastBuildDate>Tue, 15 Sep 2026 09:04:00 GMT</lastBuildDate>
+    <atom:link href="https://www.storynory.com/feeds/stories/" rel="self" type="application/rss+xml" />
+    <itunes:author>Storynory</itunes:author>
+    <itunes:owner><itunes:name>Storynory Ltd</itunes:name><itunes:email>bertie@storynory.com</itunes:email></itunes:owner>
+    <itunes:image href="https://static.libsyn.com/p/assets/3/1/6/d/316d1a0b906e67c116c3140a3186d450/storynory-new-id-v2.jpg" />
+    <itunes:explicit>false</itunes:explicit>
+    <itunes:category text="Kids &amp; Family"><itunes:category text="Stories for Kids" /></itunes:category>
+    <item><title>Birdy's Grudge</title><link>https://www.storynory.com</link><pubDate>Tue, 15 Sep 2026 09:04:00 +0000</pubDate><guid isPermaLink="false">4520e4d5-8f0d-4ab9-b5bf-f565e9c13627</guid><enclosure url="https://traffic.libsyn.com/secure/blogrelations/birdy-grudge-16.mp3?dest-id=10605" length="20583303" type="audio/mpeg" /><description><![CDATA[Jake discovers owls in his garden. His best friend Birdy should be pleased. But ]]></description><itunes:summary>Jake discovers owls in his garden. His best friend Birdy should be pleased. But </itunes:summary><itunes:duration>15:35</itunes:duration><itunes:episodeType>full</itunes:episodeType><itunes:image href="https://static.libsyn.com/p/assets/a/3/e/7/a3e7e1ee0f73eeffe55e3c100dce7605/birdy-grudge-16.jpg" /></item>
+<item><title>The Magic Mirror and the Wedding</title><link>https://www.storynory.com</link><pubDate>Sat, 01 Aug 2026 11:04:00 +0000</pubDate><guid isPermaLink="false">c2f100ac-ad6a-4eee-9dcf-aacd770eaee6</guid><enclosure url="https://traffic.libsyn.com/secure/blogrelations/02-stella-magic-mirror-16.mp3?dest-id=10605" length="18568627" type="audio/mpeg" /><description><![CDATA[<p>Stella's best friend Celeste has invited her on a trip to FantasyLand in the ]]></description><itunes:summary>Stella's best friend Celeste has invited her on a trip to FantasyLand in the USA</itunes:summary><itunes:duration>14:41</itunes:duration><itunes:episodeType>full</itunes:episodeType><itunes:image href="https://static.libsyn.com/p/assets/c/f/f/b/cffbab8a7b7d6a2216c3140a3186d450/02-stella-magic-mirror-16.jpg" /></item>
+<item><title>Stella's Magic Mirror</title><link>https://www.storynory.com</link><pubDate>Tue, 21 Jul 2026 11:42:00 +0000</pubDate><guid isPermaLink="false">8079ccaf-abde-42b2-9273-2b629aec8d8e</guid><enclosure url="https://traffic.libsyn.com/secure/blogrelations/01-stella-magic-mirror-16.mp3?dest-id=10605" length="22270412" type="audio/mpeg" /><description><![CDATA[Stella's grandmother gives her an old mirror as a birthday present. There is mor]]></description><itunes:summary>Stella's grandmother gives her an old mirror as a birthday present. There is mor</itunes:summary><itunes:duration>15:20</itunes:duration><itunes:episodeType>full</itunes:episodeType><itunes:image href="https://static.libsyn.com/p/assets/c/d/7/2/cd722edcc22a56a3d959afa2a1bf1c87/01-stella-magic-mirror-16.jpg" /></item>
+<item><title>Journey to the West: the Crown that Hurt</title><link>https://www.storynory.com</link><pubDate>Tue, 07 Jul 2026 14:59:00 +0000</pubDate><guid isPermaLink="false">579529d5-c85f-45c6-9453-00ba35e3dec5</guid><enclosure url="https://traffic.libsyn.com/secure/blogrelations/journey-to-the-west-crown-that-hurt-16.mp3?dest-id=10605" length="17472306" type="audio/mpeg" /><description><![CDATA[<p>A Chinese Monk - Tripitaka - is travelling through lawless lands on the way t]]></description><itunes:summary>A Chinese Monk - Tripitaka - is travelling through lawless lands on the way to I</itunes:summary><itunes:duration>12:01</itunes:duration><itunes:episodeType>full</itunes:episodeType><itunes:image href="https://static.libsyn.com/p/assets/b/1/d/9/b1d98fcda000008bd959afa2a1bf1c87/journey-to-the-west-crown-that-hurt-16.jpg" /></item>
+  </channel>
+</rss>

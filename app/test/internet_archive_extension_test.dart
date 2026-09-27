@@ -101,4 +101,23 @@ void main() {
     expect(entry.package.url, endsWith('.zip'));
     expect(entry.revoked, isFalse);
   });
+
+  test('the probe runs the same code the app publishes', () {
+    // The probe is a Flutter package of its own and can only bundle assets inside itself, so its
+    // copy of main.js is a copy. This is what stops the two drifting: the probe is the only thing
+    // that runs the extension on the real engine, and a stale copy would prove nothing.
+    final published = File('${_folder.path}/main.js');
+    final probe = File(
+      '../spikes/quickjs_binding/qjs_probe/assets/internetarchive/main.js',
+    );
+
+    expect(probe.existsSync(), isTrue, reason: '${probe.path} is missing');
+    expect(
+      probe.readAsBytesSync(),
+      published.readAsBytesSync(),
+      reason:
+          'copy assets/extensions/internetarchive/main.js over '
+          'spikes/quickjs_binding/qjs_probe/assets/internetarchive/main.js',
+    );
+  });
 }

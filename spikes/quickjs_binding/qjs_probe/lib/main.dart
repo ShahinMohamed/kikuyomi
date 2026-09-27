@@ -1556,6 +1556,404 @@ Future<void> _runLibriVoxProbes() async {
   });
 }
 
+// ---------------------------------------------------------------- internet archive and storynory
+//
+// The two extensions that ship only through the repository. They are here for a reason worth
+// writing down: both went out having passed a Node harness, a static manifest check and a green CI
+// run, and both failed the moment a book was opened, because nothing had ever decoded what they
+// returned with the app's own decoder. That is what these do.
+
+/// The Archive answers recorded for the requests the extension makes.
+final class _ArchiveFixtures implements HostBridge {
+  _ArchiveFixtures(this._bodies);
+
+  static Future<_ArchiveFixtures> load() async {
+    const names = ['popular-page-1', 'search-sherlock', 'item-whale'];
+    final bodies = <String, String>{};
+    for (final name in names) {
+      bodies[name] = await rootBundle.loadString(
+        'assets/internetarchive/fixtures/$name.json',
+      );
+    }
+    return _ArchiveFixtures(bodies);
+  }
+
+  final Map<String, String> _bodies;
+  final asked = <String>[];
+
+  @override
+  String get module => 'http';
+
+  @override
+  Future<Object?> call(String method, List<Object?> arguments) async {
+    if (method != 'fetch') throw HostCallException('there is no http.$method');
+    final request = arguments.objectAt(0, 'a request');
+    final url = '${request['url']}';
+    asked.add(url);
+    final name = _fixtureFor(url);
+    if (name == null) {
+      throw HostCallException('the probe has no fixture for $url');
+    }
+    return {
+      'status': 200,
+      'url': url,
+      'headers': const {'content-type': 'application/json'},
+      'body': jsonDecode(_bodies[name]!),
+    };
+  }
+
+  static String? _fixtureFor(String url) {
+    if (url.startsWith('https://archive.org/metadata/')) {
+      return url.endsWith('the_whale_1610.poem_librivox') ? 'item-whale' : null;
+    }
+    if (!url.startsWith('https://archive.org/advancedsearch.php')) return null;
+    if (url.contains('sherlock')) return 'search-sherlock';
+    if (url.contains('sort')) return 'popular-page-1';
+    return null;
+  }
+}
+
+/// Storynory's feed, recorded and trimmed to four stories.
+///
+/// Served as text rather than decoded: the extension asks for `responseType: 'text'` because a feed
+/// is XML, and handing it an object would be answering a question it did not ask.
+final class _StorynoryFixtures implements HostBridge {
+  _StorynoryFixtures(this._feed);
+
+  static Future<_StorynoryFixtures> load() async => _StorynoryFixtures(
+    await rootBundle.loadString('assets/storynory/fixtures/feed.xml'),
+  );
+
+  final String _feed;
+  final asked = <String>[];
+
+  @override
+  String get module => 'http';
+
+  @override
+  Future<Object?> call(String method, List<Object?> arguments) async {
+    if (method != 'fetch') throw HostCallException('there is no http.$method');
+    final request = arguments.objectAt(0, 'a request');
+    final url = '${request['url']}';
+    asked.add(url);
+    if (url != 'https://www.storynory.com/feeds/stories') {
+      throw HostCallException('the probe has no fixture for $url');
+    }
+    return {
+      'status': 200,
+      'url': url,
+      'headers': const {'content-type': 'application/rss+xml'},
+      'body': _feed,
+    };
+  }
+}
+
+/// Opens [extensionId]'s source over [bridge], with the manifest's own domains.
+Future<T> _withExtension<T>({
+  required String asset,
+  required String extensionId,
+  required String sourceKey,
+  required List<String> domains,
+  required HostBridge http,
+  required Future<T> Function(JsSourceAdapter source) body,
+}) async {
+  final code = await rootBundle.loadString(asset);
+  final runtime = await ExtensionRuntime.load(
+    engine: const QuickJsScriptEngineFactory().create(
+      const ScriptRuntimeLimits(callTimeout: Duration(seconds: 10)),
+    ),
+    bundle: ExtensionBundle(
+      extensionId: extensionId,
+      code: code,
+      domains: DomainAllowlist(domains),
+    ),
+    host: const HostFacts(appVersion: '1.0.0'),
+    bridges: [
+      HtmlBridge(),
+      const CryptoBridge(),
+      LogBridge(extensionId: extensionId, sink: InMemoryExtensionLog()),
+      StorageBridge(extensionId: extensionId, store: InMemoryExtensionStore()),
+      http,
+    ],
+  );
+  try {
+    return await body(
+      await JsSourceAdapter.open(runtime: runtime, sourceKey: sourceKey),
+    );
+  } finally {
+    await runtime.dispose();
+  }
+}
+
+Future<void> _runArchiveProbes() async {
+  Future<T> withSource<T>(
+    Future<T> Function(JsSourceAdapter source, _ArchiveFixtures http) body,
+  ) async {
+    final http = await _ArchiveFixtures.load();
+    return _withExtension(
+      asset: 'assets/internetarchive/main.js',
+      extensionId: 'org.kikuyomi.internetarchive',
+      sourceKey: 'internetarchive',
+      domains: const ['archive.org', '*.archive.org'],
+      http: http,
+      body: (source) => body(source, http),
+    );
+  }
+
+  await _probe('archive-loads', () async {
+    return withSource((source, http) async {
+      if (source.capabilities.length != 1 ||
+          !source.capabilities.contains(SourceCapability.filters)) {
+        throw StateError('capabilities are ${source.capabilities}');
+      }
+      return 'loaded, and declares ${source.capabilities}';
+    });
+  });
+
+  await _probe('archive-popular', () async {
+    return withSource((source, http) async {
+      final page = await source.getPopular(1);
+      if (page.items.length != 50) {
+        throw StateError('expected fifty, got ${page.items.length}');
+      }
+      if (page.items.first.key != 'librivoxaudio') {
+        throw StateError('first is ${page.items.first.key}');
+      }
+      if (!page.hasNextPage) throw StateError('expected another page');
+      if (http.asked.length != 1) {
+        throw StateError('one page cost ${http.asked.length} requests');
+      }
+      if (!http.asked.single.contains('sort')) {
+        throw StateError('popular did not ask for an order: ${http.asked}');
+      }
+      return 'fifty items, ranked: ${page.items.first.title}';
+    });
+  });
+
+  await _probe('archive-search', () async {
+    return withSource((source, http) async {
+      final page = await source.search(const SearchQuery(text: 'sherlock'), 1);
+      if (page.items.isEmpty) throw StateError('found nothing');
+      if (http.asked.single.contains('sort')) {
+        throw StateError(
+          'a search should be ranked by relevance, not downloads',
+        );
+      }
+      return 'found ${page.items.length}: ${page.items.first.title}';
+    });
+  });
+
+  // The probe this whole file exists for. `decodeBookDetails` reads authors, narrators and genres
+  // with required: true, and an extension that leaves one out fails here rather than on a listener's
+  // first tap — which is how it failed before.
+  await _probe('archive-book-details', () async {
+    return withSource((source, http) async {
+      final book = await source.getBookDetails('the_whale_1610.poem_librivox');
+      if (book.title != 'The Whale') throw StateError('title is ${book.title}');
+      if (book.authors.join() != 'Ellis Parker Butler') {
+        throw StateError('authors are ${book.authors}');
+      }
+      // Empty and present: the Archive has no narrator field, and saying nothing is not the same
+      // as failing to answer.
+      if (book.narrators.isNotEmpty) {
+        throw StateError('narrators are ${book.narrators}');
+      }
+      // Split, not one long semicolon-separated string drawn as a single chip.
+      if (book.genres.length < 4 || book.genres.any((g) => g.contains(';'))) {
+        throw StateError('genres are ${book.genres}');
+      }
+      final description = book.description ?? '';
+      if (description.contains('<')) {
+        throw StateError('the description still holds markup: $description');
+      }
+      if (book.language != 'en') {
+        throw StateError('language is ${book.language}');
+      }
+      if (book.status != BookStatus.complete) {
+        throw StateError('status is ${book.status}');
+      }
+      return 'decoded: ${book.genres.length} genres, no narrators claimed';
+    });
+  });
+
+  // Sixty audio files, four renderings of each of fifteen chapters, grouped by the `original` every
+  // derivative names. Getting this wrong gives a book with sixty chapters.
+  await _probe('archive-chapters-are-grouped', () async {
+    return withSource((source, http) async {
+      final chapters = await source.getChapters('the_whale_1610.poem_librivox');
+      if (chapters.length != 15) {
+        throw StateError('expected fifteen chapters, got ${chapters.length}');
+      }
+      final keys = chapters.map((c) => c.key).toSet();
+      if (keys.length != chapters.length) {
+        throw StateError('chapter keys repeat');
+      }
+      if (chapters.any((c) => c.durationMs == null)) {
+        throw StateError('a chapter has no duration');
+      }
+      if (!chapters.first.title.startsWith('01')) {
+        throw StateError('not in track order: ${chapters.first.title}');
+      }
+      return 'sixty files became ${chapters.length} chapters, in order';
+    });
+  });
+
+  await _probe('archive-resolve-media', () async {
+    return withSource((source, http) async {
+      final chapters = await source.getChapters('the_whale_1610.poem_librivox');
+      final media = await source.resolveMedia(
+        ChapterRef(
+          bookKey: 'the_whale_1610.poem_librivox',
+          chapterKey: chapters.first.key,
+        ),
+        const ResolveContext(
+          purpose: ResolvePurpose.stream,
+          network: NetworkType.unknown,
+        ),
+      );
+      final segment = media.segments.single;
+      if (!segment.request.url.toString().startsWith(
+        'https://archive.org/download/',
+      )) {
+        throw StateError('url is ${segment.request.url}');
+      }
+      if (segment.format != MediaFormat.mp3) {
+        throw StateError('format is ${segment.format}');
+      }
+      if (media.expiresAt != null) {
+        throw StateError('the Archive serves these without an expiry');
+      }
+      return 'one segment: ${segment.request.url}';
+    });
+  });
+
+  await _probe('archive-unknown-item', () async {
+    return withSource((source, http) async {
+      try {
+        await source.getBookDetails('no_such_item_at_all');
+        throw StateError('an item that does not exist was read anyway');
+      } on SourceException catch (error) {
+        return 'refused as ${error.kind}';
+      }
+    });
+  });
+}
+
+Future<void> _runStorynoryProbes() async {
+  Future<T> withSource<T>(
+    Future<T> Function(JsSourceAdapter source, _StorynoryFixtures http) body,
+  ) async {
+    final http = await _StorynoryFixtures.load();
+    return _withExtension(
+      asset: 'assets/storynory/main.js',
+      extensionId: 'org.kikuyomi.storynory',
+      sourceKey: 'storynory',
+      // The three hosts the manifest names. The audio one is load-bearing: without it the media
+      // URL fails the allowlist and a story will not play.
+      domains: const ['storynory.com', '*.storynory.com', '*.libsyn.com'],
+      http: http,
+      body: (source) => body(source, http),
+    );
+  }
+
+  await _probe('storynory-loads', () async {
+    return withSource((source, http) async {
+      if (source.capabilities.isNotEmpty) {
+        throw StateError('capabilities are ${source.capabilities}');
+      }
+      return 'loaded, declaring nothing optional';
+    });
+  });
+
+  await _probe('storynory-popular', () async {
+    return withSource((source, http) async {
+      final page = await source.getPopular(1);
+      if (page.items.length != 4) {
+        throw StateError('expected four stories, got ${page.items.length}');
+      }
+      if (page.hasNextPage) throw StateError('four is the whole fixture');
+      if (http.asked.length != 1) {
+        throw StateError('a listing cost ${http.asked.length} requests');
+      }
+      return 'four stories: ${page.items.first.title}';
+    });
+  });
+
+  await _probe('storynory-search-reads-the-feed-once', () async {
+    return withSource((source, http) async {
+      final page = await source.search(const SearchQuery(text: 'magic'), 1);
+      if (page.items.length != 1) {
+        throw StateError('found ${page.items.map((b) => b.title)}');
+      }
+      if (http.asked.length != 1) {
+        throw StateError('matching locally cost ${http.asked.length} requests');
+      }
+      return 'matched in the feed already in hand: ${page.items.single.title}';
+    });
+  });
+
+  await _probe('storynory-book-details', () async {
+    return withSource((source, http) async {
+      final page = await source.getPopular(1);
+      final book = await source.getBookDetails(page.items.first.key);
+      if (book.narrators.isNotEmpty) {
+        throw StateError('narrators are ${book.narrators}');
+      }
+      if (book.genres.isEmpty) {
+        throw StateError(
+          'the feed names categories; genres are ${book.genres}',
+        );
+      }
+      final description = book.description ?? '';
+      if (description.contains('<') || description.contains('CDATA')) {
+        throw StateError('the summary still holds markup: $description');
+      }
+      if (book.totalDurationMs == null || book.totalDurationMs! <= 0) {
+        throw StateError('duration is ${book.totalDurationMs}');
+      }
+      return 'decoded: ${book.genres.join(', ')}';
+    });
+  });
+
+  await _probe('storynory-one-story-is-one-chapter', () async {
+    return withSource((source, http) async {
+      final page = await source.getPopular(1);
+      final chapters = await source.getChapters(page.items.first.key);
+      if (chapters.length != 1) {
+        throw StateError('expected one chapter, got ${chapters.length}');
+      }
+      return 'one story, one chapter: ${chapters.single.title}';
+    });
+  });
+
+  // The probe that proves the libsyn wildcard earns its place: the audio is on another host
+  // entirely, and the decoder checks it against the manifest's domains.
+  await _probe('storynory-resolve-media', () async {
+    return withSource((source, http) async {
+      final page = await source.getPopular(1);
+      final chapters = await source.getChapters(page.items.first.key);
+      final media = await source.resolveMedia(
+        ChapterRef(
+          bookKey: page.items.first.key,
+          chapterKey: chapters.single.key,
+        ),
+        const ResolveContext(
+          purpose: ResolvePurpose.stream,
+          network: NetworkType.unknown,
+        ),
+      );
+      final segment = media.segments.single;
+      if (segment.request.url.host != 'traffic.libsyn.com') {
+        throw StateError('url is ${segment.request.url}');
+      }
+      if (segment.format != MediaFormat.mp3) {
+        throw StateError('format is ${segment.format}');
+      }
+      return 'audio on another host, allowed: ${segment.request.url.host}';
+    });
+  });
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   _emit('QJS_PROBE INFO probe=spike-a-qjs-probe');
@@ -1576,6 +1974,8 @@ Future<void> main() async {
   await _runEngineProbes();
   await _runProtocolProbes();
   await _runLibriVoxProbes();
+  await _runArchiveProbes();
+  await _runStorynoryProbes();
 
   _emit('QJS_PROBE DONE passed=$_passed failed=$_failed');
 
