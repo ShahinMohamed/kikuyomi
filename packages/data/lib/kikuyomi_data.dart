@@ -11,6 +11,7 @@ export 'src/backup/drift_backup_store.dart';
 export 'src/database/converters.dart';
 export 'src/database/database.dart';
 export 'src/database/tables.dart';
+export 'src/downloads/chapter_downloads.dart';
 export 'src/downloads/download_queue.dart';
 export 'src/downloads/download_storage.dart';
 export 'src/downloads/drift_download_store.dart';

@@ -240,6 +240,31 @@ final class PlaybackCoordinator {
     _publish();
   });
 
+  /// Moves to the start of chapter [chapterId], for a listener who picked it out of a list.
+  ///
+  /// Not the same as seeking to where that chapter happens to begin: a list gives a chapter's
+  /// identity, and turning that into a position is the Timeline's job, not the caller's. The caller
+  /// has a row; only the Timeline knows what millisecond it starts at, and only it knows whether
+  /// the book's layout has changed since the row was drawn.
+  ///
+  /// A chapter this book's Timeline does not hold is ignored. §4.4 keeps a chapter whose files
+  /// could not be laid out, so a details screen can list one that has no position to move to, and a
+  /// tap on it should do nothing rather than land somewhere arbitrary.
+  Future<void> goToChapter(int chapterId) => _serial(() async {
+    final session = _session;
+    if (session == null) return;
+    final timeline = session.timeline;
+    if (!timeline.chapterIds.contains(chapterId)) return;
+    session.retried = false;
+    session.completed = false;
+    await _seekInternal(
+      session,
+      timeline.globalOf(ChapterPosition(chapterId: chapterId, offsetMs: 0)),
+    );
+    _pinSleepChapter(session);
+    _publish();
+  });
+
   /// Restarts the current chapter, or moves to the previous one near its start. See
   /// [previousChapterThreshold].
   Future<void> previousChapter() => _serial(() async {

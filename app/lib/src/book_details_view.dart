@@ -1,7 +1,8 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:kikuyomi_data/kikuyomi_data.dart' show BookOverview, CoverFiles;
+import 'package:kikuyomi_data/kikuyomi_data.dart'
+    show BookOverview, ChapterDownload, CoverFiles;
 import 'package:kikuyomi_design_system/kikuyomi_design_system.dart';
 
 import 'downloads/book_downloads.dart';
@@ -26,6 +27,12 @@ enum PlayFrom {
 /// markers have no menu: §4.5 records listened state for the file's one chapter, not for a marker,
 /// so marking the book finished or not is how it is set.
 ///
+/// A chapter row does three things, and which of them a tap means is decided by where it lands.
+/// Tapping the row plays from that chapter; tapping the arrow on the right downloads it; the menu
+/// marks it listened. Playing is the one a listener does most, so it gets the whole row, and the
+/// other two get targets of their own rather than sharing it through a long press -- a long press
+/// is not reachable by keyboard, and a screen reader cannot announce one.
+///
 /// Fed with data rather than watching providers, so it can be tested without a database.
 class BookDetailsView extends StatelessWidget {
   const BookDetailsView({
@@ -35,10 +42,15 @@ class BookDetailsView extends StatelessWidget {
     required this.onRemove,
     required this.listenedCommands,
     this.downloads = BookDownloads.none,
+    this.chapterDownloads = const {},
     this.onDownload,
     this.onStopDownloading,
     this.onAddToLibrary,
     this.onOpenAtSource,
+    this.onPlayChapter,
+    this.onDownloadChapters,
+    this.onRefresh,
+    this.onOpenDownloadQueue,
   });
 
   final BookOverview book;
@@ -70,6 +82,41 @@ class BookDetailsView extends StatelessWidget {
   /// import has none of.
   final VoidCallback? onOpenAtSource;
 
+  /// Where each chapter's audio is, by chapter id (§5.2). Chapters missing from the map read as
+  /// [ChapterDownload.absent].
+  final Map<int, ChapterDownload> chapterDownloads;
+
+  /// Plays the book from the start of a chapter.
+  final ValueChanged<int>? onPlayChapter;
+
+  /// Queues the files behind these chapters, in the order given.
+  final ValueChanged<List<int>>? onDownloadChapters;
+
+  /// Asks the source for the book again. Null for a book with no source to ask.
+  final Future<void> Function()? onRefresh;
+
+  /// Opens the downloads screen, from the chapter list's own menu, where a listener who has just
+  /// queued twenty chapters is looking.
+  final VoidCallback? onOpenDownloadQueue;
+
+  /// The chapters a "download the next few" action would take, in order: those not listened to and
+  /// not already here, starting at where the listener is.
+  ///
+  /// Listened chapters are skipped rather than counted, so "next 5" after finishing ten means the
+  /// five after those ten, not five of them again. Chapters already downloaded are skipped for the
+  /// same reason: a listener asking for five wants five more, not five rows that were already
+  /// green.
+  List<int> _nextChapters([int? count]) {
+    final wanted = <int>[];
+    for (final chapter in book.chapters) {
+      if (chapter.listened) continue;
+      if (chapterDownloads[chapter.chapterId] == ChapterDownload.here) continue;
+      wanted.add(chapter.chapterId);
+      if (count != null && wanted.length >= count) break;
+    }
+    return wanted;
+  }
+
   /// Wider than this, the content stays at a readable measure in the middle of the window.
   static const _maxContentWidth = 720.0;
 
@@ -87,7 +134,9 @@ class BookDetailsView extends StatelessWidget {
           16.0,
           (constraints.maxWidth - _maxContentWidth) / 2,
         );
-        return ListView(
+        final list = ListView(
+          // Always scrollable, so that a short book can still be pulled down to refresh.
+          physics: const AlwaysScrollableScrollPhysics(),
           // Room at the foot for the floating button, which would otherwise sit on the last chapter.
           padding: EdgeInsets.fromLTRB(side, 16, side, 96),
           children: [
@@ -146,7 +195,25 @@ class BookDetailsView extends StatelessWidget {
               ),
             ],
             const SizedBox(height: 24),
-            Text(_chapterCount(), style: theme.textTheme.titleMedium),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    _chapterCount(),
+                    style: theme.textTheme.titleMedium,
+                  ),
+                ),
+                if (onDownloadChapters != null)
+                  _DownloadMenu(
+                    next: _nextChapters,
+                    all: [
+                      for (final chapter in book.chapters) chapter.chapterId,
+                    ],
+                    onDownloadChapters: onDownloadChapters!,
+                    onOpenDownloadQueue: onOpenDownloadQueue,
+                  ),
+              ],
+            ),
             const SizedBox(height: 8),
             // §4.5: a single file's embedded markers are its chapters as far as the listener is
             // concerned, and the one chapter spanning the file would only repeat the book's title.
@@ -165,6 +232,15 @@ class BookDetailsView extends StatelessWidget {
                   durationMs: chapter.durationMs,
                   listened: chapter.listened,
                   current: chapter.current && !finished,
+                  download:
+                      chapterDownloads[chapter.chapterId] ??
+                      ChapterDownload.absent,
+                  onPlay: onPlayChapter == null
+                      ? null
+                      : () => onPlayChapter!(chapter.chapterId),
+                  onDownload: onDownloadChapters == null
+                      ? null
+                      : () => onDownloadChapters!([chapter.chapterId]),
                   onMark: (listened) => markChapterListened(
                     context,
                     listenedCommands,
@@ -174,6 +250,14 @@ class BookDetailsView extends StatelessWidget {
                 ),
           ],
         );
+        // Pull to refresh, where there is a source to ask. This is the whole of the app's answer to
+        // a serial that keeps publishing: a listener who wonders whether there is a new chapter
+        // pulls the page they are already looking at, rather than the app sweeping the library on a
+        // schedule to answer a question nobody asked.
+        final refresh = onRefresh;
+        return refresh == null
+            ? list
+            : RefreshIndicator(onRefresh: refresh, child: list);
       },
     );
   }
@@ -222,12 +306,25 @@ class _EntryTile extends StatelessWidget {
     required this.durationMs,
     required this.listened,
     required this.current,
+    this.download = ChapterDownload.absent,
+    this.onPlay,
+    this.onDownload,
     this.onMark,
   });
 
   final String title;
   final int? durationMs;
   final bool listened;
+
+  /// Where this chapter's audio is (§5.2).
+  final ChapterDownload download;
+
+  /// Plays the book from here. Null for a row that cannot be played from, which an embedded marker
+  /// on a book with no layout is.
+  final VoidCallback? onPlay;
+
+  /// Queues this chapter's files. Null where there is nothing to fetch.
+  final VoidCallback? onDownload;
 
   /// Where the listener is. Not shown for a finished book, where it would only point at the end.
   final bool current;
@@ -244,6 +341,7 @@ class _EntryTile extends StatelessWidget {
     return ListTile(
       contentPadding: EdgeInsets.zero,
       selected: current,
+      onTap: onPlay,
       leading: SizedBox.square(
         dimension: 24,
         child: current
@@ -263,6 +361,12 @@ class _EntryTile extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 ?length,
+                if (onDownload != null)
+                  _ChapterDownloadButton(
+                    title: title,
+                    state: download,
+                    onDownload: onDownload!,
+                  ),
                 // A button of its own, rather than a long press on the row, so the menu is found and
                 // reached the same way by mouse, touch and keyboard, and a screen reader names it.
                 PopupMenuButton<bool>(
@@ -281,6 +385,141 @@ class _EntryTile extends StatelessWidget {
             ),
     );
   }
+}
+
+/// The arrow on a chapter row, and what it is doing.
+///
+/// One control with four faces rather than four controls: a listener looks at a row to find out
+/// whether that chapter is on the device, and the answer belongs where the action is.
+class _ChapterDownloadButton extends StatelessWidget {
+  const _ChapterDownloadButton({
+    required this.title,
+    required this.state,
+    required this.onDownload,
+  });
+
+  final String title;
+  final ChapterDownload state;
+  final VoidCallback onDownload;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return switch (state) {
+      // The three states with nothing to press are drawn rather than disabled, and they absorb
+      // their own taps. A disabled button does not stop a tap: without absorbing, it falls through
+      // to the row, which plays the book from here -- so a listener aiming at an inert tick, or a
+      // screen reader activating one, would start playback instead of nothing.
+      ChapterDownload.here => _inert(
+        tooltip: '$title is downloaded',
+        child: Icon(Icons.download_done, color: colors.primary),
+      ),
+      ChapterDownload.working => _inert(
+        tooltip: 'Downloading $title',
+        child: const SizedBox.square(
+          dimension: 18,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      ),
+      ChapterDownload.queued => _inert(
+        tooltip: '$title is waiting to download',
+        child: const Icon(Icons.hourglass_empty),
+      ),
+      ChapterDownload.failed => IconButton(
+        icon: const Icon(Icons.error_outline),
+        color: colors.error,
+        onPressed: onDownload,
+        tooltip: '$title did not download. Try again',
+      ),
+      ChapterDownload.absent => IconButton(
+        icon: const Icon(Icons.arrow_circle_down_outlined),
+        onPressed: onDownload,
+        tooltip: 'Download $title',
+      ),
+    };
+  }
+
+  /// A state with nothing to press, sized and placed like the buttons beside it so that the column
+  /// of arrows stays a column.
+  ///
+  /// The empty `onTap` is doing real work and is not a placeholder. A tap here must not reach the
+  /// row underneath, which plays the book from this chapter, and neither a disabled button nor an
+  /// `AbsorbPointer` stops that: absorbing keeps events from a widget's own descendants, while the
+  /// row's ink well is its *ancestor* and still wins the gesture arena. A recognizer of its own,
+  /// deeper in the tree, is what beats it.
+  Widget _inert({required String tooltip, required Widget child}) =>
+      GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {},
+        child: Tooltip(
+          message: tooltip,
+          child: Semantics(
+            label: tooltip,
+            child: SizedBox.square(dimension: 48, child: Center(child: child)),
+          ),
+        ),
+      );
+}
+
+/// Downloading several chapters at once, from the chapter list's heading.
+///
+/// The counts are what a listener actually wants: enough for the commute, enough for the flight, or
+/// the lot. Each skips what is listened and what is already here, so "next 5" is five more rather
+/// than five it already had.
+class _DownloadMenu extends StatelessWidget {
+  const _DownloadMenu({
+    required this.next,
+    required this.all,
+    required this.onDownloadChapters,
+    required this.onOpenDownloadQueue,
+  });
+
+  final List<int> Function([int? count]) next;
+
+  /// Every chapter of the book, listened or not, for the one item that does not mean "next".
+  final List<int> all;
+
+  final ValueChanged<List<int>> onDownloadChapters;
+  final VoidCallback? onOpenDownloadQueue;
+
+  @override
+  Widget build(BuildContext context) => PopupMenuButton<VoidCallback>(
+    // A plain arrow, not the strip's filled download icon. They sit a few rows apart and do
+    // different things -- the strip downloads the book, this picks how much of it -- and two of the
+    // same glyph would read as the same button twice.
+    icon: const Icon(Icons.arrow_downward),
+    tooltip: 'Download chapters',
+    onSelected: (action) => action(),
+    itemBuilder: (context) => [
+      PopupMenuItem(
+        value: () => onDownloadChapters(next(1)),
+        child: const Text('Next chapter'),
+      ),
+      PopupMenuItem(
+        value: () => onDownloadChapters(next(5)),
+        child: const Text('Next 5 chapters'),
+      ),
+      PopupMenuItem(
+        value: () => onDownloadChapters(next(10)),
+        child: const Text('Next 10 chapters'),
+      ),
+      PopupMenuItem(
+        value: () => onDownloadChapters(next()),
+        child: const Text('All unlistened chapters'),
+      ),
+      PopupMenuItem(
+        value: () => onDownloadChapters(all),
+        child: const Text('All chapters'),
+      ),
+      if (onOpenDownloadQueue != null) ...[
+        const PopupMenuDivider(),
+        PopupMenuItem(
+          value: onOpenDownloadQueue!,
+          child: const Text('Download queue'),
+        ),
+      ],
+    ],
+  );
 }
 
 /// What a book's download is doing, under the buttons.

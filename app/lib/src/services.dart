@@ -585,6 +585,79 @@ final class AppServices {
     return asked;
   }
 
+  /// Queues the files behind [chapterIds], in the order given, and sets the queue going.
+  ///
+  /// One pump for the lot rather than one per chapter: asking for ten chapters is one action, and
+  /// ten pumps would have the scheduler start, find its slots full, and stop again nine times.
+  ///
+  /// Chapters sharing a file queue it once, which is why what comes back is counted in files and
+  /// not in chapters. "Ten chapters, two files" is the truthful answer for an M4B and the one worth
+  /// showing.
+  Future<EnqueuedDownloads> downloadChapters(List<int> chapterIds) async {
+    var added = 0;
+    var alreadyQueued = 0;
+    var alreadyOnDevice = 0;
+    for (final chapterId in chapterIds) {
+      final asked = await enqueueChapterDownload(
+        database,
+        chapterId,
+        clock: clock,
+      );
+      added += asked.added;
+      alreadyQueued += asked.alreadyQueued;
+      alreadyOnDevice += asked.alreadyOnDevice;
+    }
+    unawaited(downloads.pump());
+    return EnqueuedDownloads(
+      added: added,
+      alreadyQueued: alreadyQueued,
+      alreadyOnDevice: alreadyOnDevice,
+    );
+  }
+
+  /// Asks the source for book [bookId] again, and returns how many chapters that added.
+  ///
+  /// This is the whole of the app's answer to a serial that keeps publishing. §4.4's merge does the
+  /// work: a book already known is refreshed rather than replaced, so the listener's edits, their
+  /// progress and their bookmarks survive, and chapters they already have keep their listened state
+  /// and their files.
+  ///
+  /// Only on demand, from the book's own page. A background job that swept the whole library was
+  /// the other way to do this, and it is a great deal more machinery for something a listener can
+  /// ask for in the one place they are already looking.
+  ///
+  /// Throws [StateError] for a book with no source to ask -- one added off this device -- and
+  /// whatever the extension throws for one whose source will not answer.
+  Future<int> refreshBookFromSource(int bookId) async {
+    final book = await (database.select(
+      database.books,
+    )..where((b) => b.id.equals(bookId))).getSingleOrNull();
+    if (book == null) throw StateError('That book is no longer here.');
+    if (book.sourceId == localSourceId) {
+      throw StateError(
+        'This book was added from this device, so there is no source to ask.',
+      );
+    }
+
+    final before = await _chapterCount(bookId);
+    final fetched = await previewSourceBook(book.sourceId, book.key);
+    await saveSourceBook(
+      database,
+      sourceId: book.sourceId,
+      details: fetched.details,
+      chapters: fetched.chapters,
+      clock: clock,
+    );
+    return await _chapterCount(bookId) - before;
+  }
+
+  Future<int> _chapterCount(int bookId) async {
+    final rows = await (database.select(
+      database.chapters,
+    )..where((c) => c.bookId.equals(bookId))).get();
+    return rows.length;
+  }
+
   /// Stops download [taskId], keeping what has arrived.
   Future<void> pauseDownload(int taskId) => downloads.pause(taskId);
 

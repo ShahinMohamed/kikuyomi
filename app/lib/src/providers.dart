@@ -183,6 +183,17 @@ final bookOverviewProvider = StreamProvider.autoDispose
 
 /// How far a book's download has got, watched, so a progress bar follows the queue without anything
 /// being refreshed (§2.5). Disposed once no screen shows the book.
+/// Where each chapter of a book stands, for the arrows on its details screen (§5.2).
+///
+/// Its own provider rather than part of `bookOverviewProvider`: the overview changes when the book
+/// does, and this changes on every byte of progress, so joining them would rebuild the header,
+/// the description and the credits a few times a second while something downloads.
+final chapterDownloadsProvider = StreamProvider.autoDispose
+    .family<Map<int, ChapterDownload>, int>(
+      (ref, bookId) =>
+          watchChapterDownloads(ref.watch(servicesProvider).database, bookId),
+    );
+
 final bookDownloadsProvider = StreamProvider.autoDispose
     .family<BookDownloads, int>(
       (ref, bookId) => watchBookDownloads(
