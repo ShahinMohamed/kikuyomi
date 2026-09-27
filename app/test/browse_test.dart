@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kikuyomi/src/app_shell.dart';
-import 'package:kikuyomi/src/browse_screen.dart';
+import 'package:kikuyomi/src/sources_view.dart';
 import 'package:kikuyomi/src/source_books_view.dart';
 import 'package:kikuyomi/src/sources/source_books_controller.dart';
 import 'package:kikuyomi/src/sources/source_error_view.dart';
@@ -27,6 +27,15 @@ const librivox = SourceDescription(
   lang: 'multi',
   capabilities: {SourceCapability.filters},
   extensionId: 'org.kikuyomi.librivox',
+);
+
+const storynory = SourceDescription(
+  id: 0x53544f,
+  key: 'storynory',
+  name: 'Storynory',
+  lang: 'en',
+  capabilities: {},
+  extensionId: 'org.kikuyomi.storynory',
 );
 
 PageResult<BookSummary> booksPage(int from, int count, {bool more = false}) =>
@@ -109,6 +118,146 @@ void main() {
       );
 
       expect(find.textContaining('No sources yet'), findsOneWidget);
+    });
+
+    testWidgets('groups the sources by language', (tester) async {
+      // A list of thirty sources is unreadable in one run, and language is what divides them.
+      await tester.pumpWidget(
+        wrap(
+          Scaffold(
+            body: SourcesView(
+              sources: const [local, librivox, storynory],
+              onOpen: (_) {},
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Several languages'), findsWidgets);
+      expect(find.text('EN'), findsOneWidget);
+      expect(find.text('UND'), findsOneWidget);
+    });
+
+    testWidgets('puts the last one used at the top', (tester) async {
+      // Coming back to Browse usually means going back where you were.
+      await tester.pumpWidget(
+        wrap(
+          Scaffold(
+            body: SourcesView(
+              sources: const [local, librivox, storynory],
+              recent: const [0x53544f],
+              onOpen: (_) {},
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Last used'), findsOneWidget);
+      // Once under its heading and once under its language: the groups answer different questions,
+      // and a source leaving its language would make the language list wrong.
+      expect(find.text('Storynory'), findsNWidgets(2));
+    });
+
+    testWidgets('only the most recent counts as last used', (tester) async {
+      await tester.pumpWidget(
+        wrap(
+          Scaffold(
+            body: SourcesView(
+              sources: const [local, librivox, storynory],
+              recent: const [0x53544f, 0x4c4942],
+              onOpen: (_) {},
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Storynory'), findsNWidgets(2));
+      expect(find.text('LibriVox'), findsOneWidget);
+    });
+
+    testWidgets('shows pinned sources under their own heading', (tester) async {
+      await tester.pumpWidget(
+        wrap(
+          Scaffold(
+            body: SourcesView(
+              sources: const [local, librivox, storynory],
+              pinned: const [0x4c4942],
+              onOpen: (_) {},
+              onTogglePin: (_) {},
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Pinned'), findsOneWidget);
+      expect(find.text('LibriVox'), findsNWidgets(2));
+    });
+
+    testWidgets('pinning and unpinning say which source', (tester) async {
+      final toggled = <String>[];
+      await tester.pumpWidget(
+        wrap(
+          Scaffold(
+            body: SourcesView(
+              sources: const [librivox],
+              onOpen: (_) {},
+              onTogglePin: (source) => toggled.add(source.name),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.byTooltip('Pin LibriVox'));
+      expect(toggled, ['LibriVox']);
+    });
+
+    testWidgets('a pinned source offers to be unpinned', (tester) async {
+      await tester.pumpWidget(
+        wrap(
+          Scaffold(
+            body: SourcesView(
+              sources: const [librivox],
+              pinned: const [0x4c4942],
+              onOpen: (_) {},
+              onTogglePin: (_) {},
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byTooltip('Unpin LibriVox'), findsWidgets);
+    });
+
+    testWidgets('the local source cannot be pinned', (tester) async {
+      // It is not a source you browse, and it is already at the top of everything.
+      await tester.pumpWidget(
+        wrap(
+          Scaffold(
+            body: SourcesView(
+              sources: const [local],
+              onOpen: (_) {},
+              onTogglePin: (_) {},
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byTooltip('Pin Local files'), findsNothing);
+    });
+
+    testWidgets('a source whose extension has no icon still shows', (
+      tester,
+    ) async {
+      // Extensions published before icons, and folders an author has not drawn one for.
+      await tester.pumpWidget(
+        wrap(
+          Scaffold(
+            body: SourcesView(sources: const [librivox], onOpen: (_) {}),
+          ),
+        ),
+      );
+
+      expect(find.byIcon(Icons.public), findsOneWidget);
     });
   });
 

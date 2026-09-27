@@ -26,6 +26,13 @@ const extensionManifestFileName = 'manifest.json';
 /// The bundled code's name inside a package.
 const extensionCodeFileName = 'main.js';
 
+/// The icon's name inside a package, as §3.3 lists one among a package's files.
+///
+/// Optional, and an extension without one is not refused: an author working in a folder has code
+/// long before they have artwork, and a list that shows a placeholder beside such an extension is
+/// better than one that will not install it.
+const extensionIconFileName = 'icon.png';
+
 /// The files of one extension package. What holds them is the caller's business.
 abstract interface class ExtensionFiles {
   /// What to call this package in a message meant for a person: a folder's path, or
@@ -63,6 +70,7 @@ final class ExtensionPackage {
     required this.manifestJson,
     required this.code,
     required this.hashesChecked,
+    this.icon,
   });
 
   final ExtensionManifest manifest;
@@ -73,6 +81,12 @@ final class ExtensionPackage {
 
   /// `main.js`, decoded as UTF-8.
   final String code;
+
+  /// The icon's bytes, when the package has one.
+  ///
+  /// Held rather than decoded: what reads it is a widget, and what writes it is an install. Neither
+  /// needs this code to know what a PNG is.
+  final Uint8List? icon;
 
   /// Whether [code] was held to the hash the manifest names.
   ///
@@ -117,7 +131,43 @@ Future<ExtensionPackage> readExtensionPackage(
     manifestJson: manifestJson,
     code: utf8.decode(bytes),
     hashesChecked: checkHashes,
+    icon: await _readIcon(files, manifest, checkHashes: checkHashes),
   );
+}
+
+/// The package's icon, or null when it has none.
+///
+/// A missing icon is not a failure. A *wrong* one is, when the manifest named it and hashes are
+/// being checked: at that point the package is claiming to contain a file it does not, which is the
+/// same claim about `main.js` that would be refused.
+Future<Uint8List?> _readIcon(
+  ExtensionFiles files,
+  ExtensionManifest manifest, {
+  required bool checkHashes,
+}) async {
+  final declared = manifest.files[extensionIconFileName];
+  final Uint8List bytes;
+  try {
+    bytes = await files.read(extensionIconFileName);
+  } on ExtensionPackageException {
+    if (checkHashes && declared != null) {
+      throw ExtensionPackageException(
+        files.description,
+        'its manifest lists $extensionIconFileName and the package has none',
+      );
+    }
+    return null;
+  }
+  if (checkHashes && declared != null) {
+    final actual = sha256OfExtensionFile(bytes);
+    if (declared != actual) {
+      throw ExtensionPackageException(
+        files.description,
+        '$extensionIconFileName is $actual, and its manifest says $declared',
+      );
+    }
+  }
+  return bytes;
 }
 
 /// [bytes] as a manifest's `files` map spells a hash: `sha256-` and then base64.

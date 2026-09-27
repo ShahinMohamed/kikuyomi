@@ -58,9 +58,26 @@ final class ExtensionInstallFolder {
         .writeAsString(package.manifestJson);
     await File('${partial.path}$_slash$extensionCodeFileName')
         .writeAsString(package.code);
+    // Kept beside the code so that a list can show it with no network and no unpacking. An
+    // extension without one simply has no file here, and the list shows a placeholder.
+    if (package.icon case final icon?) {
+      await File('${partial.path}$_slash$extensionIconFileName')
+          .writeAsBytes(icon);
+    }
     if (await target.exists()) await target.delete(recursive: true);
     await partial.rename(target.path);
     return installPath;
+  }
+
+  /// The icon of the extension installed at [installPath], or null when it has none.
+  ///
+  /// A path rather than bytes: a widget wants an image file, and reading one into memory to hand it
+  /// over would be the list holding every icon it has ever drawn.
+  File? iconAt(String installPath) {
+    final file = File(
+      '${_folderAt(installPath).path}$_slash$extensionIconFileName',
+    );
+    return file.existsSync() ? file : null;
   }
 
   /// The files of the extension installed at [installPath], to read its package back.

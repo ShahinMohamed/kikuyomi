@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kikuyomi_data/kikuyomi_data.dart';
 import 'package:kikuyomi_domain/kikuyomi_domain.dart';
 
+import 'app_shell.dart';
 import 'downloads/downloads_overview.dart';
 import 'downloads_view.dart';
 import 'providers.dart';
@@ -13,8 +14,8 @@ import 'snack_bars.dart';
 
 /// Downloads: what is on this device and what is being fetched (§5.6).
 ///
-/// Reached from the library's app bar, beside Settings, for the reason Settings is there: §2.6's More
-/// tab does not exist yet, and this belongs in it when it does.
+/// A tab of its own rather than a button on the library's app bar. A listener who has queued twenty
+/// chapters comes back to this screen repeatedly while they arrive, and that is what a tab is for.
 ///
 /// Everything it shows is watched, so a file that finishes while the screen is open moves by itself
 /// (§2.5). The screen's own state is one book id — whichever is being worked on — because deleting a
@@ -33,7 +34,8 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
   Widget build(BuildContext context) {
     final downloads = ref.watch(downloadsProvider);
     final rates = ref.watch(downloadRatesProvider).value ?? const {};
-    return Scaffold(
+    return AppShell(
+      tab: AppTab.downloads,
       appBar: AppBar(title: const Text('Downloads')),
       body: downloads.when(
         data: (books) => DownloadsView(

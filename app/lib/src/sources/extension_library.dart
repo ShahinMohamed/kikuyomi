@@ -38,6 +38,7 @@ final class ExtensionSummary {
     required this.row,
     required this.isRunnable,
     this.earlierVersions = const [],
+    this.iconPath,
   });
 
   final ExtensionRow row;
@@ -51,6 +52,20 @@ final class ExtensionSummary {
 
   /// Whether nothing proved this code is what its author published (§3.8).
   bool get isUnverified => row.status == ExtensionStatus.untrusted;
+
+  /// Where its icon is on this device, or null when it has none (§3.3).
+  ///
+  /// A path, because an icon is a file beside the code the install wrote, and a list should draw it
+  /// from disk rather than hold every icon it has ever shown in memory. Null for the extension that
+  /// ships inside the app, whose icon is an app asset -- see [bundledIconAsset].
+  final String? iconPath;
+
+  /// The asset an extension bundled with the app draws its icon from, or null for any other.
+  ///
+  /// The bundled one is never installed into the app's storage, so it has no file to point at. Its
+  /// icon sits where its code does, in the app's own assets.
+  String? get bundledIconAsset =>
+      isBundled ? 'assets/extensions/${row.id.split('.').last}/icon.png' : null;
 
   /// The other versions of it still on disk, newest first (§3.9).
   ///
@@ -586,6 +601,9 @@ final class ExtensionLibrary {
         ExtensionSummary(
           row: row,
           isRunnable: runnable.contains(row.id),
+          iconPath: row.installPath == null
+              ? null
+              : _installs.iconAt(row.installPath!)?.path,
           earlierVersions: row.origin == ExtensionOrigin.bundled
               ? const []
               : [

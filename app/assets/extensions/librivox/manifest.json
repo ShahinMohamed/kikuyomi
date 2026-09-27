@@ -1,8 +1,8 @@
 {
   "id": "org.kikuyomi.librivox",
   "name": "LibriVox",
-  "version": "1.0.0",
-  "versionCode": 1,
+  "version": "1.0.1",
+  "versionCode": 2,
   "apiVersion": "1.0",
   "minAppVersion": "1.0.0",
   "author": "Kikuyomi",
@@ -25,6 +25,7 @@
     }
   ],
   "files": {
-    "main.js": "sha256-yBLA2emKTfNJeLeylCHqh1r+psOto/6ni1Ah3xFXDsY="
+    "main.js": "sha256-yBLA2emKTfNJeLeylCHqh1r+psOto/6ni1Ah3xFXDsY=",
+    "icon.png": "sha256-6VCOhFUE+Kv9wl88xB5zkCYqaBHlMlaK+34MNprT3Ik="
   }
 }

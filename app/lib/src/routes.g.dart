@@ -72,6 +72,11 @@ RouteBase get $homeRoute => GoRouteData.$route(
       factory: $HistoryRoute._fromState,
     ),
     GoRouteData.$route(
+      path: 'more',
+      hasOverriddenOnExit: false,
+      factory: $MoreRoute._fromState,
+    ),
+    GoRouteData.$route(
       path: 'browse',
       hasOverriddenOnExit: false,
       factory: $BrowseRoute._fromState,
@@ -241,6 +246,26 @@ mixin $HistoryRoute on GoRouteData {
 
   @override
   String get location => GoRouteData.$location('/history');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+mixin $MoreRoute on GoRouteData {
+  static MoreRoute _fromState(GoRouterState state) => const MoreRoute();
+
+  @override
+  String get location => GoRouteData.$location('/more');
 
   @override
   void go(BuildContext context) => context.go(location);

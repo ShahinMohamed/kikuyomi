@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:kikuyomi_domain/kikuyomi_domain.dart';
 
@@ -25,6 +27,8 @@ class ExtensionsView extends StatelessWidget {
     required this.onUpdate,
     required this.onRollBack,
     required this.onOpenConsole,
+    required this.onCheckForUpdates,
+    required this.checking,
   });
 
   /// Every extension the app knows about, bundled and installed.
@@ -59,6 +63,12 @@ class ExtensionsView extends StatelessWidget {
   /// Opens the console, for every extension or for one.
   final ValueChanged<String?> onOpenConsole;
 
+  /// Asks every repository what it is offering now. Null while a check is already running.
+  final VoidCallback? onCheckForUpdates;
+
+  /// Whether one is running, so the row can say so rather than looking unpressed.
+  final bool checking;
+
   bool get _busy => busyWith != null;
 
   @override
@@ -75,6 +85,19 @@ class ExtensionsView extends StatelessWidget {
           onInstallFromDropFolder: onInstallFromDropFolder,
         ),
       ),
+      ListTile(
+        leading: checking
+            ? const SizedBox.square(
+                dimension: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Icon(Icons.update),
+        title: const Text('Check for updates'),
+        subtitle: const Text('Asks every repository what it is offering now'),
+        enabled: onCheckForUpdates != null,
+        onTap: onCheckForUpdates,
+      ),
+      const Divider(height: 1),
       for (final extension in extensions)
         _ExtensionTile(
           extension: extension,
@@ -191,11 +214,7 @@ class _ExtensionTile extends StatelessWidget {
               dimension: 24,
               child: CircularProgressIndicator(strokeWidth: 2),
             )
-          : Icon(
-              extension.isRunnable
-                  ? Icons.extension_outlined
-                  : Icons.extension_off_outlined,
-            ),
+          : ExtensionIcon(extension: extension),
       title: Text('${row.name}  ${row.version}'),
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -352,6 +371,56 @@ Future<int?> chooseEarlierVersion(
     ],
   ),
 );
+
+/// An extension's own icon, or a stand-in for one that has none (§3.3).
+///
+/// Three cases, and the order matters. An installed extension's icon is a file the install wrote
+/// beside its code, so it draws with no network and no unpacking. The one bundled with the app is
+/// never installed, so its icon is an app asset. Anything else — an extension published before
+/// icons, or a folder an author has not drawn one for yet — gets the puzzle piece, which also says
+/// whether the app can run it.
+class ExtensionIcon extends StatelessWidget {
+  const ExtensionIcon({super.key, required this.extension, this.size = 32});
+
+  final ExtensionSummary extension;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final path = extension.iconPath;
+    final asset = extension.bundledIconAsset;
+    final Widget image;
+    if (path != null) {
+      image = Image.file(
+        File(path),
+        width: size,
+        height: size,
+        // A file that is there but will not decode is a broken icon, not a broken screen.
+        errorBuilder: (context, _, _) => _fallback(context),
+      );
+    } else if (asset != null) {
+      image = Image.asset(
+        asset,
+        width: size,
+        height: size,
+        errorBuilder: (context, _, _) => _fallback(context),
+      );
+    } else {
+      image = _fallback(context);
+    }
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(size / 5),
+      child: SizedBox.square(dimension: size, child: image),
+    );
+  }
+
+  Widget _fallback(BuildContext context) => Icon(
+    extension.isRunnable
+        ? Icons.extension_outlined
+        : Icons.extension_off_outlined,
+    size: size * 0.75,
+  );
+}
 
 /// What removing an extension asks first.
 ///
