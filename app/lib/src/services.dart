@@ -326,6 +326,27 @@ final class AppServices {
     return _add(await probeBookFile(file, playable), file.path);
   }
 
+  /// Adds an EPUB the user picked in a file dialog as a book to read, returning the book's id.
+  ///
+  /// Kept as [addPickedBook] keeps an audiobook file: moved into the import folder where the picker
+  /// hands over only a copy, referred to where it is elsewhere. A book locked with DRM is refused
+  /// with an [EpubProtectedException] before anything is moved.
+  Future<int> addPickedEbook(String path) async {
+    final picked = File(path).absolute;
+    final read = await readEpubFile(picked);
+    final storedPath = locations.pickerHandsOverCopies
+        ? await _importFolder.adoptCopy(picked)
+        : picked.path;
+    return _addEbook(read, storedPath);
+  }
+
+  /// Adds the EPUB at [path] where it is, returning the book's id. For a path given on the command
+  /// line, which is always the user's own file.
+  Future<int> addEbookInPlace(String path) async {
+    final file = File(path).absolute;
+    return _addEbook(await readEpubFile(file), file.path);
+  }
+
   /// Adds a folder of audio files as one book, referring to the files where they are. Returns the
   /// book's id, and the audio files in the folder that were left out: those that could not be read,
   /// and those in a format this device cannot play. For a folder picked on desktop, or given on the
@@ -394,9 +415,16 @@ final class AppServices {
             audioExtensions.contains(_extension(entryName))) {
           await _add(await probeBookFile(entry, playable), key);
           added++;
+        } else if (entry is File && isEpubPath(entryName)) {
+          await _addEbook(await readEpubFile(entry), key);
+          added++;
         }
       } on FormatException {
         // Not audio this app can read.
+      } on EpubFormatException {
+        // Not an EPUB this app can read.
+      } on EpubProtectedException {
+        // Locked. It stays in the folder, as anything else that cannot be added does.
       } on UnplayableFormatException catch (reason) {
         unplayable.add((name: entryName, reason: reason));
       }
@@ -866,6 +894,25 @@ final class AppServices {
     clock: clock,
     covers: covers,
   );
+
+  /// Adds the EPUB [read] as a book to read, stored at [storedPath]: absolute, or relative to the
+  /// media root.
+  Future<int> _addEbook(LocalEpubImport read, String storedPath) =>
+      importLocalEpub(
+        database,
+        LocalEpubImport(
+          path: storedPath,
+          title: read.title,
+          chapters: read.chapters,
+          authors: read.authors,
+          language: read.language,
+          description: read.description,
+          publisher: read.publisher,
+          cover: read.cover,
+        ),
+        clock: clock,
+        covers: covers,
+      );
 
   /// Adds a folder read as a book under [key], with each file stored at the path [pathOf] gives
   /// its name. [folder] is where the folder is, to read its cover from.

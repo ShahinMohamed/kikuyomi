@@ -82,6 +82,9 @@ dev_dependencies:
   # does. The app only ever verifies; signing is a test's job here, which is why this is a dev
   # dependency. Gohilla, Apache-2.0, pure Dart.
   cryptography: ^2.7.0
+  # Zips, so the EPUB tests can build a book in memory. The app reads EPUBs through
+  # kikuyomi_sources_builtin, which depends on it for real. Pure Dart.
+  archive: ^4.0.0
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
