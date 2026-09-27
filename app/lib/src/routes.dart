@@ -8,6 +8,7 @@ import 'extension_console_screen.dart';
 import 'extensions_screen.dart';
 import 'history_screen.dart';
 import 'repositories_screen.dart';
+import 'library/categories_screen.dart';
 import 'library_screen.dart';
 import 'more_screen.dart';
 import 'player_screen.dart';
@@ -89,6 +90,7 @@ class SetupRoute extends GoRouteData with $SetupRoute {
     TypedGoRoute<DownloadsRoute>(path: 'downloads'),
     TypedGoRoute<HistoryRoute>(path: 'history'),
     TypedGoRoute<MoreRoute>(path: 'more'),
+    TypedGoRoute<CategoriesRoute>(path: 'categories'),
     TypedGoRoute<BrowseRoute>(
       path: 'browse',
       routes: [
@@ -233,6 +235,15 @@ class HistoryRoute extends GoRouteData with $HistoryRoute {
 ///
 /// Under Extensions, because a repository is where an extension comes from and Extensions is where
 /// they are managed. Mihon puts them in the same place, for the same reason.
+/// The listener's own shelves, and what can be done with them (Phase 4).
+class CategoriesRoute extends GoRouteData with $CategoriesRoute {
+  const CategoriesRoute();
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      const CategoriesScreen();
+}
+
 /// More: the things a listener reaches now and then rather than every day (§2.6).
 ///
 /// A tab because the design asks for one, and it earns the place now that Settings is not the only

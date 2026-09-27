@@ -198,4 +198,53 @@ void main() {
       expect(LibrarySort.byName('byNarratorsBirthday'), isNull);
     });
   });
+
+  group('narrowing to a category', () {
+    test('shows only the books in it', () {
+      final shelf = arrangeLibrary(
+        [
+          book(id: 1, title: 'One'),
+          book(id: 2, title: 'Two'),
+          book(id: 3, title: 'Three'),
+        ],
+        onlyBookIds: {1, 3},
+      );
+
+      expect([for (final b in shelf) b.id], [1, 3]);
+    });
+
+    test('a category with nothing in it is an empty shelf', () {
+      // Not the whole library. An empty set is a real answer -- a shelf that holds nothing -- and
+      // treating it as "no filter" would show every book under a category that has none.
+      final shelf = arrangeLibrary([
+        book(id: 1, title: 'One'),
+        book(id: 2, title: 'Two'),
+      ], onlyBookIds: const {});
+
+      expect(shelf, isEmpty);
+    });
+
+    test('no category chosen shows everything', () {
+      final shelf = arrangeLibrary([
+        book(id: 1, title: 'One'),
+        book(id: 2, title: 'Two'),
+      ]);
+
+      expect(shelf, hasLength(2));
+    });
+
+    test('the search still applies inside a category', () {
+      final shelf = arrangeLibrary(
+        [
+          book(id: 1, title: 'Dune'),
+          book(id: 2, title: 'Dracula'),
+          book(id: 3, title: 'Emma'),
+        ],
+        query: 'dun',
+        onlyBookIds: {1, 2},
+      );
+
+      expect([for (final b in shelf) b.id], [1]);
+    });
+  });
 }

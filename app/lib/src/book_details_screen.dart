@@ -3,10 +3,16 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kikuyomi_data/kikuyomi_data.dart'
-    show removeBookFromLibrary, watchBookDownloads;
+    show
+        BookOverview,
+        readBookCategories,
+        removeBookFromLibrary,
+        setBookCategories,
+        watchBookDownloads;
 
 import 'book_details_view.dart';
 import 'downloads/book_downloads.dart';
+import 'library/file_book_dialog.dart';
 import 'listened_commands.dart';
 import 'open_book.dart';
 import 'providers.dart';
@@ -30,7 +36,16 @@ class BookDetailsScreen extends ConsumerWidget {
         ref.watch(chapterDownloadsProvider(bookId)).value ?? const {};
     final book = overview.value;
     return Scaffold(
-      appBar: AppBar(),
+      appBar: AppBar(
+        actions: [
+          if (book != null && book.inLibrary)
+            IconButton(
+              icon: const Icon(Icons.label_outline),
+              tooltip: 'Categories',
+              onPressed: () => _fileUnderCategories(context, ref, book),
+            ),
+        ],
+      ),
       // The one thing every visit is for, kept where a thumb reaches it rather than in a row of
       // outlined buttons where it looked like one option among four.
       floatingActionButton: book == null
@@ -78,6 +93,33 @@ class BookDetailsScreen extends ConsumerWidget {
             Center(child: Text('Could not load the book: $error')),
       ),
     );
+  }
+
+  /// Asks which shelves this book sits on, and files it there.
+  ///
+  /// Only for a book in the library: a book being previewed from a source has nothing to file yet,
+  /// and offering it would put a book in a category without putting it in the library.
+  Future<void> _fileUnderCategories(
+    BuildContext context,
+    WidgetRef ref,
+    BookOverview book,
+  ) async {
+    final services = ref.read(servicesProvider);
+    // Read before the dialog, so the one await between here and showing it cannot leave the screen
+    // gone by the time the context is used.
+    final filedUnder = await readBookCategories(services.database, bookId);
+    if (!context.mounted) return;
+    final chosen = await chooseBookCategories(
+      context,
+      bookTitle: book.title,
+      categories: ref.read(categoriesProvider).value ?? const [],
+      chosen: filedUnder,
+      onManageCategories: () => const CategoriesRoute().push<void>(context),
+    );
+    // Null is "changed my mind"; an empty set is "on no shelf at all", and the two must not be
+    // confused, or taking a book off its last category would silently do nothing.
+    if (chosen == null) return;
+    await setBookCategories(services.database, bookId, chosen);
   }
 
   /// Opens the book and starts it at the beginning of [chapterId].

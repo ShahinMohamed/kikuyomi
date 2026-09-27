@@ -9,17 +9,25 @@ library;
 import 'package:kikuyomi_data/kikuyomi_data.dart' show BookRow;
 import 'package:kikuyomi_domain/kikuyomi_domain.dart';
 
-/// [books] searched by [query] and put in [sort] order.
+/// [books] narrowed to [onlyBookIds], searched by [query] and put in [sort] order.
 ///
-/// The search runs first, so the order is the order of what is actually shown.
+/// The narrowing and the search run first, so the order is the order of what is actually shown.
+///
+/// [onlyBookIds] is the category the listener has chosen, or null for all of them. Null rather than
+/// every id, because "no category chosen" and "a category that happens to hold every book" are
+/// different things, and only one of them should keep showing a book that has just been filed
+/// elsewhere.
 List<BookRow> arrangeLibrary(
   List<BookRow> books, {
   String query = '',
   LibrarySort sort = LibrarySort.fallback,
+  Set<int>? onlyBookIds,
 }) {
   final found = [
     for (final book in books)
-      if (matchesLibrarySearch(book, query)) book,
+      if ((onlyBookIds?.contains(book.id) ?? true) &&
+          matchesLibrarySearch(book, query))
+        book,
   ];
   found.sort(_comparatorFor(sort));
   return found;

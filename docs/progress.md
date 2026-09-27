@@ -145,7 +145,11 @@ changes, and the list is a sliver that builds a row as it comes into view.
 
 ## Phase 4 — Library power features
 
-- [ ] Categories, with per-category settings — tables and backup support exist, no UI
+- [x] Categories — make, rename, reorder and delete them under More; file a book under any number
+      of them from its own page; and narrow the library to one from the bar above the shelf. A name
+      is what identifies a category, because that is what a backup matches on, so names are unique
+- [ ] Per-category settings — `category.flags` is written down in §4.3 and nothing sets it. Each
+      category should carry its own sort, filter and display
 - [ ] Smart collections
 - [ ] Series grouping
 - [x] Sorting: title, recently added, longest, kept in settings
