@@ -1,6 +1,6 @@
 /// A source written in Dart, for everything that has to be tested without a site or an engine.
 ///
-/// SourceAPI 1.0's `ContentSource` is what the app sees of every source, extension or built-in
+/// SourceAPI's `ContentSource` is what the app sees of every source, extension or built-in
 /// (§3.4), so a fake one is enough to test the library writes, the media resolver and every Browse
 /// screen. Nothing here runs JavaScript; what the real engine does with a real extension is the
 /// probe's business (`spikes/quickjs_binding`).
@@ -15,6 +15,8 @@ import 'package:kikuyomi_source_api/kikuyomi_source_api.dart';
 /// so a test can say what was asked and how often.
 final class FakeContentSource implements ContentSource {
   FakeContentSource({
+    this.kind = SourceKind.audio,
+    this.texts = const {},
     this.capabilities = const {},
     this.pages = const {},
     this.searchPages = const {},
@@ -26,6 +28,12 @@ final class FakeContentSource implements ContentSource {
     this.failure,
     this.delay,
   });
+
+  @override
+  final SourceKind kind;
+
+  /// What `getChapterContent` answers, by chapter key, for a text source.
+  final Map<String, ChapterContent> texts;
 
   @override
   final Set<SourceCapability> capabilities;
@@ -128,6 +136,19 @@ final class FakeContentSource implements ContentSource {
     }
     return found;
   });
+
+  @override
+  Future<ChapterContent> getChapterContent(ChapterRef chapter) =>
+      _answer('getChapterContent(${chapter.chapterKey})', () {
+        if (kind != SourceKind.text) {
+          throw UnsupportedError('an audio source has no chapter text');
+        }
+        final found = texts[chapter.chapterKey];
+        if (found == null) {
+          throw NotFoundException('no text for ${chapter.chapterKey}');
+        }
+        return found;
+      });
 
   @override
   Future<HttpRequest> getImageRequest(Uri url) =>

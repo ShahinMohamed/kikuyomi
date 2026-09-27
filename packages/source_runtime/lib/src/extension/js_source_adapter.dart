@@ -47,6 +47,7 @@ final class JsSourceAdapter implements ContentSource {
     required ExtensionCalls runtime,
     required this.sourceKey,
     required this.capabilities,
+    this.kind = SourceKind.audio,
   }) : _runtime = runtime;
 
   /// Opens a source, asking the extension which of the optional methods it really has.
@@ -55,9 +56,14 @@ final class JsSourceAdapter implements ContentSource {
   /// constructor instead and call nothing. This asks the extension because the extension is what
   /// will be called: a manifest that claims `latest` for a source without `getLatest` would
   /// otherwise fail a listener's tap rather than never offering the tab.
+  ///
+  /// [kind] is the manifest's, which is where it is declared (1.1). It is not asked of the extension:
+  /// what a source *is* is a promise the permissions screen already showed, not something to be
+  /// discovered by probing for methods.
   static Future<JsSourceAdapter> open({
     required ExtensionCalls runtime,
     required String sourceKey,
+    SourceKind kind = SourceKind.audio,
   }) async {
     final capabilities = <SourceCapability>{};
     if (await runtime.hasMethod(sourceKey, 'getLatest')) {
@@ -73,6 +79,7 @@ final class JsSourceAdapter implements ContentSource {
       runtime: runtime,
       sourceKey: sourceKey,
       capabilities: Set.unmodifiable(capabilities),
+      kind: kind,
     );
   }
 
@@ -80,6 +87,9 @@ final class JsSourceAdapter implements ContentSource {
 
   /// The manifest's key for this source, under which the extension exports it.
   final String sourceKey;
+
+  @override
+  final SourceKind kind;
 
   @override
   final Set<SourceCapability> capabilities;
@@ -122,12 +132,23 @@ final class JsSourceAdapter implements ContentSource {
   Future<MediaResolution> resolveMedia(
     ChapterRef chapter,
     ResolveContext context,
-  ) async => _runtime.decoder.decodeMediaResolution(
-    await _invoke('resolveMedia', [
-      encodeChapterRef(chapter),
-      encodeResolveContext(context),
-    ]),
-  );
+  ) async {
+    _requireKind(SourceKind.audio, 'resolveMedia');
+    return _runtime.decoder.decodeMediaResolution(
+      await _invoke('resolveMedia', [
+        encodeChapterRef(chapter),
+        encodeResolveContext(context),
+      ]),
+    );
+  }
+
+  @override
+  Future<ChapterContent> getChapterContent(ChapterRef chapter) async {
+    _requireKind(SourceKind.text, 'getChapterContent');
+    return _runtime.decoder.decodeChapterContent(
+      await _invoke('getChapterContent', [encodeChapterRef(chapter)]),
+    );
+  }
 
   @override
   Future<HttpRequest> getImageRequest(Uri url) async {
@@ -139,6 +160,17 @@ final class JsSourceAdapter implements ContentSource {
 
   Future<Object?> _invoke(String method, List<Object?> arguments) =>
       _runtime.invoke(sourceKey, method, arguments);
+
+  /// Asking a source for the other kind's content is a programming error in the app, as calling an
+  /// undeclared optional method is: a screen should never have offered it.
+  void _requireKind(SourceKind wanted, String method) {
+    if (kind != wanted) {
+      throw UnsupportedError(
+        'the source "$sourceKey" of ${_runtime.extensionId} is ${kind.name}, '
+        'and has no $method()',
+      );
+    }
+  }
 
   /// Calling an optional method a source does not declare is a programming error in the app, not a
   /// source failure, so it is an [UnsupportedError] rather than a [SourceException].

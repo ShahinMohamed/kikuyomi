@@ -23,6 +23,7 @@ final class SourceDescription {
     this.extensionId,
     this.contentRating,
     this.isMissing = false,
+    this.kind = SourceKind.audio,
   });
 
   /// The §3.7 id: the first 8 bytes of SHA-256 over `{extensionId}/{sourceKey}/{lang}/{versionId}`,
@@ -51,6 +52,13 @@ final class SourceDescription {
   /// books are migrated". This is that stub. It exists so the library can still name the source a book
   /// came from, and so opening it fails with a sentence rather than with nothing.
   final bool isMissing;
+
+  /// Books to listen to or books to read (ADR-0019), as the manifest declares. Browse lists the two
+  /// under tabs of their own.
+  ///
+  /// A stub's is not known, since the manifest that said is gone; it reads as audio, which is what
+  /// every source was before 1.1 and what its books will say they are in any case.
+  final SourceKind kind;
 
   /// Whether a listener can browse this source's catalogue.
   ///
@@ -262,6 +270,7 @@ final class SourceRegistry {
     final source = await JsSourceAdapter.open(
       runtime: worker,
       sourceKey: description.key,
+      kind: description.kind,
     );
     return _opened[sourceId] = source;
   }
@@ -401,6 +410,7 @@ final class SourceRegistry {
             capabilities: manifest.declaredCapabilities,
             extensionId: manifest.id,
             contentRating: manifest.contentRating.name,
+            kind: source.kind,
           ),
         );
       }

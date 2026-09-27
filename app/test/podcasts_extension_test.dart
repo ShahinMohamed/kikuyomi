@@ -57,7 +57,10 @@ void main() {
     final manifest = readManifest();
 
     expect(manifest.id, 'org.kikuyomi.podcasts');
-    expect(manifest.apiVersion.toString(), apiVersion);
+    // 1.0, not whatever the app implements. An audio source needs nothing 1.1 added, and
+    // targeting the oldest version that has what it needs is what lets it run on every app
+    // that could play it.
+    expect(manifest.apiVersion.toString(), '1.0');
     expect(manifest.compatibility(), ApiCompatibility.supported);
   });
 

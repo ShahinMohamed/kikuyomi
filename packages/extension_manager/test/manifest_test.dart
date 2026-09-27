@@ -172,6 +172,83 @@ void main() {
     });
   });
 
+  group("a source's kind (1.1)", () {
+    Map<String, Object?> source({Object? kind}) => {
+      'key': 'novels',
+      'name': 'Novels',
+      'lang': 'en',
+      'versionId': 1,
+      'kind': ?kind,
+    };
+
+    test('is audio when it does not say, as every 1.0 source does not', () {
+      expect(read().sources.single.kind, SourceKind.audio);
+    });
+
+    test('may say audio outright', () {
+      final manifest = read(
+        changed: {
+          'sources': [source(kind: 'audio')],
+        },
+      );
+      expect(manifest.sources.single.kind, SourceKind.audio);
+    });
+
+    test('may be text when the manifest targets 1.1', () {
+      final manifest = read(
+        changed: {
+          'apiVersion': '1.1',
+          'sources': [source(kind: 'text')],
+        },
+      );
+      expect(manifest.sources.single.kind, SourceKind.text);
+    });
+
+    test('is refused as text when the manifest targets 1.0', () {
+      // A 1.0 app ignores fields it does not know, so it would read this source as audio and call
+      // resolveMedia on something that has none. Requiring 1.1 keeps it away from that app entirely.
+      expect(
+        () => read(
+          changed: {
+            'sources': [source(kind: 'text')],
+          },
+        ),
+        refuses('sources[0].kind'),
+      );
+    });
+
+    test('is refused when it is a kind this build does not know', () {
+      // Read as audio, a later kind would be played as something it is not. Refused, it tells the
+      // listener to update instead.
+      expect(
+        () => read(
+          changed: {
+            'apiVersion': '1.1',
+            'sources': [source(kind: 'comics')],
+          },
+        ),
+        refuses('sources[0].kind'),
+      );
+    });
+
+    test('may differ between the sources of one extension', () {
+      // One extension may offer both, which is why kind lives on the source and not the extension.
+      final manifest = read(
+        changed: {
+          'apiVersion': '1.1',
+          'sources': [
+            {...source(kind: 'audio'), 'key': 'audio'},
+            {...source(kind: 'text'), 'key': 'text'},
+          ],
+        },
+      );
+      expect(
+        [for (final s in manifest.sources) s.kind],
+        [SourceKind.audio, SourceKind.text],
+      );
+    });
+  });
+
   group('sources', () {
     test('keep the order the manifest lists them in', () {
       final manifest = read(

@@ -17,5 +17,12 @@ resolution: workspace
 environment:
   sdk: "^3.13.3"
 
+dependencies:
+  # SourceAPI 1.1's text sources hand over HTML, and this package is where untrusted output becomes
+  # strict types (ADR-0019), so the parser that reads it lives here. The Dart team's own HTML5
+  # parser: pure Dart, BSD-3-Clause, the same on Android, Windows and iOS, and already in the
+  # workspace through `source_runtime`'s html bridge.
+  html: ^0.15.6
+
 dev_dependencies:
   test: ^1.25.0

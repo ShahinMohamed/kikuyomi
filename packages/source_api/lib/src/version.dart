@@ -7,10 +7,13 @@
 library;
 
 /// The SourceAPI version this app implements, as `host.apiVersion` reports it to extensions.
-const apiVersion = '1.0';
+///
+/// 1.1 adds text sources (ADR-0019): a source may declare `"kind": "text"` and implement
+/// `getChapterContent`. Everything 1.0 had is unchanged, so every 1.0 extension still runs.
+const apiVersion = '1.1';
 
 /// The versions of SourceAPI this app runs extensions for.
-const supportedApiVersions = SupportedApiVersions({1: 0});
+const supportedApiVersions = SupportedApiVersions({1: 1});
 
 /// A SourceAPI version: `MAJOR.MINOR`.
 ///

@@ -38,6 +38,13 @@ abstract final class SourceLimits {
   /// The most segments in one chapter's media.
   static const maxSegments = 2000;
 
+  /// How long a chapter's HTML or text may be, in characters (1.1). A chapter of a long novel runs to
+  /// a few hundred kilobytes; the bound stops a page that is not a chapter from being read as one.
+  static const maxChapterContentLength = 4 * 1024 * 1024;
+
+  /// How many blocks a chapter may become (1.1).
+  static const maxContentBlocks = 20000;
+
   /// The most variants of one segment.
   static const maxVariants = 10;
 

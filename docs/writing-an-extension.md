@@ -402,6 +402,53 @@ This one shape covers every audiobook layout:
 Use `headers` on the `request` when the site needs a referer or a token. Do not put an expiring URL in
 a `fileKey`.
 
+### `ChapterContent` — what a chapter says, for a text source (1.1)
+
+A source can offer books to **read** instead of books to listen to. Declare it in the manifest, and
+target 1.1 — a `"text"` source is refused in a manifest that targets 1.0, because a 1.0 app would
+call `resolveMedia` on it:
+
+```json
+"apiVersion": "1.1",
+"sources": [
+  { "key": "novels", "name": "Novels", "lang": "en", "versionId": 1, "kind": "text" }
+]
+```
+
+A text source implements everything an audio source does **except `resolveMedia`**, and implements
+`getChapterContent` instead:
+
+```js
+async getChapterContent({ bookKey, chapterKey }) {
+  const page = await http.fetch({ url: chapterUrl(bookKey, chapterKey), responseType: 'text' });
+  const doc = await html.parse(page.body, page.url);
+  return { html: doc.selectFirst('.chapter-body').html(), baseUrl: page.url };
+}
+```
+
+Return exactly one of:
+
+```ts
+{ html: string, baseUrl?: string }   // the chapter's markup, and the page it came from
+{ text: string }                     // plain text
+```
+
+**You hand over markup; the app does not show it.** It is converted, in the app, into paragraphs,
+headings, quotations, lists, scene breaks, preformatted text and images, with bold, italic and line
+breaks inside them. Everything else is dropped — scripts, styles, forms, frames and navigation go
+entirely, content included, and every other element keeps only its text. No attribute is read but an
+image's `src`, `data-src` and `alt` and a list's `start`. So strip the page's chrome if you like, but
+there is nothing to gain from sanitising: it is done for you, and it is not optional.
+
+- A paragraph that is only `* * *`, `***`, `#` or `~ ~ ~` becomes a scene break.
+- An image is kept only if its address — resolved against `baseUrl` when you give one — is on a host
+  you declared. One that is not is quietly left out; the chapter's words are kept.
+- Plain text with blank lines between paragraphs is read as hard-wrapped, so single newlines become
+  spaces. Plain text with no blank lines at all is read as one paragraph per line.
+- A chapter may be at most 4 MB of characters and make at most 20,000 blocks.
+
+An empty chapter is `{ html: '' }`, not an error. Throw `NotFound` for a chapter that is gone.
+
 ### `Filter[]` — the search controls, if you declare `filters`
 
 ```ts
