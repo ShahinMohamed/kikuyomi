@@ -4,12 +4,18 @@ Every scope item from `architecture.md` §8, ticked or not. It is the at-a-glanc
 `status.md` is the detailed one and says *how* each piece works and what has never been run.
 
 A box is ticked only when the thing is built **and** believed to work. "Built but never run on a
-device" is not ticked — that distinction is the whole reason this file is worth keeping, because
-this project has twice found real defects in code that a green test suite and a clean build both
-passed.
+device" is not ticked — that distinction is the whole reason this file is worth keeping. Six real
+defects have now been found in code that a green test suite and a clean build both passed: a
+download queue that stopped at four of fifteen, downloaded files the player could not find, HTML
+left in descriptions, two extensions missing a field the contract requires, a settings key that
+threw on every read and made Browse untappable, and chapter rows that did nothing when tapped. Every
+one of them was found by running the app, and none by the suite.
 
 Phases are not being done strictly in order. Some Phase 4 work has been pulled forward because the
 library is the screen used daily, and Phase 2 and Phase 3 both still have holes.
+
+`[~]` marks a roadmap item that was **decided against** rather than left undone, with the reason
+beside it. An empty box that will never be ticked is worth telling apart from one that is waiting.
 
 ---
 
@@ -35,7 +41,9 @@ caveat that the Android proofs are the emulator probes in CI rather than the app
 - [x] Drift schema with migration tests
 - [x] Domain entities and the Timeline
 - [x] Design system
-- [ ] Adaptive shell — two tabs of §2.6's four; Settings, Downloads and History sit in the app bar because More does not exist
+- [x] Adaptive shell — five tabs, a bottom bar on a phone and a rail on a wide window. §2.6 asks
+      for four; History and Downloads were given tabs of their own rather than living under More,
+      because both were reached through the library's app bar and neither is about the library
 - [ ] Local source — Windows folders and drag-and-drop, tags and M4B chapters work; the Android folder picker has never been driven by the running app, and local files is not a real `ContentSource` (§3.10)
 - [x] Library
 - [x] Book details
@@ -76,6 +84,10 @@ Not met — the app has never been run on Android at all.
       Spotify show link, or found by name through Apple's public index
 - [x] An official repository for them to live in, built and signed by
       `packages/extension_manager/tool/build_repository.dart`
+- [x] Extension icons, which §3.3 always listed among a package's files and nothing read: the
+      package carries one, the install writes it beside the code, and both lists draw it from disk
+- [x] Browse in two halves, Sources and Extensions, with sources grouped by last used, pinned and
+      language
 - [ ] GitHub Releases for Android and Windows
 - [ ] In-app update checker
 - [ ] Android developer account
@@ -90,13 +102,6 @@ are release engineering, which needs a signing keystore created once and backed 
 places (§5.1) and a Play-independent release pipeline — and, for the last of them, an Android
 developer account only the project's owner can open.
 
-The extension system itself is finished: the contract, the runtime, both doors in, signatures,
-updates, rollback, and four extensions in a signed repository. What is left of this phase is not
-extension work at all. The TypeScript SDK and CLI is a project of its own, and the last three items
-are release engineering, which needs a signing keystore that must be created once and backed up in
-two safe places (§5.1) and a Play-independent release pipeline -- and, for the last of them, an
-Android developer account only the project's owner can open.
-
 ---
 
 ## Phase 3 — Offline
@@ -106,7 +111,11 @@ Android developer account only the project's owner can open.
 - [x] Queue UI: the Downloads screen, with total usage, per-book sizes and a book opened to its files
 - [x] Pause, resume, stop, retry, and remove in any state
 - [x] Whole-book downloads
-- [ ] Per-chapter downloads
+- [ ] Per-chapter downloads — **built, and not yet run.** Each row has its own arrow and its own
+      state, the Download button offers next / next 5 / next 10 / all unlistened / all, and chapters
+      can be held to pick several out. A chapter reads as downloaded only when every file it needs
+      is here, and downloading one chapter of an M4B downloads its neighbours because it is the same
+      bytes. Nothing has exercised any of it against a real source
 - [x] Storage management: delete a file, delete a book, what it all comes to
 - [ ] Per-chapter delete — a file can hold thirty chapters and a chapter can span three files, so one that quietly took a neighbour with it would be worse than none
 - [ ] Auto-delete finished chapters
@@ -134,12 +143,16 @@ nothing has confirmed it.
 - [ ] Filtering
 - [x] Library search by title, subtitle and series
 - [ ] Full-text library search
-- [x] History, with per-entry and per-book deletion
+- [x] History, with per-entry and per-book deletion, on a tab of its own
+- [x] Playing from any chapter by tapping it, and from an embedded marker in a single-file book
 - [ ] Statistics
 - [x] Bookmarks
 - [ ] Manual backup and restore with selective restore and retention
 - [ ] Metadata editing
-- [ ] Library updates and a Home feed
+- [~] Library updates — **decided against as a background job.** A book's page pulls down to ask
+      its source again, and §4.4's merge keeps progress, bookmarks and listened state. The sweep of
+      the whole library on a schedule, and the Updates feed it would fill, were declined as far more
+      machinery than the question deserves. The Home feed is still open if one is ever wanted
 - [ ] Global search across sources
 - [ ] Source migration
 

@@ -277,7 +277,7 @@ Playing a downloaded book with the network off is still unconfirmed.
 `listening_session` has been filled in since the coordinator learned to record one — every
 play-to-pause span, split whenever the chapter, the speed or the position jumps, so each row
 describes a stretch actually heard. Nothing ever read it back. The History screen does: newest first,
-under a heading per day with what that day came to, reached from the library's app bar.
+under a heading per day with what that day came to, on a tab of its own.
 
 A session outlives the chapter it was in. `chapter_id` goes null when a chapter is purged, because
 §4.4's "keep while it carries user data" rule covers progress, bookmarks and downloads and not
@@ -308,9 +308,21 @@ side panel on a wide window), speed, a sleep timer and keyboard shortcuts.
 **Routing.** go_router's typed routes (ADR-0005), declared in `app/lib/src/routes.dart`: home at
 `/`, a book at `/book/<id>`, the player at `/player`, Settings at `/settings`, restore at
 `/settings/restore`, Browse at `/browse` with a source at `/browse/source` and one of its books at
-`/browse/source/book`, all above the home, and first-start setup at `/setup`. §2.6's shell is two
-tabs so far — Library and Browse, a bottom bar on a narrow window and a rail on a wide one — with
-Settings still in the library's app bar, because a More tab would hold nothing else yet.
+`/browse/source/book`, More at `/more`, all above the home, and first-start setup at `/setup`.
+
+§2.6's shell is five tabs — Library, History, Browse, Downloads, More — a bottom bar on a narrow
+window and a rail on a wide one. §2.6 asks for four, with History and Downloads under More. They
+were given tabs instead, because both were reached through the library's app bar and that is the
+wrong place for them twice over: neither is about the library, and an app bar changes as you move
+around, so a button in one is somewhere to be found rather than somewhere known. More keeps
+Settings, the extension screens and the version number.
+
+Browse is itself two tabs. Sources and Extensions are different questions — "where shall I look for
+something to listen to" and "what is installed" — and Extensions was a button in Browse's app bar,
+which made the thing you want most and the thing you want rarely look equally important. Sources are
+grouped by last used, then pinned, then language; a source appears in every group it belongs to,
+because the groups answer different questions and a pinned source vanishing from its language would
+make the language list wrong.
 
 **Backups.** Scheduled once a backup folder is chosen. An empty library offers a setup screen
 through a redirect: choose a folder, restore from a backup in one, or skip. Settings holds the
@@ -496,11 +508,18 @@ left, in order:
    downloaded while listening, and fetching new chapters of library books on an unmetered connection.
    Nothing of this exists; every download is asked for by hand. The Downloads screen itself is built —
    total usage, per-book sizes, a book opened to its files, pause, resume, stop, retry, and remove in
-   any state, reached from the library's app bar beside Settings — and so is the button on a book's details
-   screen. What is still missing from the screens themselves is a per-chapter download action, and
-   deleting per chapter rather than per file: a file can hold thirty chapters and a chapter can span
-   three files, so a per-chapter delete that quietly took a neighbouring chapter with it would be
-   worse than not offering one.
+   any state, on a tab of its own — and so is the button on a book's details screen.
+
+   Per-chapter downloading is built and has not been run. Each chapter row carries its own arrow and
+   its own state, the Download button offers next / next 5 / next 10 / all unlistened / all, and
+   chapters can be held to pick several out and fetch only those. The arithmetic behind the arrow is
+   the part worth knowing: the queue counts physical files and a listener counts chapters, so a
+   chapter reads as downloaded only when every file it needs is here, and downloading one chapter of
+   an M4B reports its neighbours as downloaded because it is the same bytes.
+
+   What is still missing is deleting per chapter rather than per file: a file can hold thirty
+   chapters and a chapter can span three files, so a per-chapter delete that quietly took a
+   neighbouring chapter with it would be worse than not offering one.
 2. **Android.** `background_downloader` hands work to `WorkManager` there, which needs a foreground
    service declared in the manifest, with a service type on Android 14 and later. Nothing of this
    fails at compile time, so CI is no evidence; it is the most likely reason a first Android attempt
@@ -626,6 +645,21 @@ working, and the listener may well be offline. Every kept version is offered, no
 before, because an extension can be broken for two releases running. Rolling back is not pinning —
 the row goes back to the older version code, so the repository offers the newer one again at the
 next check, which is what a listener waiting for a fix wants.
+
+### A bug worth keeping in mind
+
+The settings store is opened as a `SharedPreferencesWithCache` whose allow-list is built from
+`AppSettings.all`, and it **throws** for a key outside that list. Two settings were declared and
+never added to it, so every read threw — and because the first thing tapping a source did was read
+one of them, every row in Browse did nothing at all when tapped. `librarySort` had been missing from
+the same list since it was added.
+
+Nothing caught it. The tests use `InMemorySettingsStore`, which has no allow-list, so the suite was
+green on a build where the main screen of the app could not be used. `app_settings_test.dart` now
+reads the source, finds every `Setting` declared, and fails if one is missing from `all`.
+
+The general lesson is the one this file keeps making: a fake that is more permissive than the real
+thing will pass code the real thing refuses.
 
 ### Loose ends
 
