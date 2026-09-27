@@ -279,17 +279,22 @@ final class ExtensionLibrary {
     console.note(id, 'Removed. Your books, progress and settings were kept.');
   }
 
-  /// Reads the package [files] hold and takes it in, replacing any version of it already installed.
   /// Installs the package a repository served, recording where it came from (§3.8, §3.9).
   ///
   /// Hashes are checked here, unlike a folder install: a package is assembled as one piece, so its
   /// manifest's `files` map proves the manifest and the code were published together. That is worth
   /// something for a package and worth nothing for a folder somebody is editing.
   ///
-  /// It is still recorded `untrusted`. The hash proves the package is internally consistent and the
-  /// index's own hash proves the bytes are the ones listed; neither says who wrote the listing, and
-  /// nothing verifies the signature yet (ADR-0018). Marking it trusted would be the app asserting
-  /// something it has not checked.
+  /// It is recorded `active`, and that word is earned by three checks that have already happened by
+  /// the time [files] gets here. The repository's pinned key signed the hash the index listed; the
+  /// bytes that arrived hash to it; and the manifest inside those bytes names the hash of the code
+  /// beside it. So the app can say who published this code, and that it is unaltered, which is as
+  /// far as `active` ever claims to go — it is not a statement that the code is any good, only that
+  /// it is the code the repository the listener trusted actually published.
+  ///
+  /// It also means the hashes are re-checked at every start, which a folder install skips: from here
+  /// on, code that no longer matches its manifest is something to notice rather than something an
+  /// author is in the middle of doing.
   Future<ExtensionSummary> installFromRepository(
     ExtensionFiles files, {
     required String repositoryUrl,
@@ -300,14 +305,17 @@ final class ExtensionLibrary {
     name: repositoryName,
     origin: ExtensionOrigin.repository,
     checkHashes: true,
+    status: ExtensionStatus.active,
   );
 
+  /// Reads the package [files] hold and takes it in, replacing any version of it already installed.
   Future<ExtensionSummary> _install(
     ExtensionFiles files, {
     required String handle,
     required String name,
     ExtensionOrigin origin = ExtensionOrigin.folder,
     bool checkHashes = false,
+    ExtensionStatus status = ExtensionStatus.untrusted,
   }) async {
     final LoadedExtension read;
     try {
@@ -319,7 +327,7 @@ final class ExtensionLibrary {
         // A package from a repository is a different case and is checked.
         package: await readExtensionPackage(files, checkHashes: checkHashes),
         origin: origin,
-        status: ExtensionStatus.untrusted,
+        status: status,
         originHandle: handle,
         originName: name,
       );

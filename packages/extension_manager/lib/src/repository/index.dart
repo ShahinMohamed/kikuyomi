@@ -15,10 +15,11 @@
 /// reads. An entry's manifest fields go through the manifest's own decoder, so a field the two share
 /// cannot drift apart.
 ///
-/// **Signatures are carried and not yet checked** (ADR-0018). `publicKey` and `signature` are
-/// required by the format from version 1, because adding them later would break every published
-/// repository; verifying them belongs to the install path. Until that lands, a repository is trusted
-/// no further than ADR-0017 trusts a folder.
+/// **Signatures are read here and checked in `signature.dart`.** This file decodes them and says
+/// nothing about whether they are good: an index carrying a signature the repository's key did not
+/// make is a readable document that happens to be untrustworthy, and the two are worth keeping
+/// apart. `RepositoryFetcher` does both, in that order, so nothing above it ever holds a listing
+/// that has not been verified (§3.8, ADR-0018).
 library;
 
 import 'dart:convert';
@@ -75,7 +76,7 @@ final class RepositoryInfo {
   /// Its Ed25519 signing key, as the base64 the document carried.
   ///
   /// Kept as written rather than decoded, because what is pinned and compared later has to be
-  /// exactly what was published — and because nothing here verifies with it yet (ADR-0018).
+  /// exactly what was published. What verifies with it is `repositorySigned`.
   final String publicKey;
 
   /// The key as §3.8's fingerprint: what the app shows when a repository is added, and what a
@@ -111,8 +112,8 @@ final class PackageLocation {
   /// The SHA-256 of the package, lowercase hex.
   ///
   /// Verified at install whatever else is true, because it is what catches a truncated or corrupted
-  /// download. It proves the bytes are the bytes the index named and nothing about who wrote the
-  /// index, which is what the signature is for (ADR-0018).
+  /// download. On its own it proves the bytes are the bytes the index named and nothing about who
+  /// wrote the index; it is the entry's signature over this hash that carries that (ADR-0018).
   final String sha256;
 
   /// How big it is, when the index says, so a download can be sized before it starts.
@@ -141,8 +142,8 @@ final class RepositoryEntry {
 
   final PackageLocation package;
 
-  /// The repository's Ed25519 signature, as the base64 the index carried. Not yet verified
-  /// (ADR-0018).
+  /// The repository's Ed25519 signature over [PackageLocation.sha256], as the base64 the index
+  /// carried. Checked against the repository's key by `repositorySigned` (ADR-0018).
   final String signature;
 
   /// An icon to show beside it, when the index says.
