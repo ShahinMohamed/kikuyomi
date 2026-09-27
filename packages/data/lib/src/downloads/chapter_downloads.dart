@@ -43,11 +43,22 @@ enum ChapterDownload {
   bool get canBeAskedFor => this == absent || this == failed;
 }
 
-/// Where every chapter of book [bookId] stands, by chapter id, again on every change.
+/// Where every chapter of book [bookId] stands, by chapter id, again whenever that **changes**.
 ///
 /// Chapters with no files at all are [ChapterDownload.absent]: §4.4 keeps a chapter whose layout is
 /// not known yet, and "nothing to download" and "nothing downloaded" look the same to a listener
 /// and are both honest here.
+///
+/// **Only when it changes**, which is the whole reason this is not a plain `watchTables`. A running
+/// download writes `bytes_done` many times a second, and every one of those is a change to
+/// `download_tasks`. None of them moves a chapter from one of these five states to another: a
+/// chapter that was downloading is still downloading. Handing each one to a screen made a
+/// four-hundred-chapter book rebuild its whole list several times a second, which is exactly as slow
+/// as it sounds.
+///
+/// The queries still run per write; what stops is the rebuilding above. A coarser watch is possible
+/// -- `download_tasks` could say which columns changed -- and is not worth it while this costs three
+/// small indexed reads.
 Stream<Map<int, ChapterDownload>> watchChapterDownloads(
   KikuyomiDatabase db,
   int bookId,
@@ -56,7 +67,20 @@ Stream<Map<int, ChapterDownload>> watchChapterDownloads(
   db.chapterSegments,
   db.mediaFiles,
   db.downloadTasks,
-], () => readChapterDownloads(db, bookId));
+], () => readChapterDownloads(db, bookId)).distinct(_sameStates);
+
+/// Whether two readings say the same thing about every chapter.
+///
+/// Written out rather than taken from `package:collection`, because it is six lines and this package
+/// does not otherwise depend on it.
+bool _sameStates(Map<int, ChapterDownload> a, Map<int, ChapterDownload> b) {
+  if (identical(a, b)) return true;
+  if (a.length != b.length) return false;
+  for (final entry in a.entries) {
+    if (b[entry.key] != entry.value) return false;
+  }
+  return true;
+}
 
 /// Where every chapter of book [bookId] stands, once.
 Future<Map<int, ChapterDownload>> readChapterDownloads(

@@ -1,8 +1,8 @@
 {
   "id": "org.kikuyomi.storynory",
   "name": "Storynory",
-  "version": "1.0.2",
-  "versionCode": 3,
+  "version": "1.0.3",
+  "versionCode": 4,
   "apiVersion": "1.0",
   "minAppVersion": "1.0.0",
   "author": "Kikuyomi",
@@ -23,6 +23,6 @@
   ],
   "files": {
     "main.js": "sha256-nEzOa1iVVXt3O8rrc5YhFk5iUZecjnkPGXgq/l8WbPY=",
-    "icon.png": "sha256-o5c/sC5JIJLF3QOB+had0QlLbpr9kTxdQrqI6O3wO/M="
+    "icon.png": "sha256-PlNzJrnIRCxJ+6uZG4Pmj7iMuo1Uz2A/K3s27K2nuT4="
   }
 }

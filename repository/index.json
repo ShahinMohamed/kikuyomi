@@ -4,8 +4,8 @@
     {
       "id": "org.kikuyomi.internetarchive",
       "name": "Internet Archive",
-      "version": "1.0.3",
-      "versionCode": 4,
+      "version": "1.0.4",
+      "versionCode": 5,
       "apiVersion": "1.0",
       "minAppVersion": "1.0.0",
       "author": "Kikuyomi",
@@ -26,18 +26,18 @@
         }
       ],
       "package": {
-        "url": "https://raw.githubusercontent.com/kikuyomiapp/kikuyomi/HEAD/repository/packages/org.kikuyomi.internetarchive-4.zip",
-        "sha256": "db041c81440916d6605ca1092c60885c4562491c18fe5dd041937e05409b7c22",
-        "size": 16134
+        "url": "https://raw.githubusercontent.com/kikuyomiapp/kikuyomi/HEAD/repository/packages/org.kikuyomi.internetarchive-5.zip",
+        "sha256": "f57644c04659247f9d4cee25d9e36b5eccad42eacd2a661b1c7bcbd17aa5f990",
+        "size": 33469
       },
-      "signature": "Km5y2yS3mam/58bwJn9VV1P8OOtV8YxBVOBXYydiSufKfurY8fupRUMMNsEZ6fsNdGaTwjAWuaXMIX6EG7kVAA==",
+      "signature": "xC8JgZLKudFjUTuV485ikAIeUFMs0IWfL+Aekli3PQV71FHhELGRIjQieVSCi30SQXSDv4b0seqc+L7B1bE6Dg==",
       "revoked": false
     },
     {
       "id": "org.kikuyomi.librivox",
       "name": "LibriVox",
-      "version": "1.0.1",
-      "versionCode": 2,
+      "version": "1.0.2",
+      "versionCode": 3,
       "apiVersion": "1.0",
       "minAppVersion": "1.0.0",
       "author": "Kikuyomi",
@@ -60,18 +60,18 @@
         }
       ],
       "package": {
-        "url": "https://raw.githubusercontent.com/kikuyomiapp/kikuyomi/HEAD/repository/packages/org.kikuyomi.librivox-2.zip",
-        "sha256": "44a61cbf1ebda9abf36b8122e7291c536849f6f88790843acc1031cc54656bc8",
-        "size": 16414
+        "url": "https://raw.githubusercontent.com/kikuyomiapp/kikuyomi/HEAD/repository/packages/org.kikuyomi.librivox-3.zip",
+        "sha256": "4199657e5a4b16737350e261de6b61aea28762a2c8c3a6c52f8c03a566610c23",
+        "size": 34673
       },
-      "signature": "gddGzkL0xSfxXe2ewdfk4f0jSQ8zH5wS0hGbCP5MXvcnGOW0DWPoagYxjym5mGL8Vc3Xw6knwmzDLS2AhN50DA==",
+      "signature": "UAz1ZraBqVRGyOUZL9dSPz840FqMSek9na5CE4Q5J/PPq+iShJT7B1gKuOv2nIYmYDKxh6pP9LCsA2FMkvF8DQ==",
       "revoked": false
     },
     {
       "id": "org.kikuyomi.podcasts",
       "name": "Podcasts",
-      "version": "1.0.2",
-      "versionCode": 3,
+      "version": "1.0.3",
+      "versionCode": 4,
       "apiVersion": "1.0",
       "minAppVersion": "1.0.0",
       "author": "Kikuyomi",
@@ -151,18 +151,18 @@
         }
       ],
       "package": {
-        "url": "https://raw.githubusercontent.com/kikuyomiapp/kikuyomi/HEAD/repository/packages/org.kikuyomi.podcasts-3.zip",
-        "sha256": "33ece4f1f74cb6d0951c6331b8fff675e3f492b137b22e09647abcb514f50582",
-        "size": 21813
+        "url": "https://raw.githubusercontent.com/kikuyomiapp/kikuyomi/HEAD/repository/packages/org.kikuyomi.podcasts-4.zip",
+        "sha256": "ddc9ab52c3122cacf2eedfdc0a474fa75971493ddf7d998e7cf92556d2e4b578",
+        "size": 16139
       },
-      "signature": "q83P56S7iOaEzgBXvhnD4J+OdEKGfKieN9U90gDNZx9C0PAYn2L2sqD0Ne+FplbHeN0oEkBumHwyRZDIelw5Cg==",
+      "signature": "LNcYby18DS1WpXDrho7OVvtsmEoUg6ES0RNYPwUp38YkUdC8q/sWoCfOaZ2Lo9OaQC7f9Pls/vkM50Ihb2x1AQ==",
       "revoked": false
     },
     {
       "id": "org.kikuyomi.storynory",
       "name": "Storynory",
-      "version": "1.0.2",
-      "versionCode": 3,
+      "version": "1.0.3",
+      "versionCode": 4,
       "apiVersion": "1.0",
       "minAppVersion": "1.0.0",
       "author": "Kikuyomi",
@@ -182,11 +182,11 @@
         }
       ],
       "package": {
-        "url": "https://raw.githubusercontent.com/kikuyomiapp/kikuyomi/HEAD/repository/packages/org.kikuyomi.storynory-3.zip",
-        "sha256": "2e8583c130de389eb4f84f948634104c203ce90f580a478a110909b35bd7fbe9",
-        "size": 14643
+        "url": "https://raw.githubusercontent.com/kikuyomiapp/kikuyomi/HEAD/repository/packages/org.kikuyomi.storynory-4.zip",
+        "sha256": "aed66747d373361c39874875e44b8f3f78147a8206ae55fc281ee013627deb9b",
+        "size": 26374
       },
-      "signature": "pHLMRxF2EaMXy57+owldCv1CkmJQrlxLiNvjvKV1Y3OJ0taiBIAQvcq1mbKSX4DLMK6RZcrjVUMJRAdADWGJDA==",
+      "signature": "dWr8MGufG3q8OzGSuiNB3a1X+G/HksstCu/AKgnrUG+xB8WhcCf+MIgRSm8qWbtDH4AAm72IVpE05xwbprc+AA==",
       "revoked": false
     }
   ]

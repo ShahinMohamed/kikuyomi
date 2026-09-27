@@ -1,8 +1,8 @@
 {
   "id": "org.kikuyomi.internetarchive",
   "name": "Internet Archive",
-  "version": "1.0.3",
-  "versionCode": 4,
+  "version": "1.0.4",
+  "versionCode": 5,
   "apiVersion": "1.0",
   "minAppVersion": "1.0.0",
   "author": "Kikuyomi",
@@ -24,6 +24,6 @@
   ],
   "files": {
     "main.js": "sha256-mHE18jaQQYIJeMMQVLI5ym7bRTgxnmYBeEv1DcU3LuU=",
-    "icon.png": "sha256-4RxTgCcsYed1rX2FTq34QzTcsQVPvtnmFt6rAfpdICw="
+    "icon.png": "sha256-uNyR19mJ5fM5SFwcxpZDjG9uhAiLlwhfL7qXNHt5QFM="
   }
 }

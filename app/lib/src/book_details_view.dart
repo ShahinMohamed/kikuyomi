@@ -141,82 +141,97 @@ class BookDetailsView extends StatelessWidget {
           16.0,
           (constraints.maxWidth - _maxContentWidth) / 2,
         );
-        final list = ListView(
+        // Slivers, not a `ListView` of children. Everything above the chapters is one block, and
+        // the chapters build a row as it is about to be seen. Before this, a four-hundred-chapter
+        // podcast built every row on every frame, and rebuilt all of them whenever anything on the
+        // page changed -- which, while a download runs, is several times a second.
+        final list = CustomScrollView(
           // Always scrollable, so that a short book can still be pulled down to refresh.
           physics: const AlwaysScrollableScrollPhysics(),
-          // Room at the foot for the floating button, which would otherwise sit on the last chapter.
-          padding: EdgeInsets.fromLTRB(side, 16, side, 96),
-          children: [
-            _Header(book: book, covers: covers),
-            const SizedBox(height: 16),
-            _ActionStrip(
-              inLibrary: book.inLibrary,
-              finished: finished,
-              downloads: downloads,
-              onLibrary: book.inLibrary
-                  ? () => _confirmRemoval(context)
-                  : onAddToLibrary,
-              onDownload: onDownload,
-              onStopDownloading: onStopDownloading,
-              nextChapters: _nextChapters,
-              allChapters: [
-                for (final chapter in book.chapters) chapter.chapterId,
-              ],
-              onDownloadChapters: onDownloadChapters,
-              onOpenDownloadQueue: onOpenDownloadQueue,
-              onFinished: () => finished
-                  ? markBookNotFinished(context, listenedCommands)
-                  : markBookFinishedWithUndo(context, listenedCommands),
-              onOpenAtSource: onOpenAtSource,
-            ),
-            // Nothing here for a finished book: the strip's lit "Finished" says it, and a book
-            // marked finished by hand may never have been started, so there is no progress to draw.
-            if (!finished && progress != null) ...[
-              const SizedBox(height: 16),
-              if (total != null && total > 0)
-                LinearProgressIndicator(
-                  value: (progress.globalPositionMs / total).clamp(0.0, 1.0),
-                ),
-              const SizedBox(height: 4),
-              Text(
-                total == null
-                    ? '${formatClock(progress.globalPositionMs)} listened'
-                    : '${formatClock(total - progress.globalPositionMs)} left',
-                style: theme.textTheme.bodySmall,
-              ),
-            ],
-            if (!downloads.isEmpty && !downloads.isComplete) ...[
-              const SizedBox(height: 16),
-              _DownloadProgress(downloads: downloads),
-            ],
-            if (description != null && description.trim().isNotEmpty) ...[
-              const SizedBox(height: 16),
-              _Description(text: description.trim()),
-            ],
-            if (book.genres.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
+          slivers: [
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(side, 16, side, 0),
+              sliver: SliverList.list(
                 children: [
-                  for (final genre in book.genres)
-                    Chip(
-                      label: Text(genre),
-                      visualDensity: VisualDensity.compact,
+                  _Header(book: book, covers: covers),
+                  const SizedBox(height: 16),
+                  _ActionStrip(
+                    inLibrary: book.inLibrary,
+                    finished: finished,
+                    downloads: downloads,
+                    onLibrary: book.inLibrary
+                        ? () => _confirmRemoval(context)
+                        : onAddToLibrary,
+                    onDownload: onDownload,
+                    onStopDownloading: onStopDownloading,
+                    nextChapters: _nextChapters,
+                    allChapters: [
+                      for (final chapter in book.chapters) chapter.chapterId,
+                    ],
+                    onDownloadChapters: onDownloadChapters,
+                    onOpenDownloadQueue: onOpenDownloadQueue,
+                    onFinished: () => finished
+                        ? markBookNotFinished(context, listenedCommands)
+                        : markBookFinishedWithUndo(context, listenedCommands),
+                    onOpenAtSource: onOpenAtSource,
+                  ),
+                  // Nothing here for a finished book: the strip's lit "Finished" says it, and a book
+                  // marked finished by hand may never have been started, so there is no progress to draw.
+                  if (!finished && progress != null) ...[
+                    const SizedBox(height: 16),
+                    if (total != null && total > 0)
+                      LinearProgressIndicator(
+                        value: (progress.globalPositionMs / total).clamp(
+                          0.0,
+                          1.0,
+                        ),
+                      ),
+                    const SizedBox(height: 4),
+                    Text(
+                      total == null
+                          ? '${formatClock(progress.globalPositionMs)} listened'
+                          : '${formatClock(total - progress.globalPositionMs)} left',
+                      style: theme.textTheme.bodySmall,
                     ),
+                  ],
+                  if (!downloads.isEmpty && !downloads.isComplete) ...[
+                    const SizedBox(height: 16),
+                    _DownloadProgress(downloads: downloads),
+                  ],
+                  if (description != null && description.trim().isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    _Description(text: description.trim()),
+                  ],
+                  if (book.genres.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final genre in book.genres)
+                          Chip(
+                            label: Text(genre),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                      ],
+                    ),
+                  ],
+                  const SizedBox(height: 24),
                 ],
               ),
-            ],
-            const SizedBox(height: 24),
+            ),
             _ChapterList(
               book: book,
               finished: finished,
+              side: side,
               chapterDownloads: chapterDownloads,
               listenedCommands: listenedCommands,
               onPlayChapter: onPlayChapter,
               onPlayFrom: onPlayFrom,
               onDownloadChapters: onDownloadChapters,
             ),
+            // Room at the foot for the floating button, which would otherwise sit on the last row.
+            const SliverToBoxAdapter(child: SizedBox(height: 96)),
           ],
         );
         // Pull to refresh, where there is a source to ask. This is the whole of the app's answer to
@@ -259,6 +274,10 @@ class BookDetailsView extends StatelessWidget {
 
 /// A book's entries, and picking some of them out.
 ///
+/// A sliver, so that a book with four hundred chapters builds the dozen rows on screen rather than
+/// all of them. That is not a micro-optimisation: as a `Column` of every row inside a `ListView` it
+/// dropped a phone to about five frames a second whenever anything on the page changed.
+///
 /// Stateful for one reason: holding a row selects it, and what is selected is nobody else's
 /// business. The screen above does not need to know, and keeping it here means the rest of the
 /// details page stays a pure function of the book.
@@ -270,6 +289,7 @@ class _ChapterList extends StatefulWidget {
   const _ChapterList({
     required this.book,
     required this.finished,
+    required this.side,
     required this.chapterDownloads,
     required this.listenedCommands,
     required this.onPlayChapter,
@@ -279,6 +299,10 @@ class _ChapterList extends StatefulWidget {
 
   final BookOverview book;
   final bool finished;
+
+  /// How far the page is inset, which this has to apply itself: it is a sliver of its own, so the
+  /// padding around the block above it does not reach here.
+  final double side;
   final Map<int, ChapterDownload> chapterDownloads;
   final ListenedCommands listenedCommands;
   final ValueChanged<int>? onPlayChapter;
@@ -322,66 +346,88 @@ class _ChapterListState extends State<_ChapterList> {
     final theme = Theme.of(context);
     final book = widget.book;
     final markers = book.markers;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (_selecting)
-          _SelectionBar(
-            count: _selected.length,
-            onDownload: widget.onDownloadChapters == null
-                ? null
-                : _downloadSelected,
-            onSelectAll: _selectAll,
-            onClear: _clear,
-          )
-        else
-          Text(_countLabel(), style: theme.textTheme.titleMedium),
-        const SizedBox(height: 8),
-        if (markers.isNotEmpty)
-          for (final marker in markers)
-            _EntryTile(
-              title: marker.title,
-              durationMs: marker.durationMs,
-              listened: marker.listened,
-              current: marker.current && !widget.finished,
-              // Playable, like a chapter row. Before this, a single-file book's rows did nothing at
-              // all when tapped, which looked exactly like the app being broken.
-              onPlay: widget.onPlayFrom == null
-                  ? null
-                  : () => widget.onPlayFrom!(marker.startMs),
-            )
-        else
-          for (final chapter in book.chapters)
-            _EntryTile(
-              title: chapter.title,
-              durationMs: chapter.durationMs,
-              listened: chapter.listened,
-              current: chapter.current && !widget.finished,
-              download:
-                  widget.chapterDownloads[chapter.chapterId] ??
-                  ChapterDownload.absent,
-              selected: _selected.contains(chapter.chapterId),
-              // While something is selected a tap adds to the selection instead of playing. Once
-              // you are choosing, you are choosing, and a stray tap must not start playback.
-              onPlay: _selecting
-                  ? () => _toggle(chapter.chapterId)
-                  : widget.onPlayChapter == null
-                  ? null
-                  : () => widget.onPlayChapter!(chapter.chapterId),
-              onSelect: widget.onDownloadChapters == null
-                  ? null
-                  : () => _toggle(chapter.chapterId),
-              onDownload: widget.onDownloadChapters == null
-                  ? null
-                  : () => widget.onDownloadChapters!([chapter.chapterId]),
-              onMark: (listened) => markChapterListened(
-                context,
-                widget.listenedCommands,
-                chapterId: chapter.chapterId,
-                listened: listened,
-              ),
-            ),
-      ],
+    final rows = markers.isNotEmpty ? markers.length : book.chapters.length;
+    return SliverPadding(
+      padding: EdgeInsets.symmetric(horizontal: widget.side),
+      sliver: SliverMainAxisGroup(
+        slivers: [
+          SliverToBoxAdapter(
+            child: _selecting
+                ? _SelectionBar(
+                    count: _selected.length,
+                    onDownload: widget.onDownloadChapters == null
+                        ? null
+                        : _downloadSelected,
+                    onSelectAll: _selectAll,
+                    onClear: _clear,
+                  )
+                : Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      _countLabel(),
+                      style: theme.textTheme.titleMedium,
+                    ),
+                  ),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 8)),
+          // One row built as it is about to be seen, rather than four hundred built every frame.
+          SliverList.builder(
+            itemCount: rows,
+            itemBuilder: (context, index) =>
+                markers.isNotEmpty ? _marker(index) : _chapter(index),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// One embedded marker (§4.5).
+  ///
+  /// Playable, like a chapter row. Before it was, a single-file book's rows did nothing at all when
+  /// tapped, which looked exactly like the app being broken. It cannot be downloaded or selected:
+  /// there is one file, and it is either here or it is not.
+  Widget _marker(int index) {
+    final marker = widget.book.markers[index];
+    return _EntryTile(
+      title: marker.title,
+      durationMs: marker.durationMs,
+      listened: marker.listened,
+      current: marker.current && !widget.finished,
+      onPlay: widget.onPlayFrom == null
+          ? null
+          : () => widget.onPlayFrom!(marker.startMs),
+    );
+  }
+
+  Widget _chapter(int index) {
+    final chapter = widget.book.chapters[index];
+    return _EntryTile(
+      title: chapter.title,
+      durationMs: chapter.durationMs,
+      listened: chapter.listened,
+      current: chapter.current && !widget.finished,
+      download:
+          widget.chapterDownloads[chapter.chapterId] ?? ChapterDownload.absent,
+      selected: _selected.contains(chapter.chapterId),
+      // While something is selected a tap adds to the selection instead of playing. Once you are
+      // choosing, you are choosing, and a stray tap must not start playback.
+      onPlay: _selecting
+          ? () => _toggle(chapter.chapterId)
+          : widget.onPlayChapter == null
+          ? null
+          : () => widget.onPlayChapter!(chapter.chapterId),
+      onSelect: widget.onDownloadChapters == null
+          ? null
+          : () => _toggle(chapter.chapterId),
+      onDownload: widget.onDownloadChapters == null
+          ? null
+          : () => widget.onDownloadChapters!([chapter.chapterId]),
+      onMark: (listened) => markChapterListened(
+        context,
+        widget.listenedCommands,
+        chapterId: chapter.chapterId,
+        listened: listened,
+      ),
     );
   }
 

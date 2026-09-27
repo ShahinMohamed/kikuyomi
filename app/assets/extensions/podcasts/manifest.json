@@ -1,8 +1,8 @@
 {
   "id": "org.kikuyomi.podcasts",
   "name": "Podcasts",
-  "version": "1.0.2",
-  "versionCode": 3,
+  "version": "1.0.3",
+  "versionCode": 4,
   "apiVersion": "1.0",
   "minAppVersion": "1.0.0",
   "author": "Kikuyomi",
@@ -75,7 +75,7 @@
   "capabilities": [],
   "files": {
     "main.js": "sha256-MBWp217hSDErS1cXysqkeBFyN0RryfNqMWEDO69Azfw=",
-    "icon.png": "sha256-biOSfABaUWIIMv6bjDhS4lA8d5WpiqzNP7zTTPStedk="
+    "icon.png": "sha256-8+Y39rH5m1c4mYfnLsVDls/zectKeY+fF2USyhUFn5k="
   },
   "sources": [
     {
