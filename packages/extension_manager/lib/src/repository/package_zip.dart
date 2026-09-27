@@ -24,7 +24,8 @@ import 'package:crypto/crypto.dart';
 import '../package.dart';
 import 'index.dart';
 
-/// A package that is not a readable zip, or whose bytes are not the ones the index named.
+/// A package the app will not install: one the repository's key did not sign, one whose bytes are
+/// not the ones the index named, or one that is not a readable zip.
 final class PackageRefused implements Exception {
   const PackageRefused(this.message);
 

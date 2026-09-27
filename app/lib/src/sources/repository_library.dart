@@ -6,6 +6,12 @@
 /// and returns without writing anything, and [accept] is what pins the key. Nothing else stores a
 /// key, so a key can only ever arrive by somebody agreeing to it.
 ///
+/// **What the pinned key then does.** Every index the fetcher reads must be signed by the key it
+/// publishes, and every package installed must be signed by the key in the row — the one the
+/// listener actually agreed to. That is the whole of what trust on first use buys: the listener
+/// judges a repository once, and afterwards the app holds it to that, so a repository that changes
+/// hands cannot quietly start shipping other people's code.
+///
 /// **An index is held in memory, not in the database.** §4.3's `repository` row keeps where a
 /// repository is, who it is and its key; what it offers is a listing, re-read rather than stored.
 /// That means the stored ETag is only sent when there is a cached index to compare against — sending
@@ -125,9 +131,11 @@ final class RepositoryLibrary {
       etag: held == null ? null : repository.etag,
     );
 
-    // §3.8: a key that has changed is either a rotation signed by the old key or a repository that
-    // is not the one it was, and nothing here may decide which. Until signatures are verified there
-    // is no way to tell them apart, so the safe answer is to stop rather than to follow.
+    // §3.8: a key that has changed is either a rotation the operator meant or a repository that is
+    // not the one it was, and nothing here may decide which. Verifying signatures does not help:
+    // the new key verifies the new index perfectly, which is exactly what someone who had taken the
+    // repository over would arrange. Telling the two apart needs the new key signed by the old one,
+    // and the format has nowhere to put that (ADR-0018). So the safe answer is to stop.
     if (fetched.info.publicKey != repository.publicKey) {
       throw RepositoryException(
         '${repository.name} is signing with a different key than the one you '
@@ -147,15 +155,23 @@ final class RepositoryLibrary {
     return index;
   }
 
-  /// Downloads [entry]'s package and checks it is the one the listing named.
+  /// Downloads [entry]'s package, checking [repository]'s pinned key signed it and that the bytes
+  /// are the ones the listing named (§3.8).
+  ///
+  /// The key comes from the row rather than from the last fetch, because the row is where the
+  /// listener's decision was written down. A fetch reads whatever the repository is serving today;
+  /// only one of the two was ever agreed to.
   ///
   /// Stops short of installing it, which is `ExtensionLibrary`'s: the package is a package whatever
   /// door it came through, and there should be one path that unpacks, checks and records one.
-  Future<ZipExtensionFiles> fetchPackage(RepositoryEntry entry) =>
-      _fetcher.downloadPackage(
-        entry.package,
-        description: '${entry.manifest.name} ${entry.manifest.version}',
-      );
+  Future<ZipExtensionFiles> fetchPackage(
+    RepositoryRow repository,
+    RepositoryEntry entry,
+  ) => _fetcher.downloadPackage(
+    entry,
+    publicKey: repository.publicKey,
+    description: '${entry.manifest.name} ${entry.manifest.version}',
+  );
 
   /// Forgets [repository]. Extensions installed from it stay installed (§3.9); what is lost is
   /// updates.

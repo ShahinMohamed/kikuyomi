@@ -529,9 +529,11 @@ Installing from a URL, as Mihon does (§3.8, §3.9).
    signature, and whether that version has been withdrawn. An entry is decoded by the manifest's own
    decoder, so a field the two share cannot drift apart. It has its own `formatVersion`, and a
    document from a newer one is refused rather than read hopefully.
-2. Fetching and parsing it; accepting a plain `github.com/user/repo` URL and working out the raw
-   one, as Mihon does.
-3. Managing a list of repositories, browsing one, installing, updating, uninstalling.
+2. ~~Fetching and parsing it~~ — **built**, with ETag caching, and accepting a plain
+   `github.com/user/repo` URL and working out the raw one, as Mihon does.
+3. ~~Managing a list of repositories, browsing one, installing, uninstalling~~ — **built and used
+   for real**: the official repository was added on Windows and all three extensions installed from
+   it. Updating is not done.
 4. Update checks against the index.
 
 **Trust.** Settled by ADR-0018, against an earlier proposal recorded here to ship unsigned. §3.8 had
@@ -539,12 +541,26 @@ already decided: an Ed25519 key in `repo.json`, pinned on first use, with every 
 Going unsigned would have been reversing that rather than filling a gap, in the direction of less
 safety, for a format that is public and versioned and therefore expensive to change afterwards.
 
-So the format carries `publicKey` and `signature` from version 1 and **nothing verifies them yet**.
-A package's SHA-256 is verified at install regardless, because it catches a truncated download — but
-it proves only that the bytes are the ones the index named, and nothing about who wrote the index.
-Until the install path verifies signatures, a repository is trusted no further than ADR-0017 trusts
-a folder, and an extension from one stays `untrusted`. That window is a stage, not a decision: Phase
-2 is not done before it closes.
+**The verification is now there**, and ADR-0018's window is closed. Two checks, each answering what
+the other cannot. An index is refused unless the key `repo.json` publishes signed every entry in it,
+so nothing above the fetcher ever holds a listing that has not been verified — one bad signature
+fails the whole document, because picking the trustworthy half out of a tampered file is exactly the
+decision a trust boundary must not make. Then a package is refused unless the **pinned** key, the one
+in the repository's row that the listener actually agreed to, signed the hash the index lists, and
+that check happens before a byte is downloaded. The package's own SHA-256 is still verified over the
+bytes that arrive, because a signature over a hash says nothing about a download that was truncated
+on the way.
+
+So an extension installed from a repository is recorded `active` rather than `untrusted`, and that
+word is earned: the app can say who published the code and that it is unaltered. It follows that its
+hashes are re-checked at every start, which a folder install skips.
+
+Three gaps are known and written down in ADR-0018 rather than half-built. An entry is signed on its
+own, so a repository under someone else's control could re-offer an older version its key genuinely
+did sign, or drop an entry and let it look withdrawn; catching either needs the index signed as one
+document with a time in it, which is a format version 2 change. And a changed key is still refused
+outright rather than followed, because the format has nowhere to put a new key signed by the old one,
+so a rotation and a takeover look identical.
 
 The app ships knowing only the official repository. Per `CLAUDE.md`, neither the app nor the docs
 list or recommend any other.
@@ -554,8 +570,9 @@ list or recommend any other.
 - The folder **picker** path has never been driven by the running app: installing on iOS goes through
   the app's own `Extensions` folder, not `UserFolders.choose()`, so the desktop path and Android's
   Storage Access Framework tree are still exercised only by tests. Reload is untried too.
-- An extension is never verified once it is installed from a folder, so `untrusted` is the normal
-  state. When repository installs arrive, `active` will start to mean something (ADR-0017).
+- An extension installed from a **folder** is still never verified, and `untrusted` is the right
+  answer for one (ADR-0017). `active` now means something: it is what a repository install gets, and
+  only after its signature checked against the pinned key.
 - Nothing rolls back to an earlier installed version, although the versioned directory keeps one.
 - A backup does not carry which extensions a library wants; it waits for the repository door and a
   backup format version of its own (`backupLeavesOut` names the tables and says why).

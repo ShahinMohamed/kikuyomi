@@ -91,3 +91,47 @@ do.
 
 `status.md`'s proposal to ship unsigned is superseded by this ADR and should be removed from it
 rather than left as an open question, since leaving it invites the same decision being made twice.
+
+## Update, 2026-09-27: the window is closed
+
+Verification landed with the install path, as option 3 said it would. Two checks, in two places, and
+each answers something the other cannot.
+
+`RepositoryFetcher.fetch` refuses an index unless the key `repo.json` publishes signed every entry in
+it. One bad signature fails the whole document rather than that entry: a listener accepted one key,
+not an extension at a time, so a listing carrying something that key did not sign is one the app has
+no way to reason about, and picking the good entries out of it would be the app deciding which half
+of a tampered file to believe. Doing it in the fetcher means there is no moment above it where an
+unverified listing exists to be shown, browsed or filtered.
+
+`RepositoryFetcher.downloadPackage` then refuses a package unless the **pinned** key — the one in the
+repository's row, which is where the listener's decision was written down, not the one this morning's
+fetch happened to read — signed the hash the entry lists. That check runs before a byte is
+downloaded. The package's own SHA-256 is still verified over the bytes that arrive, because a
+signature over a hash proves nothing about a download that was truncated on the way.
+
+So an extension installed from a repository is recorded `active`, and the word is earned: the app can
+say who published the code and that it is unaltered. It is not a claim that the code is any good.
+
+Signing is `packages/extension_manager/tool/build_repository.dart` rather than §3.10's SDK CLI, which
+still does not exist. What it signs is the package's SHA-256 as the lowercase hex the index lists it
+in — not the listing around it, because what an extension is *allowed* to do is read from the
+manifest inside the verified package, never from the listing beside it.
+
+### What is still not covered
+
+Three things, written here rather than half-built.
+
+**Rollback.** An entry is signed on its own, so a repository under someone else's control can
+re-offer an older version its key genuinely did sign, and the app will take it. Catching that needs
+the index signed as one document, with a time in it, so that an old index can be recognised as old.
+That is a format version 2 change.
+
+**Withdrawal by omission.** For the same reason, dropping an entry is indistinguishable from a
+repository that no longer offers it. `revoked` is honest signalling, not a defence.
+
+**Key rotation.** §3.8 supposes a rotation is signed by the old key; the format has nowhere to put
+that. So a changed key is still refused outright — a rotation and a takeover look identical, and the
+new key verifies the new index perfectly in both cases, which is precisely what makes verification no
+help here. Adding a `previousKey`/`rotationSignature` pair to `repo.json` is additive and can go into
+a version 2 alongside the signed index.

@@ -160,8 +160,8 @@ class _RepositoriesScreenState extends ConsumerState<RepositoriesScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Check this matches what its operator published. Kikuyomi '
-                  'does not verify signatures yet.',
+                  'Check this matches what its operator published. From then '
+                  'on Kikuyomi installs only what this key has signed.',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.outline,
                   ),
@@ -183,25 +183,27 @@ class _RepositoriesScreenState extends ConsumerState<RepositoriesScreen> {
         false;
   }
 
-  /// Takes [entry] from [repository]: downloads it, checks it is what was listed, installs it.
+  /// Takes [entry] from [repository]: checks its pinned key signed it, downloads it, checks the
+  /// bytes are what was listed, installs it.
   ///
   /// Its own busy state, so a long download does not lock the repository it came from, and its own
-  /// error handling, because what can go wrong here — a package that is not the one listed, an
-  /// extension this build cannot run — is a different set of sentences from a fetch failing.
+  /// error handling, because what can go wrong here — a package the repository did not sign, one
+  /// that is not the one listed, an extension this build cannot run — is a different set of
+  /// sentences from a fetch failing.
   Future<void> _install(RepositoryRow repository, RepositoryEntry entry) async {
     if (_installing.contains(entry.id)) return;
     setState(() => _installing.add(entry.id));
     final services = ref.read(servicesProvider);
     try {
-      final files = await services.repositories.fetchPackage(entry);
+      final files = await services.repositories.fetchPackage(repository, entry);
       final installed = await services.extensions.installFromRepository(
         files,
         repositoryUrl: repository.url,
         repositoryName: repository.name,
       );
       _tell(
-        'Installed ${installed.name} ${installed.row.version}. Unverified: '
-        'nothing has checked who published it.',
+        'Installed ${installed.name} ${installed.row.version}, signed by '
+        '${repository.name}.',
       );
     } on PackageRefused catch (error) {
       _tell(error.message);

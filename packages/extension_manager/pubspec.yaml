@@ -36,10 +36,11 @@ dependencies:
   # A repository serves each extension as one zip (§3.2). Pure Dart, so it needs nothing of Android,
   # Windows or iOS and works the same on all three. Brendan Duncan, MIT.
   archive: ^4.0.0
+  # Ed25519: verifying that a repository signed the package it is offering (§3.8, ADR-0018), and
+  # signing one in the tool that builds a publishable repository. Pure Dart, so Android, Windows and
+  # iOS all get the same implementation and none of them needs a platform channel. Gohilla,
+  # Apache-2.0.
+  cryptography: ^2.7.0
 
 dev_dependencies:
-  # Ed25519, for the tool that builds a publishable repository (§3.8, ADR-0018). A dev dependency
-  # because signing is something a repository's operator does, not something the app ever does —
-  # the app only verifies. Gohilla, Apache-2.0, pure Dart.
-  cryptography: ^2.7.0
   test: ^1.25.0

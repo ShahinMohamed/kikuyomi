@@ -12,6 +12,11 @@
 ///
 /// **`repo.json` is fetched every time.** It is tiny, and it carries the signing key: a key rotation
 /// is precisely the thing that must not be missed because a cached index looked unchanged (§3.8).
+///
+/// **An index is verified before it is handed back.** Every entry must carry a signature the
+/// repository's own key made, or the whole document is refused (§3.8, ADR-0018). Doing it here means
+/// there is no moment anywhere above this class where an unverified listing exists to be shown,
+/// browsed or filtered.
 library;
 
 import 'dart:convert';
@@ -21,6 +26,7 @@ import 'package:kikuyomi_networking/kikuyomi_networking.dart';
 import 'index.dart';
 import 'location.dart';
 import 'package_zip.dart';
+import 'signature.dart';
 
 /// What a refresh came back with.
 final class RepositoryFetch {
@@ -65,26 +71,50 @@ final class RepositoryFetcher {
     if (response.status == 304) {
       return RepositoryFetch(info: info, etag: etag);
     }
+    final index = RepositoryIndex.parse(_bodyOf(response, 'index.json'));
+    await checkIndexSignatures(
+      index,
+      publicKey: info.publicKey,
+      repositoryName: info.name,
+    );
     return RepositoryFetch(
       info: info,
-      index: RepositoryIndex.parse(_bodyOf(response, 'index.json')),
+      index: index,
       // A repository that stopped sending one is not an error; it means asking again next time.
       etag: response.headers['etag'],
     );
   }
 
-  /// Downloads the package at [where] and checks it is the one the index named (§3.8).
+  /// Downloads [entry]'s package, having first checked [publicKey] signed it (§3.8).
   ///
-  /// The hash is what catches a truncated or corrupted download, and it is all it catches: it proves
-  /// the bytes are the ones the index listed and nothing about who wrote the index. Verifying that
-  /// is what the signature is for, and nothing does it yet (ADR-0018).
+  /// Two checks, and each answers a question the other cannot. The signature says the repository
+  /// whose key the listener pinned published a package with this hash; the hash, taken over the
+  /// bytes that arrived, says these are those bytes. Neither alone is worth much — a hash beside a
+  /// listing proves nothing about who wrote the listing, and a signature over a hash proves nothing
+  /// about a download that was truncated on the way.
   ///
-  /// Throws [RepositoryException] when it could not be fetched, and [PackageRefused] when what
-  /// arrived is not what was listed.
+  /// [publicKey] is the **pinned** key, from the repository's row, not the one the last fetch read.
+  /// They are the same whenever a refresh has succeeded, and it is the pinned one that carries the
+  /// listener's decision, so it is the one asked.
+  ///
+  /// The signature is checked before a byte is downloaded: a package this app is not going to accept
+  /// is not one to spend a listener's data on.
+  ///
+  /// Throws [RepositoryException] when it could not be fetched, and [PackageRefused] when the
+  /// repository did not sign it or what arrived is not what was listed.
   Future<ZipExtensionFiles> downloadPackage(
-    PackageLocation where, {
+    RepositoryEntry entry, {
+    required String publicKey,
     required String description,
   }) async {
+    if (!await repositorySigned(entry, publicKey: publicKey)) {
+      throw PackageRefused(
+        '$description is not signed by the key you accepted for this '
+        'repository, so it was not installed.',
+      );
+    }
+
+    final where = entry.package;
     final response = await _send(Uri.parse(where.url));
     if (response.status != 200) {
       throw RepositoryException(

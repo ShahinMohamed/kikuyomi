@@ -55,22 +55,23 @@ Not met — the app has never been run on Android at all.
 - [ ] TypeScript SDK and CLI — does not exist; `docs/writing-an-extension.md` is the whole of the author's story
 - [x] QuickJS runtime with worker isolates and bridges
 - [x] ExtensionManager: install, uninstall and reload from a folder (ADR-0017)
-- [ ] ExtensionManager: repositories — **built, and never run against a real one.** The format and
-      its parser (ADR-0018), the address handling, fetching with ETag caching, the `repository` table
-      with its pinned key, a Repositories screen that adds one after showing its fingerprint, and
-      downloading, verifying and installing a package from one. What is missing is a repository to
-      point it at: §3.10's SDK CLI has the `index` and `sign` commands that would make one, and does
-      not exist
+- [x] ExtensionManager: repositories — the format and its parser (ADR-0018), the address handling,
+      fetching with ETag caching, the `repository` table with its pinned key, a Repositories screen
+      that adds one after showing its fingerprint, and downloading, verifying and installing a
+      package from one. Used for real on Windows against the official repository
 - [ ] ExtensionManager: update checks
-- [ ] ExtensionManager: signatures and trust — the format carries the key and the signatures, and
-      nothing verifies them yet, so every extension is still `untrusted` (ADR-0018)
+- [x] ExtensionManager: signatures and trust — an index is refused unless the repository's published
+      key signed every entry, and a package unless the **pinned** key signed the hash the index
+      lists, checked before the download starts. A repository install is recorded `active`; a folder
+      install stays `untrusted`, which is what a folder deserves (ADR-0018)
 - [ ] Rolling back to an earlier installed version, although the versioned directory keeps one
 - [x] Browse, and per-source search
 - [x] Extension-backed details and chapters
 - [x] Streaming, with re-resolve when an address goes stale
 - [x] A LibriVox extension, bundled with the app
-- [ ] An Internet Archive extension
-- [ ] An official repository for either of them to live in
+- [x] An Internet Archive extension, and a Storynory one
+- [x] An official repository for them to live in, built and signed by
+      `packages/extension_manager/tool/build_repository.dart`
 - [ ] GitHub Releases for Android and Windows
 - [ ] In-app update checker
 - [ ] Android developer account
