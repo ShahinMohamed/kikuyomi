@@ -256,6 +256,29 @@ final librarySortProvider = StreamProvider<LibrarySort>(
       .map((sort) => sort ?? LibrarySort.fallback),
 );
 
+/// The listener's categories, in their order (Phase 4).
+final categoriesProvider = StreamProvider<List<CategoryRow>>(
+  (ref) => watchCategories(ref.watch(servicesProvider).database),
+);
+
+/// How many books each category holds, by id.
+final categoryCountsProvider = StreamProvider<Map<int, int>>(
+  (ref) => watchCategoryCounts(ref.watch(servicesProvider).database),
+);
+
+/// The books in one category, for narrowing the shelf to it.
+final booksInCategoryProvider = StreamProvider.autoDispose
+    .family<Set<int>, int>(
+      (ref, categoryId) =>
+          watchBooksIn(ref.watch(servicesProvider).database, categoryId),
+    );
+
+/// The categories one book is filed under.
+final bookCategoriesProvider = StreamProvider.autoDispose.family<Set<int>, int>(
+  (ref, bookId) =>
+      watchBookCategories(ref.watch(servicesProvider).database, bookId),
+);
+
 /// The sources pinned to the top of Browse, watched, so pinning one moves it at once.
 final pinnedSourcesProvider = StreamProvider<List<int>>(
   (ref) => ref

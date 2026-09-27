@@ -12,6 +12,7 @@ import 'book_drop_zone.dart';
 import 'book_files.dart';
 import 'dropped_books.dart';
 import 'home_view.dart';
+import 'library/category_bar.dart';
 import 'library/library_shelf.dart';
 import 'open_book.dart';
 import 'providers.dart';
@@ -57,6 +58,13 @@ class LibraryScreen extends ConsumerStatefulWidget {
 }
 
 class _LibraryScreenState extends ConsumerState<LibraryScreen> {
+  /// The category being shown, or null for all of them.
+  ///
+  /// Not kept in settings: which shelf you were last on is a place in a session, not a preference,
+  /// and opening the app to find it filtered to something chosen days ago would look like books
+  /// going missing.
+  int? _category;
+
   /// What the shelf has been narrowed to. Kept in memory rather than in settings: a search is about
   /// the next ten seconds, and a library that opened still filtered from yesterday would look empty
   /// for no reason anyone could see.
@@ -168,37 +176,61 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           label: const Text('Add book'),
         ),
         body: library.when(
-          data: (books) => HomeView(
-            // The library does not wait for Continue Listening; the shelf fills in when it arrives.
-            continueListening: continueListening.value ?? const [],
-            library: arrangeLibrary(books, query: query, sort: sort),
-            searchQuery: query,
-            covers: services.covers,
-            emptyMessage: locations.importFolderIsVisible
-                ? 'No books yet. Add an audiobook file, or copy books into the '
-                      'Import folder under Kikuyomi in the Files app.'
-                : locations.acceptsDroppedFiles
-                ? 'No books yet. Add an audiobook file or a folder of audio '
-                      'files, or drop them here, to start listening.'
-                : locations.canPickFolders
-                ? 'No books yet. Add an audiobook file, or a folder of audio '
-                      'files, to start listening.'
-                : 'No books yet. Add an audiobook file to start listening.',
-            onResume: (bookId) => openBookInPlayer(context, ref, bookId),
-            onShowDetails: (bookId) =>
-                BookRoute(bookId: bookId).push<void>(context),
-            header: remindToBackUp
-                ? BackupReminderCard(
-                    onChooseFolder: () => chooseBackupFolder(
-                      context,
-                      ref,
-                      backUpAfter: books.isNotEmpty,
-                    ),
-                    onNotNow: () => ref
-                        .read(backupReminderPutOffProvider.notifier)
-                        .putOff(),
-                  )
-                : null,
+          data: (books) => Column(
+            children: [
+              CategoryBar(
+                categories: ref.watch(categoriesProvider).value ?? const [],
+                counts: ref.watch(categoryCountsProvider).value ?? const {},
+                selected: _category,
+                onSelected: (id) => setState(() => _category = id),
+              ),
+              Expanded(
+                child: HomeView(
+                  // The library does not wait for Continue Listening; the shelf fills in when it arrives.
+                  continueListening: continueListening.value ?? const [],
+                  // A category with nothing in it reads as an empty set rather than as no filter, so an
+                  // empty shelf says so instead of quietly showing the whole library.
+                  library: arrangeLibrary(
+                    books,
+                    query: query,
+                    sort: sort,
+                    onlyBookIds: _category == null
+                        ? null
+                        : ref
+                                  .watch(booksInCategoryProvider(_category!))
+                                  .value ??
+                              const <int>{},
+                  ),
+                  searchQuery: query,
+                  covers: services.covers,
+                  emptyMessage: locations.importFolderIsVisible
+                      ? 'No books yet. Add an audiobook file, or copy books into the '
+                            'Import folder under Kikuyomi in the Files app.'
+                      : locations.acceptsDroppedFiles
+                      ? 'No books yet. Add an audiobook file or a folder of audio '
+                            'files, or drop them here, to start listening.'
+                      : locations.canPickFolders
+                      ? 'No books yet. Add an audiobook file, or a folder of audio '
+                            'files, to start listening.'
+                      : 'No books yet. Add an audiobook file to start listening.',
+                  onResume: (bookId) => openBookInPlayer(context, ref, bookId),
+                  onShowDetails: (bookId) =>
+                      BookRoute(bookId: bookId).push<void>(context),
+                  header: remindToBackUp
+                      ? BackupReminderCard(
+                          onChooseFolder: () => chooseBackupFolder(
+                            context,
+                            ref,
+                            backUpAfter: books.isNotEmpty,
+                          ),
+                          onNotNow: () => ref
+                              .read(backupReminderPutOffProvider.notifier)
+                              .putOff(),
+                        )
+                      : null,
+                ),
+              ),
+            ],
           ),
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, _) =>

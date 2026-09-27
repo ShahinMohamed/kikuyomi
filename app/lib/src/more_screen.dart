@@ -72,6 +72,13 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
             onTap: () => const SettingsRoute().push<void>(context),
           ),
           ListTile(
+            leading: const Icon(Icons.label_outline),
+            title: const Text('Categories'),
+            subtitle: const Text('The shelves you file your books under'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => const CategoriesRoute().push<void>(context),
+          ),
+          ListTile(
             leading: const Icon(Icons.extension_outlined),
             title: const Text('Extensions'),
             subtitle: const Text('What is installed, and where it came from'),
