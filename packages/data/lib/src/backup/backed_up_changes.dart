@@ -16,6 +16,7 @@ List<TableInfo<Table, Object?>> backedUpTables(KikuyomiDatabase db) => [
   db.mediaFiles,
   db.chapterSegments,
   db.playbackStates,
+  db.readingStates,
   db.listeningSessions,
   db.bookmarks,
   db.categories,

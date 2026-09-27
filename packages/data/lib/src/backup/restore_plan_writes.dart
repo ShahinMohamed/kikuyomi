@@ -91,6 +91,7 @@ Future<Iterable<int>> _insertBook(
           lastRefreshedAt: Value(book.lastRefreshedAt),
           detailsFetched: Value(book.detailsFetched),
           playbackSpeed: Value(book.playbackSpeed),
+          kind: Value(book.kind),
           createdAt: Value(book.createdAt),
           updatedAt: Value(book.updatedAt),
         ),
@@ -100,6 +101,9 @@ Future<Iterable<int>> _insertBook(
   final chapterIds = await _insertChapters(db, bookId, book.chapters, fileIds);
   if (book.progress case final progress?) {
     await _saveProgress(db, bookId, progress, chapterIds);
+  }
+  if (book.reading case final reading?) {
+    await _saveReading(db, bookId, reading, chapterIds);
   }
   await _addSessions(db, bookId, book.sessions, chapterIds);
   await _addBookmarks(db, bookId, book.bookmarks, chapterIds);
@@ -173,6 +177,9 @@ Future<Set<int>> _mergeBook(
   if (merge.progress case final progress?) {
     await _saveProgress(db, book.id, progress, chapterIds);
     written.add(_idOf(chapterIds, progress.chapterKey, 'chapter'));
+  }
+  if (merge.reading case final reading?) {
+    await _saveReading(db, book.id, reading, chapterIds);
   }
   await _addSessions(db, book.id, merge.newSessions, chapterIds);
   await _addBookmarks(db, book.id, merge.newBookmarks, chapterIds);
@@ -323,6 +330,24 @@ Future<void> _saveProgress(
           globalPositionMs: Value(progress.globalPositionMs),
           updatedAt: Value(progress.updatedAt),
           deviceId: Value(progress.deviceId),
+        ),
+      );
+}
+
+Future<void> _saveReading(
+  KikuyomiDatabase db,
+  int bookId,
+  ReadingSnapshot reading,
+  Map<String, int> chapterIds,
+) async {
+  await db
+      .into(db.readingStates)
+      .insertOnConflictUpdate(
+        ReadingStatesCompanion(
+          bookId: Value(bookId),
+          chapterId: Value(_idOf(chapterIds, reading.chapterKey, 'chapter')),
+          progress: Value(reading.progress),
+          updatedAt: Value(reading.updatedAt),
         ),
       );
 }

@@ -87,7 +87,7 @@ void main() {
         ),
       );
 
-  test('creates exactly the tables of version 4', () {
+  test('creates exactly the tables of version 5', () {
     expect(
       {for (final table in db.allTables) table.actualTableName},
       {
@@ -99,6 +99,7 @@ void main() {
         'media_files',
         'chapter_segments',
         'playback_states',
+        'reading_states',
         'listening_sessions',
         'bookmarks',
         'categories',

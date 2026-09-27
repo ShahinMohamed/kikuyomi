@@ -55,6 +55,10 @@ message Backup {
   //    so a reader restores listened state from a version 1 backup's positions instead of taking it
   //    as written. The fields and their meaning are unchanged, and a version 1 reader restores a
   //    version 2 backup correctly, so `min_reader_version` stays at 1.
+  // 3: books to read as well as to listen to (ADR-0019): `Book.kind` and `Book.reading_state`. A
+  //    version 2 reader would restore a book to read as an audiobook, without a word, so a backup
+  //    holding one has `min_reader_version` 3. A backup of audiobooks alone restores correctly on a
+  //    version 2 reader and keeps `min_reader_version` at 1 (ADR-0020).
   uint32 format_version = 1;
 
   // The oldest format version a reader can implement and still restore this backup correctly.
@@ -157,6 +161,19 @@ message Book {
 
   // The names of the categories the book belongs to.
   repeated string categories = 33;
+
+  // A book to listen to or a book to read (format version 3). The default is audio, which is what
+  // every book in an older backup was.
+  BookKind kind = 34;
+
+  // Where the reader of a book to read is up to. Absent for a book never opened, and for every
+  // audiobook, whose place is `playback_state`.
+  ReadingState reading_state = 35;
+}
+
+enum BookKind {
+  BOOK_KIND_AUDIO = 0;
+  BOOK_KIND_TEXT = 1;
 }
 
 enum ContributorRole {
@@ -269,6 +286,18 @@ message PlaybackState {
 
   int64 updated_at_ms = 4;
   string device_id = 5;
+}
+
+// Where the reader of a book is up to: §4.3's `reading_state` (ADR-0019).
+message ReadingState {
+  // A `Chapter.key` of the same book.
+  string chapter_key = 1;
+
+  // How far through the chapter, from 0 at its start to 1 at its end. A fraction rather than a
+  // position in characters, so that it survives a different font size or screen.
+  double progress = 2;
+
+  int64 updated_at_ms = 3;
 }
 
 // One stretch of listening, for history and statistics.

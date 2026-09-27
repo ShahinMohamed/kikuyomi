@@ -1,5 +1,6 @@
 import 'package:kikuyomi_backup/kikuyomi_backup.dart';
 import 'package:kikuyomi_domain/kikuyomi_domain.dart';
+import 'package:kikuyomi_source_api/kikuyomi_source_api.dart' show SourceKind;
 import 'package:test/test.dart';
 
 import 'fixtures.dart';
@@ -76,6 +77,8 @@ BookSnapshot book({
   List<MediaFileSnapshot> files = const [],
   List<ChapterSnapshot> chapters = const [],
   ProgressSnapshot? progress,
+  SourceKind kind = SourceKind.audio,
+  ReadingSnapshot? reading,
   List<SessionSnapshot> sessions = const [],
   List<BookmarkSnapshot> bookmarks = const [],
   List<String> categories = const [],
@@ -92,10 +95,15 @@ BookSnapshot book({
   mediaFiles: files,
   chapters: chapters,
   progress: progress,
+  kind: kind,
+  reading: reading,
   sessions: sessions,
   bookmarks: bookmarks,
   categories: categories,
 );
+
+ReadingSnapshot readingAt(String chapterKey, double progress, DateTime at) =>
+    ReadingSnapshot(chapterKey: chapterKey, progress: progress, updatedAt: at);
 
 LibrarySnapshot libraryOf(
   List<BookSnapshot> books, {
@@ -321,6 +329,82 @@ void main() {
         here: book(chapters: [chapter('one')]),
       );
       expect(merge.progress, same(backedUp));
+    });
+  });
+
+  group('a reading position', () {
+    // The same rule as playback progress: the more recent side wins, and a tie keeps the library's.
+    test('newer in the backup replaces older in the library', () {
+      final backedUp = readingAt('one', 0.8, at(2));
+      final merge = mergeOf(
+        backedUp: book(
+          kind: SourceKind.text,
+          chapters: [chapter('one')],
+          reading: backedUp,
+        ),
+        here: book(
+          kind: SourceKind.text,
+          chapters: [chapter('one')],
+          reading: readingAt('one', 0.2, at(1)),
+        ),
+      );
+      expect(merge.reading, same(backedUp));
+    });
+
+    test('newer in the library is kept', () {
+      expect(
+        changesNothing(
+          backedUp: book(
+            kind: SourceKind.text,
+            chapters: [chapter('one')],
+            reading: readingAt('one', 0.2, at(1)),
+          ),
+          here: book(
+            kind: SourceKind.text,
+            chapters: [chapter('one')],
+            reading: readingAt('one', 0.8, at(2)),
+          ),
+        ),
+        isTrue,
+      );
+    });
+
+    test("a book never opened here takes the backup's", () {
+      final backedUp = readingAt('one', 0.5, at(1));
+      final merge = mergeOf(
+        backedUp: book(
+          kind: SourceKind.text,
+          chapters: [chapter('one')],
+          reading: backedUp,
+        ),
+        here: book(kind: SourceKind.text, chapters: [chapter('one')]),
+      );
+      expect(merge.reading, same(backedUp));
+    });
+
+    test('brings back the chapter it is in when the library lacks it', () {
+      // A place in a chapter the source has since dropped is still the reader's place.
+      final merge = mergeOf(
+        backedUp: book(
+          kind: SourceKind.text,
+          chapters: [chapter('gone')],
+          reading: readingAt('gone', 0.5, at(1)),
+        ),
+        here: book(kind: SourceKind.text),
+      );
+      expect([for (final c in merge.newChapters) c.key], ['gone']);
+      expect(merge.newChapters.single.removedFromSource, isTrue);
+    });
+
+    test('makes a book carry user data', () {
+      // So that a book outside the library but being read is backed up at all.
+      expect(
+        book(
+          inLibrary: false,
+          reading: readingAt('one', 0.1, at(1)),
+        ).carriesUserData,
+        isTrue,
+      );
     });
   });
 

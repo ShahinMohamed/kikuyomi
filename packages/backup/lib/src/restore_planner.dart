@@ -29,7 +29,9 @@ import 'codec.dart';
 /// - Nothing is removed. Whatever the backup lacks stays as it is, and a restore never takes a book
 ///   out of the library, though it puts back a book the backup has in it.
 /// - The book's progress goes to whichever side saved it more recently, and a tie keeps the
-///   library's. A book never started here takes the backup's.
+///   library's. A book never started here takes the backup's. A reading position goes the same way.
+/// - A book's kind stays as the library has it. The same book always comes from the same source, so
+///   the two can only differ in a backup that was tampered with.
 /// - A chapter's progress, its listened state and last position, goes the same way, with one
 ///   exception: a chapter with no progress never wins over one with some, however recent. A book added
 ///   again before restoring has fresh chapters, written just now with nothing listened, and they must
@@ -145,6 +147,8 @@ BookMerge _mergeBook({
     backedUp: backedUp.progress,
   );
 
+  final reading = _laterReading(here: here.reading, backedUp: backedUp.reading);
+
   final bookmarksHere = {
     for (final mark in here.bookmarks) _identifyMark(mark),
   };
@@ -158,6 +162,7 @@ BookMerge _mergeBook({
   };
   final keysWithUserData = {
     ?progress?.chapterKey,
+    ?reading?.chapterKey,
     for (final mark in newBookmarks) mark.chapterKey,
   };
   final newChapters = <ChapterSnapshot>[];
@@ -223,6 +228,7 @@ BookMerge _mergeBook({
     newChapters: List.unmodifiable(newChapters),
     chapterProgress: List.unmodifiable(chapterProgress),
     progress: progress,
+    reading: reading,
     newSessions: List.unmodifiable(newSessions),
     newBookmarks: List.unmodifiable(newBookmarks),
     newCategories: List.unmodifiable([
@@ -236,6 +242,16 @@ BookMerge _mergeBook({
 ProgressSnapshot? _laterProgress({
   required ProgressSnapshot? here,
   required ProgressSnapshot? backedUp,
+}) {
+  if (backedUp == null) return null;
+  if (here == null) return backedUp;
+  return backedUp.updatedAt.isAfter(here.updatedAt) ? backedUp : null;
+}
+
+/// The backup's reading position, if it should replace the library's.
+ReadingSnapshot? _laterReading({
+  required ReadingSnapshot? here,
+  required ReadingSnapshot? backedUp,
 }) {
   if (backedUp == null) return null;
   if (here == null) return backedUp;

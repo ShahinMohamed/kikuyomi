@@ -54,11 +54,13 @@ BookSnapshot reversed(BookSnapshot book) => BookSnapshot(
   lastRefreshedAt: book.lastRefreshedAt,
   detailsFetched: book.detailsFetched,
   playbackSpeed: book.playbackSpeed,
+  kind: book.kind,
   createdAt: book.createdAt,
   updatedAt: book.updatedAt,
   mediaFiles: book.mediaFiles.reversed.toList(),
   chapters: book.chapters.reversed.toList(),
   progress: book.progress,
+  reading: book.reading,
   sessions: book.sessions.reversed.toList(),
   bookmarks: book.bookmarks.reversed.toList(),
   categories: book.categories.reversed.toList(),
@@ -154,7 +156,7 @@ void main() {
         expect(applied.isEmpty, isTrue);
         expect([
           for (final book in seen!.books) book.key,
-        ], unorderedEquals([aBook, startedBook, 'browsed']));
+        ], unorderedEquals([aBook, startedBook, 'a-novel.epub', 'browsed']));
       },
     );
 

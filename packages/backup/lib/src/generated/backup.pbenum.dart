@@ -14,6 +14,25 @@ import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
 
+class BookKind extends $pb.ProtobufEnum {
+  static const BookKind BOOK_KIND_AUDIO =
+      BookKind._(0, _omitEnumNames ? '' : 'BOOK_KIND_AUDIO');
+  static const BookKind BOOK_KIND_TEXT =
+      BookKind._(1, _omitEnumNames ? '' : 'BOOK_KIND_TEXT');
+
+  static const $core.List<BookKind> values = <BookKind>[
+    BOOK_KIND_AUDIO,
+    BOOK_KIND_TEXT,
+  ];
+
+  static final $core.List<BookKind?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 1);
+  static BookKind? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const BookKind._(super.value, super.name);
+}
+
 class ContributorRole extends $pb.ProtobufEnum {
   static const ContributorRole CONTRIBUTOR_ROLE_UNSPECIFIED = ContributorRole._(
       0, _omitEnumNames ? '' : 'CONTRIBUTOR_ROLE_UNSPECIFIED');

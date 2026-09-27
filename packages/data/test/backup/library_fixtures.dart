@@ -7,6 +7,7 @@ import 'package:drift/drift.dart' hide isNull;
 import 'package:drift/native.dart';
 import 'package:kikuyomi_data/kikuyomi_data.dart';
 import 'package:kikuyomi_domain/kikuyomi_domain.dart';
+import 'package:kikuyomi_source_api/kikuyomi_source_api.dart' show SourceKind;
 
 /// [minutes] after the seed time, with milliseconds, so that anything rounding to seconds shows up.
 DateTime at(int minutes) => DateTime.utc(
@@ -305,6 +306,44 @@ Future<void> seedLibrary(KikuyomiDatabase db) async {
   await (db.update(db.chapters)..where((c) => c.id.equals(started.chapter)))
       .write(const ChaptersCompanion(lastPositionMs: Value(5000)));
 
+  // A book to read, part way through a chapter (ADR-0019).
+  final novel = await db
+      .into(db.books)
+      .insert(
+        BooksCompanion(
+          sourceId: const Value(localSourceId),
+          key: const Value('a-novel.epub'),
+          title: const Value('A Novel'),
+          kind: const Value(SourceKind.text),
+          inLibrary: const Value(true),
+          dateAdded: Value(at(31)),
+          createdAt: Value(at(31)),
+          updatedAt: Value(at(31)),
+        ),
+      );
+  final novelChapter = await db
+      .into(db.chapters)
+      .insert(
+        ChaptersCompanion(
+          bookId: Value(novel),
+          key: const Value('chapter-1.xhtml'),
+          title: const Value('Chapter 1'),
+          sourceIndex: const Value(0),
+          createdAt: Value(at(31)),
+          updatedAt: Value(at(31)),
+        ),
+      );
+  await db
+      .into(db.readingStates)
+      .insert(
+        ReadingStatesCompanion(
+          bookId: Value(novel),
+          chapterId: Value(novelChapter),
+          progress: const Value(0.375),
+          updatedAt: Value(at(32)),
+        ),
+      );
+
   final browsed = await db
       .into(db.books)
       .insert(
@@ -463,6 +502,14 @@ Future<Map<String, List<Map<String, Object?>>>> dumpLibrary(
     ]),
     'playbackStates': sorted([
       for (final row in await db.select(db.playbackStates).get())
+        {
+          ...json(row, ['bookId', 'chapterId']),
+          'book': bookOf[row.bookId],
+          'chapter': chapterOf[row.chapterId],
+        },
+    ]),
+    'readingStates': sorted([
+      for (final row in await db.select(db.readingStates).get())
         {
           ...json(row, ['bookId', 'chapterId']),
           'book': bookOf[row.bookId],

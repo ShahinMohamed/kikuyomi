@@ -104,6 +104,10 @@ class Backup extends $pb.GeneratedMessage {
   ///    so a reader restores listened state from a version 1 backup's positions instead of taking it
   ///    as written. The fields and their meaning are unchanged, and a version 1 reader restores a
   ///    version 2 backup correctly, so `min_reader_version` stays at 1.
+  /// 3: books to read as well as to listen to (ADR-0019): `Book.kind` and `Book.reading_state`. A
+  ///    version 2 reader would restore a book to read as an audiobook, without a word, so a backup
+  ///    holding one has `min_reader_version` 3. A backup of audiobooks alone restores correctly on a
+  ///    version 2 reader and keeps `min_reader_version` at 1 (ADR-0020).
   @$pb.TagNumber(1)
   $core.int get formatVersion => $_getIZ(0);
   @$pb.TagNumber(1)
@@ -441,6 +445,8 @@ class Book extends $pb.GeneratedMessage {
     $core.Iterable<ListeningSession>? listeningSessions,
     $core.Iterable<Bookmark>? bookmarks,
     $core.Iterable<$core.String>? categories,
+    BookKind? kind,
+    ReadingState? readingState,
   }) {
     final result = Book._();
     if (sourceId != null) result.sourceId = sourceId;
@@ -477,6 +483,8 @@ class Book extends $pb.GeneratedMessage {
       result.listeningSessions.addAll(listeningSessions);
     if (bookmarks != null) result.bookmarks.addAll(bookmarks);
     if (categories != null) result.categories.addAll(categories);
+    if (kind != null) result.kind = kind;
+    if (readingState != null) result.readingState = readingState;
     return result;
   }
 
@@ -535,6 +543,10 @@ class Book extends $pb.GeneratedMessage {
     ..pPM<Bookmark>(32, _omitFieldNames ? '' : 'bookmarks',
         subBuilder: Bookmark.$_createMessage)
     ..pPS(33, _omitFieldNames ? '' : 'categories')
+    ..aE<BookKind>(34, _omitFieldNames ? '' : 'kind',
+        enumValues: BookKind.values)
+    ..aOM<ReadingState>(35, _omitFieldNames ? '' : 'readingState',
+        subBuilder: ReadingState.$_createMessage)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -815,6 +827,30 @@ class Book extends $pb.GeneratedMessage {
   /// The names of the categories the book belongs to.
   @$pb.TagNumber(33)
   $pb.PbList<$core.String> get categories => $_getList(32);
+
+  /// A book to listen to or a book to read (format version 3). The default is audio, which is what
+  /// every book in an older backup was.
+  @$pb.TagNumber(34)
+  BookKind get kind => $_getN(33);
+  @$pb.TagNumber(34)
+  set kind(BookKind value) => $_setField(34, value);
+  @$pb.TagNumber(34)
+  $core.bool hasKind() => $_has(33);
+  @$pb.TagNumber(34)
+  void clearKind() => $_clearField(34);
+
+  /// Where the reader of a book to read is up to. Absent for a book never opened, and for every
+  /// audiobook, whose place is `playback_state`.
+  @$pb.TagNumber(35)
+  ReadingState get readingState => $_getN(34);
+  @$pb.TagNumber(35)
+  set readingState(ReadingState value) => $_setField(35, value);
+  @$pb.TagNumber(35)
+  $core.bool hasReadingState() => $_has(34);
+  @$pb.TagNumber(35)
+  void clearReadingState() => $_clearField(35);
+  @$pb.TagNumber(35)
+  ReadingState ensureReadingState() => $_ensure(34);
 }
 
 /// An author or narrator credit. §4.3 normalises people in the database; here a credit carries the
@@ -1572,6 +1608,92 @@ class PlaybackState extends $pb.GeneratedMessage {
   $core.bool hasDeviceId() => $_has(4);
   @$pb.TagNumber(5)
   void clearDeviceId() => $_clearField(5);
+}
+
+/// Where the reader of a book is up to: §4.3's `reading_state` (ADR-0019).
+class ReadingState extends $pb.GeneratedMessage {
+  factory ReadingState({
+    $core.String? chapterKey,
+    $core.double? progress,
+    $fixnum.Int64? updatedAtMs,
+  }) {
+    final result = ReadingState._();
+    if (chapterKey != null) result.chapterKey = chapterKey;
+    if (progress != null) result.progress = progress;
+    if (updatedAtMs != null) result.updatedAtMs = updatedAtMs;
+    return result;
+  }
+
+  ReadingState._();
+
+  factory ReadingState.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ReadingState()..mergeFromBuffer(data, registry);
+  factory ReadingState.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ReadingState()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ReadingState',
+      package:
+          const $pb.PackageName(_omitMessageNames ? '' : 'kikuyomi.backup'),
+      createEmptyInstance: ReadingState.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'chapterKey')
+    ..aD(2, _omitFieldNames ? '' : 'progress')
+    ..aInt64(3, _omitFieldNames ? '' : 'updatedAtMs')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ReadingState clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ReadingState copyWith(void Function(ReadingState) updates) =>
+      super.copyWith((message) => updates(message as ReadingState))
+          as ReadingState;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use ReadingState() / ReadingState.new instead')
+  static ReadingState create() => ReadingState._();
+  static $pb.GeneratedMessage $_createMessage() => ReadingState._();
+  @$core.override
+  ReadingState createEmptyInstance() => ReadingState._();
+  @$core.pragma('dart2js:noInline')
+  static ReadingState getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ReadingState>(
+          ReadingState.$_createMessage);
+  static ReadingState? _defaultInstance;
+
+  /// A `Chapter.key` of the same book.
+  @$pb.TagNumber(1)
+  $core.String get chapterKey => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set chapterKey($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasChapterKey() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearChapterKey() => $_clearField(1);
+
+  /// How far through the chapter, from 0 at its start to 1 at its end. A fraction rather than a
+  /// position in characters, so that it survives a different font size or screen.
+  @$pb.TagNumber(2)
+  $core.double get progress => $_getN(1);
+  @$pb.TagNumber(2)
+  set progress($core.double value) => $_setDouble(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasProgress() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearProgress() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $fixnum.Int64 get updatedAtMs => $_getI64(2);
+  @$pb.TagNumber(3)
+  set updatedAtMs($fixnum.Int64 value) => $_setInt64(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasUpdatedAtMs() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearUpdatedAtMs() => $_clearField(3);
 }
 
 /// One stretch of listening, for history and statistics.

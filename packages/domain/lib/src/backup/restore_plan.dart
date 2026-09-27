@@ -79,6 +79,7 @@ final class BookMerge {
     this.newChapters = const [],
     this.chapterProgress = const [],
     this.progress,
+    this.reading,
     this.newSessions = const [],
     this.newBookmarks = const [],
     this.newCategories = const [],
@@ -114,6 +115,9 @@ final class BookMerge {
   /// Where the book is up to, replacing what the library has, or null to leave it.
   final ProgressSnapshot? progress;
 
+  /// Where the reader is up to, replacing what the library has, or null to leave it.
+  final ReadingSnapshot? reading;
+
   final List<SessionSnapshot> newSessions;
   final List<BookmarkSnapshot> newBookmarks;
 
@@ -131,6 +135,7 @@ final class BookMerge {
       newChapters.isEmpty &&
       chapterProgress.isEmpty &&
       progress == null &&
+      reading == null &&
       newSessions.isEmpty &&
       newBookmarks.isEmpty &&
       newCategories.isEmpty;

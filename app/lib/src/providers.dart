@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kikuyomi_backup/kikuyomi_backup.dart';
+import 'package:kikuyomi_source_api/kikuyomi_source_api.dart' show SourceKind;
 import 'package:kikuyomi_data/kikuyomi_data.dart';
 import 'package:kikuyomi_domain/kikuyomi_domain.dart';
 import 'package:kikuyomi_playback/kikuyomi_playback.dart';
@@ -73,6 +74,18 @@ final sourceGatewayProvider = Provider<SourceGateway>(
 
 /// The library, straight from the database. §2.6: screens watch Drift streams rather than holding
 /// copies, so an import appears without anything being refreshed.
+/// One tab's shelf: the books in the library of one kind (ADR-0019).
+///
+/// The Library tab asks for audio and the Reading tab for text. Separate streams rather than one
+/// list filtered twice, so that turning a page does not rebuild the audiobooks.
+final shelfProvider = StreamProvider.family<List<BookRow>, SourceKind>(
+  (ref, kind) => watchShelf(ref.watch(servicesProvider).database, kind),
+);
+
+/// Every book in the library, of either kind.
+///
+/// What "is the library empty" means, for backups: a library holding only novels still has
+/// something worth backing up. A screen that shows a shelf wants [shelfProvider] instead.
 final libraryProvider = StreamProvider<List<BookRow>>((ref) {
   final db = ref.watch(servicesProvider).database;
   return (db.select(db.books)

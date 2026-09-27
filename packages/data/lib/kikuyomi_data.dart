@@ -19,6 +19,7 @@ export 'src/extensions/extension_preferences.dart';
 export 'src/extensions/installed_extensions.dart';
 export 'src/extensions/repositories.dart';
 export 'src/library/categories.dart';
+export 'src/library/reading.dart';
 export 'src/library/book_overview.dart';
 export 'src/library/bookmarks.dart';
 export 'src/library/continue_listening.dart';

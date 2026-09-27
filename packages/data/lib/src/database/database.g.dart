@@ -883,6 +883,16 @@ class $BooksTable extends Books with TableInfo<$BooksTable, BookRow> {
     type: DriftSqlType.double,
     requiredDuringInsert: false,
   );
+  @override
+  late final GeneratedColumnWithTypeConverter<SourceKind, String> kind =
+      GeneratedColumn<String>(
+        'kind',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('audio'),
+      ).withConverter<SourceKind>($BooksTable.$converterkind);
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -934,6 +944,7 @@ class $BooksTable extends Books with TableInfo<$BooksTable, BookRow> {
     detailsFetched,
     userOverrides,
     playbackSpeed,
+    kind,
     createdAt,
     updatedAt,
   ];
@@ -1273,6 +1284,12 @@ class $BooksTable extends Books with TableInfo<$BooksTable, BookRow> {
         DriftSqlType.double,
         data['${effectivePrefix}playback_speed'],
       ),
+      kind: $BooksTable.$converterkind.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}kind'],
+        )!,
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -1293,6 +1310,8 @@ class $BooksTable extends Books with TableInfo<$BooksTable, BookRow> {
       const StringListConverter();
   static TypeConverter<Set<BookField>, String> $converteruserOverrides =
       const BookFieldSetConverter();
+  static JsonTypeConverter2<SourceKind, String, String> $converterkind =
+      const EnumNameConverter<SourceKind>(SourceKind.values);
 }
 
 class BookRow extends DataClass implements Insertable<BookRow> {
@@ -1326,6 +1345,13 @@ class BookRow extends DataClass implements Insertable<BookRow> {
 
   /// §4.3: playback speed is remembered per book.
   final double? playbackSpeed;
+
+  /// A book to listen to or a book to read (version 5, ADR-0019).
+  ///
+  /// On the book and not taken from its source, because the Local source offers both: a folder of
+  /// audio files and an EPUB are both books from this device. Every book that existed before
+  /// version 5 is audio, which is what the default says, so the migration writes nothing.
+  final SourceKind kind;
   final DateTime createdAt;
   final DateTime updatedAt;
   const BookRow({
@@ -1356,6 +1382,7 @@ class BookRow extends DataClass implements Insertable<BookRow> {
     required this.detailsFetched,
     required this.userOverrides,
     this.playbackSpeed,
+    required this.kind,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -1435,6 +1462,9 @@ class BookRow extends DataClass implements Insertable<BookRow> {
     if (!nullToAbsent || playbackSpeed != null) {
       map['playback_speed'] = Variable<double>(playbackSpeed);
     }
+    {
+      map['kind'] = Variable<String>($BooksTable.$converterkind.toSql(kind));
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
@@ -1505,6 +1535,7 @@ class BookRow extends DataClass implements Insertable<BookRow> {
       playbackSpeed: playbackSpeed == null && nullToAbsent
           ? const Value.absent()
           : Value(playbackSpeed),
+      kind: Value(kind),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -1543,6 +1574,9 @@ class BookRow extends DataClass implements Insertable<BookRow> {
       detailsFetched: serializer.fromJson<bool>(json['detailsFetched']),
       userOverrides: serializer.fromJson<Set<BookField>>(json['userOverrides']),
       playbackSpeed: serializer.fromJson<double?>(json['playbackSpeed']),
+      kind: $BooksTable.$converterkind.fromJson(
+        serializer.fromJson<String>(json['kind']),
+      ),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -1578,6 +1612,9 @@ class BookRow extends DataClass implements Insertable<BookRow> {
       'detailsFetched': serializer.toJson<bool>(detailsFetched),
       'userOverrides': serializer.toJson<Set<BookField>>(userOverrides),
       'playbackSpeed': serializer.toJson<double?>(playbackSpeed),
+      'kind': serializer.toJson<String>(
+        $BooksTable.$converterkind.toJson(kind),
+      ),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -1611,6 +1648,7 @@ class BookRow extends DataClass implements Insertable<BookRow> {
     bool? detailsFetched,
     Set<BookField>? userOverrides,
     Value<double?> playbackSpeed = const Value.absent(),
+    SourceKind? kind,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) => BookRow(
@@ -1655,6 +1693,7 @@ class BookRow extends DataClass implements Insertable<BookRow> {
     playbackSpeed: playbackSpeed.present
         ? playbackSpeed.value
         : this.playbackSpeed,
+    kind: kind ?? this.kind,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
@@ -1711,6 +1750,7 @@ class BookRow extends DataClass implements Insertable<BookRow> {
       playbackSpeed: data.playbackSpeed.present
           ? data.playbackSpeed.value
           : this.playbackSpeed,
+      kind: data.kind.present ? data.kind.value : this.kind,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -1746,6 +1786,7 @@ class BookRow extends DataClass implements Insertable<BookRow> {
           ..write('detailsFetched: $detailsFetched, ')
           ..write('userOverrides: $userOverrides, ')
           ..write('playbackSpeed: $playbackSpeed, ')
+          ..write('kind: $kind, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -1781,6 +1822,7 @@ class BookRow extends DataClass implements Insertable<BookRow> {
     detailsFetched,
     userOverrides,
     playbackSpeed,
+    kind,
     createdAt,
     updatedAt,
   ]);
@@ -1815,6 +1857,7 @@ class BookRow extends DataClass implements Insertable<BookRow> {
           other.detailsFetched == this.detailsFetched &&
           other.userOverrides == this.userOverrides &&
           other.playbackSpeed == this.playbackSpeed &&
+          other.kind == this.kind &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -1847,6 +1890,7 @@ class BooksCompanion extends UpdateCompanion<BookRow> {
   final Value<bool> detailsFetched;
   final Value<Set<BookField>> userOverrides;
   final Value<double?> playbackSpeed;
+  final Value<SourceKind> kind;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   const BooksCompanion({
@@ -1877,6 +1921,7 @@ class BooksCompanion extends UpdateCompanion<BookRow> {
     this.detailsFetched = const Value.absent(),
     this.userOverrides = const Value.absent(),
     this.playbackSpeed = const Value.absent(),
+    this.kind = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
   });
@@ -1908,6 +1953,7 @@ class BooksCompanion extends UpdateCompanion<BookRow> {
     this.detailsFetched = const Value.absent(),
     this.userOverrides = const Value.absent(),
     this.playbackSpeed = const Value.absent(),
+    this.kind = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
   }) : sourceId = Value(sourceId),
@@ -1943,6 +1989,7 @@ class BooksCompanion extends UpdateCompanion<BookRow> {
     Expression<bool>? detailsFetched,
     Expression<String>? userOverrides,
     Expression<double>? playbackSpeed,
+    Expression<String>? kind,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
   }) {
@@ -1974,6 +2021,7 @@ class BooksCompanion extends UpdateCompanion<BookRow> {
       if (detailsFetched != null) 'details_fetched': detailsFetched,
       if (userOverrides != null) 'user_overrides': userOverrides,
       if (playbackSpeed != null) 'playback_speed': playbackSpeed,
+      if (kind != null) 'kind': kind,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
     });
@@ -2007,6 +2055,7 @@ class BooksCompanion extends UpdateCompanion<BookRow> {
     Value<bool>? detailsFetched,
     Value<Set<BookField>>? userOverrides,
     Value<double?>? playbackSpeed,
+    Value<SourceKind>? kind,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
   }) {
@@ -2038,6 +2087,7 @@ class BooksCompanion extends UpdateCompanion<BookRow> {
       detailsFetched: detailsFetched ?? this.detailsFetched,
       userOverrides: userOverrides ?? this.userOverrides,
       playbackSpeed: playbackSpeed ?? this.playbackSpeed,
+      kind: kind ?? this.kind,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -2131,6 +2181,11 @@ class BooksCompanion extends UpdateCompanion<BookRow> {
     if (playbackSpeed.present) {
       map['playback_speed'] = Variable<double>(playbackSpeed.value);
     }
+    if (kind.present) {
+      map['kind'] = Variable<String>(
+        $BooksTable.$converterkind.toSql(kind.value),
+      );
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -2170,6 +2225,7 @@ class BooksCompanion extends UpdateCompanion<BookRow> {
           ..write('detailsFetched: $detailsFetched, ')
           ..write('userOverrides: $userOverrides, ')
           ..write('playbackSpeed: $playbackSpeed, ')
+          ..write('kind: $kind, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -4973,6 +5029,325 @@ class PlaybackStatesCompanion extends UpdateCompanion<PlaybackStateRow> {
           ..write('globalPositionMs: $globalPositionMs, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('deviceId: $deviceId')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ReadingStatesTable extends ReadingStates
+    with TableInfo<$ReadingStatesTable, ReadingStateRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ReadingStatesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _bookIdMeta = const VerificationMeta('bookId');
+  @override
+  late final GeneratedColumn<int> bookId = GeneratedColumn<int>(
+    'book_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES books (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _chapterIdMeta = const VerificationMeta(
+    'chapterId',
+  );
+  @override
+  late final GeneratedColumn<int> chapterId = GeneratedColumn<int>(
+    'chapter_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES chapters (id)',
+    ),
+  );
+  static const VerificationMeta _progressMeta = const VerificationMeta(
+    'progress',
+  );
+  @override
+  late final GeneratedColumn<double> progress = GeneratedColumn<double>(
+    'progress',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    bookId,
+    chapterId,
+    progress,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'reading_states';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ReadingStateRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('book_id')) {
+      context.handle(
+        _bookIdMeta,
+        bookId.isAcceptableOrUnknown(data['book_id']!, _bookIdMeta),
+      );
+    }
+    if (data.containsKey('chapter_id')) {
+      context.handle(
+        _chapterIdMeta,
+        chapterId.isAcceptableOrUnknown(data['chapter_id']!, _chapterIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_chapterIdMeta);
+    }
+    if (data.containsKey('progress')) {
+      context.handle(
+        _progressMeta,
+        progress.isAcceptableOrUnknown(data['progress']!, _progressMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_progressMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {bookId};
+  @override
+  ReadingStateRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ReadingStateRow(
+      bookId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}book_id'],
+      )!,
+      chapterId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}chapter_id'],
+      )!,
+      progress: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}progress'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $ReadingStatesTable createAlias(String alias) {
+    return $ReadingStatesTable(attachedDatabase, alias);
+  }
+}
+
+class ReadingStateRow extends DataClass implements Insertable<ReadingStateRow> {
+  final int bookId;
+
+  /// Not cascading, for `playback_state`'s reason: the database refuses to delete a chapter that holds
+  /// a reader's place. A sync never deletes one anyway — a chapter a source drops is marked
+  /// `removed_from_source` — so this only ever stops a mistake.
+  final int chapterId;
+
+  /// How far through the chapter, from 0 at its start to 1 at its end.
+  ///
+  /// A fraction rather than characters or pixels, because it has to survive the reader changing the
+  /// font size or turning the phone round, and neither of those should move anyone's place.
+  final double progress;
+  final DateTime updatedAt;
+  const ReadingStateRow({
+    required this.bookId,
+    required this.chapterId,
+    required this.progress,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['book_id'] = Variable<int>(bookId);
+    map['chapter_id'] = Variable<int>(chapterId);
+    map['progress'] = Variable<double>(progress);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  ReadingStatesCompanion toCompanion(bool nullToAbsent) {
+    return ReadingStatesCompanion(
+      bookId: Value(bookId),
+      chapterId: Value(chapterId),
+      progress: Value(progress),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory ReadingStateRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ReadingStateRow(
+      bookId: serializer.fromJson<int>(json['bookId']),
+      chapterId: serializer.fromJson<int>(json['chapterId']),
+      progress: serializer.fromJson<double>(json['progress']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'bookId': serializer.toJson<int>(bookId),
+      'chapterId': serializer.toJson<int>(chapterId),
+      'progress': serializer.toJson<double>(progress),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  ReadingStateRow copyWith({
+    int? bookId,
+    int? chapterId,
+    double? progress,
+    DateTime? updatedAt,
+  }) => ReadingStateRow(
+    bookId: bookId ?? this.bookId,
+    chapterId: chapterId ?? this.chapterId,
+    progress: progress ?? this.progress,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  ReadingStateRow copyWithCompanion(ReadingStatesCompanion data) {
+    return ReadingStateRow(
+      bookId: data.bookId.present ? data.bookId.value : this.bookId,
+      chapterId: data.chapterId.present ? data.chapterId.value : this.chapterId,
+      progress: data.progress.present ? data.progress.value : this.progress,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ReadingStateRow(')
+          ..write('bookId: $bookId, ')
+          ..write('chapterId: $chapterId, ')
+          ..write('progress: $progress, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(bookId, chapterId, progress, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ReadingStateRow &&
+          other.bookId == this.bookId &&
+          other.chapterId == this.chapterId &&
+          other.progress == this.progress &&
+          other.updatedAt == this.updatedAt);
+}
+
+class ReadingStatesCompanion extends UpdateCompanion<ReadingStateRow> {
+  final Value<int> bookId;
+  final Value<int> chapterId;
+  final Value<double> progress;
+  final Value<DateTime> updatedAt;
+  const ReadingStatesCompanion({
+    this.bookId = const Value.absent(),
+    this.chapterId = const Value.absent(),
+    this.progress = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  ReadingStatesCompanion.insert({
+    this.bookId = const Value.absent(),
+    required int chapterId,
+    required double progress,
+    required DateTime updatedAt,
+  }) : chapterId = Value(chapterId),
+       progress = Value(progress),
+       updatedAt = Value(updatedAt);
+  static Insertable<ReadingStateRow> custom({
+    Expression<int>? bookId,
+    Expression<int>? chapterId,
+    Expression<double>? progress,
+    Expression<DateTime>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (bookId != null) 'book_id': bookId,
+      if (chapterId != null) 'chapter_id': chapterId,
+      if (progress != null) 'progress': progress,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  ReadingStatesCompanion copyWith({
+    Value<int>? bookId,
+    Value<int>? chapterId,
+    Value<double>? progress,
+    Value<DateTime>? updatedAt,
+  }) {
+    return ReadingStatesCompanion(
+      bookId: bookId ?? this.bookId,
+      chapterId: chapterId ?? this.chapterId,
+      progress: progress ?? this.progress,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (bookId.present) {
+      map['book_id'] = Variable<int>(bookId.value);
+    }
+    if (chapterId.present) {
+      map['chapter_id'] = Variable<int>(chapterId.value);
+    }
+    if (progress.present) {
+      map['progress'] = Variable<double>(progress.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ReadingStatesCompanion(')
+          ..write('bookId: $bookId, ')
+          ..write('chapterId: $chapterId, ')
+          ..write('progress: $progress, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -8899,6 +9274,7 @@ abstract class _$KikuyomiDatabase extends GeneratedDatabase {
     this,
   );
   late final $PlaybackStatesTable playbackStates = $PlaybackStatesTable(this);
+  late final $ReadingStatesTable readingStates = $ReadingStatesTable(this);
   late final $ListeningSessionsTable listeningSessions =
       $ListeningSessionsTable(this);
   late final $BookmarksTable bookmarks = $BookmarksTable(this);
@@ -8921,6 +9297,10 @@ abstract class _$KikuyomiDatabase extends GeneratedDatabase {
     'playback_states_recent',
     'CREATE INDEX playback_states_recent ON playback_states (updated_at)',
   );
+  late final Index readingStatesRecent = Index(
+    'reading_states_recent',
+    'CREATE INDEX reading_states_recent ON reading_states (updated_at)',
+  );
   late final Index listeningSessionsStarted = Index(
     'listening_sessions_started',
     'CREATE INDEX listening_sessions_started ON listening_sessions (started_at)',
@@ -8942,6 +9322,7 @@ abstract class _$KikuyomiDatabase extends GeneratedDatabase {
     mediaFiles,
     chapterSegments,
     playbackStates,
+    readingStates,
     listeningSessions,
     bookmarks,
     categories,
@@ -8953,6 +9334,7 @@ abstract class _$KikuyomiDatabase extends GeneratedDatabase {
     booksLibrary,
     chaptersOrder,
     playbackStatesRecent,
+    readingStatesRecent,
     listeningSessionsStarted,
     downloadTasksPending,
   ];
@@ -8992,6 +9374,13 @@ abstract class _$KikuyomiDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('playback_states', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'books',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('reading_states', kind: UpdateKind.delete)],
     ),
     WritePropagation(
       on: TableUpdateQuery.onTableName(
@@ -9442,6 +9831,7 @@ typedef $$BooksTableCreateCompanionBuilder = BooksCompanion Function({
   Value<bool> detailsFetched,
   Value<Set<BookField>> userOverrides,
   Value<double?> playbackSpeed,
+  Value<SourceKind> kind,
   required DateTime createdAt,
   required DateTime updatedAt,
 });
@@ -9473,6 +9863,7 @@ typedef $$BooksTableUpdateCompanionBuilder = BooksCompanion Function({
   Value<bool> detailsFetched,
   Value<Set<BookField>> userOverrides,
   Value<double?> playbackSpeed,
+  Value<SourceKind> kind,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
 });
@@ -9566,6 +9957,25 @@ final class $$BooksTableReferences
     ).filter((f) => f.bookId.id.sqlEquals($_itemColumn<int>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_playbackStatesRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$ReadingStatesTable, List<ReadingStateRow>>
+  _readingStatesRefsTable(_$KikuyomiDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.readingStates,
+        aliasName: 'books__id__reading_states__book_id',
+      );
+
+  $$ReadingStatesTableProcessedTableManager get readingStatesRefs {
+    final manager = $$ReadingStatesTableTableManager(
+      $_db,
+      $_db.readingStates,
+    ).filter((f) => f.bookId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_readingStatesRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -9771,6 +10181,12 @@ class $$BooksTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnWithTypeConverterFilters<SourceKind, SourceKind, String> get kind =>
+      $composableBuilder(
+        column: $table.kind,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
+
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnFilters(column),
@@ -9895,6 +10311,31 @@ class $$BooksTableFilterComposer
           }) => $$PlaybackStatesTableFilterComposer(
             $db: $db,
             $table: $db.playbackStates,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> readingStatesRefs(
+    Expression<bool> Function($$ReadingStatesTableFilterComposer f) f,
+  ) {
+    final $$ReadingStatesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.readingStates,
+      getReferencedColumn: (t) => t.bookId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ReadingStatesTableFilterComposer(
+            $db: $db,
+            $table: $db.readingStates,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -10119,6 +10560,11 @@ class $$BooksTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -10265,6 +10711,9 @@ class $$BooksTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumnWithTypeConverter<SourceKind, String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
@@ -10394,6 +10843,31 @@ class $$BooksTableAnnotationComposer
     return f(composer);
   }
 
+  Expression<T> readingStatesRefs<T extends Object>(
+    Expression<T> Function($$ReadingStatesTableAnnotationComposer a) f,
+  ) {
+    final $$ReadingStatesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.readingStates,
+      getReferencedColumn: (t) => t.bookId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ReadingStatesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.readingStates,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
   Expression<T> listeningSessionsRefs<T extends Object>(
     Expression<T> Function($$ListeningSessionsTableAnnotationComposer a) f,
   ) {
@@ -10490,6 +10964,7 @@ class $$BooksTableTableManager
             bool chaptersRefs,
             bool mediaFilesRefs,
             bool playbackStatesRefs,
+            bool readingStatesRefs,
             bool listeningSessionsRefs,
             bool bookmarksRefs,
             bool bookCategoriesRefs,
@@ -10535,6 +11010,7 @@ class $$BooksTableTableManager
                 Value<bool> detailsFetched = const Value.absent(),
                 Value<Set<BookField>> userOverrides = const Value.absent(),
                 Value<double?> playbackSpeed = const Value.absent(),
+                Value<SourceKind> kind = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
               }) => BooksCompanion(
@@ -10565,6 +11041,7 @@ class $$BooksTableTableManager
                 detailsFetched: detailsFetched,
                 userOverrides: userOverrides,
                 playbackSpeed: playbackSpeed,
+                kind: kind,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
               ),
@@ -10597,6 +11074,7 @@ class $$BooksTableTableManager
                 Value<bool> detailsFetched = const Value.absent(),
                 Value<Set<BookField>> userOverrides = const Value.absent(),
                 Value<double?> playbackSpeed = const Value.absent(),
+                Value<SourceKind> kind = const Value.absent(),
                 required DateTime createdAt,
                 required DateTime updatedAt,
               }) => BooksCompanion.insert(
@@ -10627,6 +11105,7 @@ class $$BooksTableTableManager
                 detailsFetched: detailsFetched,
                 userOverrides: userOverrides,
                 playbackSpeed: playbackSpeed,
+                kind: kind,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
               ),
@@ -10645,6 +11124,7 @@ class $$BooksTableTableManager
                 chaptersRefs = false,
                 mediaFilesRefs = false,
                 playbackStatesRefs = false,
+                readingStatesRefs = false,
                 listeningSessionsRefs = false,
                 bookmarksRefs = false,
                 bookCategoriesRefs = false,
@@ -10656,6 +11136,7 @@ class $$BooksTableTableManager
                     if (chaptersRefs) db.chapters,
                     if (mediaFilesRefs) db.mediaFiles,
                     if (playbackStatesRefs) db.playbackStates,
+                    if (readingStatesRefs) db.readingStates,
                     if (listeningSessionsRefs) db.listeningSessions,
                     if (bookmarksRefs) db.bookmarks,
                     if (bookCategoriesRefs) db.bookCategories,
@@ -10776,6 +11257,27 @@ class $$BooksTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (readingStatesRefs)
+                        await $_getPrefetchedData<
+                          BookRow,
+                          $BooksTable,
+                          ReadingStateRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$BooksTableReferences
+                              ._readingStatesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$BooksTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).readingStatesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.bookId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                       if (listeningSessionsRefs)
                         await $_getPrefetchedData<
                           BookRow,
@@ -10865,6 +11367,7 @@ typedef $$BooksTableProcessedTableManager =
         bool chaptersRefs,
         bool mediaFilesRefs,
         bool playbackStatesRefs,
+        bool readingStatesRefs,
         bool listeningSessionsRefs,
         bool bookmarksRefs,
         bool bookCategoriesRefs,
@@ -11568,6 +12071,25 @@ final class $$ChaptersTableReferences
     );
   }
 
+  static MultiTypedResultKey<$ReadingStatesTable, List<ReadingStateRow>>
+  _readingStatesRefsTable(_$KikuyomiDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.readingStates,
+        aliasName: 'chapters__id__reading_states__chapter_id',
+      );
+
+  $$ReadingStatesTableProcessedTableManager get readingStatesRefs {
+    final manager = $$ReadingStatesTableTableManager(
+      $_db,
+      $_db.readingStates,
+    ).filter((f) => f.chapterId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_readingStatesRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
   static MultiTypedResultKey<$ListeningSessionsTable, List<ListeningSessionRow>>
   _listeningSessionsRefsTable(_$KikuyomiDatabase db) =>
       MultiTypedResultKey.fromTable(
@@ -11746,6 +12268,31 @@ class $$ChaptersTableFilterComposer
           }) => $$PlaybackStatesTableFilterComposer(
             $db: $db,
             $table: $db.playbackStates,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> readingStatesRefs(
+    Expression<bool> Function($$ReadingStatesTableFilterComposer f) f,
+  ) {
+    final $$ReadingStatesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.readingStates,
+      getReferencedColumn: (t) => t.chapterId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ReadingStatesTableFilterComposer(
+            $db: $db,
+            $table: $db.readingStates,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -12039,6 +12586,31 @@ class $$ChaptersTableAnnotationComposer
     return f(composer);
   }
 
+  Expression<T> readingStatesRefs<T extends Object>(
+    Expression<T> Function($$ReadingStatesTableAnnotationComposer a) f,
+  ) {
+    final $$ReadingStatesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.readingStates,
+      getReferencedColumn: (t) => t.chapterId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ReadingStatesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.readingStates,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
   Expression<T> listeningSessionsRefs<T extends Object>(
     Expression<T> Function($$ListeningSessionsTableAnnotationComposer a) f,
   ) {
@@ -12108,6 +12680,7 @@ class $$ChaptersTableTableManager
             bool bookId,
             bool chapterSegmentsRefs,
             bool playbackStatesRefs,
+            bool readingStatesRefs,
             bool listeningSessionsRefs,
             bool bookmarksRefs,
           })
@@ -12200,6 +12773,7 @@ class $$ChaptersTableTableManager
                 bookId = false,
                 chapterSegmentsRefs = false,
                 playbackStatesRefs = false,
+                readingStatesRefs = false,
                 listeningSessionsRefs = false,
                 bookmarksRefs = false,
               }) {
@@ -12208,6 +12782,7 @@ class $$ChaptersTableTableManager
                   explicitlyWatchedTables: [
                     if (chapterSegmentsRefs) db.chapterSegments,
                     if (playbackStatesRefs) db.playbackStates,
+                    if (readingStatesRefs) db.readingStates,
                     if (listeningSessionsRefs) db.listeningSessions,
                     if (bookmarksRefs) db.bookmarks,
                   ],
@@ -12285,6 +12860,27 @@ class $$ChaptersTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (readingStatesRefs)
+                        await $_getPrefetchedData<
+                          ChapterRow,
+                          $ChaptersTable,
+                          ReadingStateRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ChaptersTableReferences
+                              ._readingStatesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ChaptersTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).readingStatesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.chapterId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                       if (listeningSessionsRefs)
                         await $_getPrefetchedData<
                           ChapterRow,
@@ -12351,6 +12947,7 @@ typedef $$ChaptersTableProcessedTableManager =
         bool bookId,
         bool chapterSegmentsRefs,
         bool playbackStatesRefs,
+        bool readingStatesRefs,
         bool listeningSessionsRefs,
         bool bookmarksRefs,
       })
@@ -13808,6 +14405,391 @@ typedef $$PlaybackStatesTableProcessedTableManager =
       $$PlaybackStatesTableUpdateCompanionBuilder,
       (PlaybackStateRow, $$PlaybackStatesTableReferences),
       PlaybackStateRow,
+      PrefetchHooks Function({bool bookId, bool chapterId})
+    >;
+typedef $$ReadingStatesTableCreateCompanionBuilder =
+    ReadingStatesCompanion Function({
+      Value<int> bookId,
+      required int chapterId,
+      required double progress,
+      required DateTime updatedAt,
+    });
+typedef $$ReadingStatesTableUpdateCompanionBuilder =
+    ReadingStatesCompanion Function({
+      Value<int> bookId,
+      Value<int> chapterId,
+      Value<double> progress,
+      Value<DateTime> updatedAt,
+    });
+
+final class $$ReadingStatesTableReferences
+    extends
+        BaseReferences<
+          _$KikuyomiDatabase,
+          $ReadingStatesTable,
+          ReadingStateRow
+        > {
+  $$ReadingStatesTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $BooksTable _bookIdTable(_$KikuyomiDatabase db) =>
+      db.books.createAlias('reading_states__book_id__books__id');
+
+  $$BooksTableProcessedTableManager get bookId {
+    final $_column = $_itemColumn<int>('book_id')!;
+
+    final manager = $$BooksTableTableManager(
+      $_db,
+      $_db.books,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_bookIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $ChaptersTable _chapterIdTable(_$KikuyomiDatabase db) =>
+      db.chapters.createAlias('reading_states__chapter_id__chapters__id');
+
+  $$ChaptersTableProcessedTableManager get chapterId {
+    final $_column = $_itemColumn<int>('chapter_id')!;
+
+    final manager = $$ChaptersTableTableManager(
+      $_db,
+      $_db.chapters,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_chapterIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$ReadingStatesTableFilterComposer
+    extends Composer<_$KikuyomiDatabase, $ReadingStatesTable> {
+  $$ReadingStatesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<double> get progress => $composableBuilder(
+    column: $table.progress,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$BooksTableFilterComposer get bookId {
+    final $$BooksTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.bookId,
+      referencedTable: $db.books,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BooksTableFilterComposer(
+            $db: $db,
+            $table: $db.books,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ChaptersTableFilterComposer get chapterId {
+    final $$ChaptersTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.chapterId,
+      referencedTable: $db.chapters,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ChaptersTableFilterComposer(
+            $db: $db,
+            $table: $db.chapters,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ReadingStatesTableOrderingComposer
+    extends Composer<_$KikuyomiDatabase, $ReadingStatesTable> {
+  $$ReadingStatesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<double> get progress => $composableBuilder(
+    column: $table.progress,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$BooksTableOrderingComposer get bookId {
+    final $$BooksTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.bookId,
+      referencedTable: $db.books,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BooksTableOrderingComposer(
+            $db: $db,
+            $table: $db.books,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ChaptersTableOrderingComposer get chapterId {
+    final $$ChaptersTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.chapterId,
+      referencedTable: $db.chapters,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ChaptersTableOrderingComposer(
+            $db: $db,
+            $table: $db.chapters,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ReadingStatesTableAnnotationComposer
+    extends Composer<_$KikuyomiDatabase, $ReadingStatesTable> {
+  $$ReadingStatesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<double> get progress =>
+      $composableBuilder(column: $table.progress, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  $$BooksTableAnnotationComposer get bookId {
+    final $$BooksTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.bookId,
+      referencedTable: $db.books,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BooksTableAnnotationComposer(
+            $db: $db,
+            $table: $db.books,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ChaptersTableAnnotationComposer get chapterId {
+    final $$ChaptersTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.chapterId,
+      referencedTable: $db.chapters,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ChaptersTableAnnotationComposer(
+            $db: $db,
+            $table: $db.chapters,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ReadingStatesTableTableManager
+    extends
+        RootTableManager<
+          _$KikuyomiDatabase,
+          $ReadingStatesTable,
+          ReadingStateRow,
+          $$ReadingStatesTableFilterComposer,
+          $$ReadingStatesTableOrderingComposer,
+          $$ReadingStatesTableAnnotationComposer,
+          $$ReadingStatesTableCreateCompanionBuilder,
+          $$ReadingStatesTableUpdateCompanionBuilder,
+          (ReadingStateRow, $$ReadingStatesTableReferences),
+          ReadingStateRow,
+          PrefetchHooks Function({bool bookId, bool chapterId})
+        > {
+  $$ReadingStatesTableTableManager(
+    _$KikuyomiDatabase db,
+    $ReadingStatesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ReadingStatesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ReadingStatesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ReadingStatesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> bookId = const Value.absent(),
+                Value<int> chapterId = const Value.absent(),
+                Value<double> progress = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+              }) => ReadingStatesCompanion(
+                bookId: bookId,
+                chapterId: chapterId,
+                progress: progress,
+                updatedAt: updatedAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> bookId = const Value.absent(),
+                required int chapterId,
+                required double progress,
+                required DateTime updatedAt,
+              }) => ReadingStatesCompanion.insert(
+                bookId: bookId,
+                chapterId: chapterId,
+                progress: progress,
+                updatedAt: updatedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$ReadingStatesTable, ReadingStateRow>(table),
+                  $$ReadingStatesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({bookId = false, chapterId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (bookId) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.bookId,
+                        referencedTable: $$ReadingStatesTableReferences
+                            ._bookIdTable(db),
+                        referencedColumn: $$ReadingStatesTableReferences
+                            ._bookIdTable(db)
+                            .id,
+                      ) as T;
+                    }
+                    if (chapterId) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.chapterId,
+                        referencedTable: $$ReadingStatesTableReferences
+                            ._chapterIdTable(db),
+                        referencedColumn: $$ReadingStatesTableReferences
+                            ._chapterIdTable(db)
+                            .id,
+                      ) as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$ReadingStatesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$KikuyomiDatabase,
+      $ReadingStatesTable,
+      ReadingStateRow,
+      $$ReadingStatesTableFilterComposer,
+      $$ReadingStatesTableOrderingComposer,
+      $$ReadingStatesTableAnnotationComposer,
+      $$ReadingStatesTableCreateCompanionBuilder,
+      $$ReadingStatesTableUpdateCompanionBuilder,
+      (ReadingStateRow, $$ReadingStatesTableReferences),
+      ReadingStateRow,
       PrefetchHooks Function({bool bookId, bool chapterId})
     >;
 typedef $$ListeningSessionsTableCreateCompanionBuilder =
@@ -16679,6 +17661,8 @@ class $KikuyomiDatabaseManager {
       $$ChapterSegmentsTableTableManager(_db, _db.chapterSegments);
   $$PlaybackStatesTableTableManager get playbackStates =>
       $$PlaybackStatesTableTableManager(_db, _db.playbackStates);
+  $$ReadingStatesTableTableManager get readingStates =>
+      $$ReadingStatesTableTableManager(_db, _db.readingStates);
   $$ListeningSessionsTableTableManager get listeningSessions =>
       $$ListeningSessionsTableTableManager(_db, _db.listeningSessions);
   $$BookmarksTableTableManager get bookmarks =>
