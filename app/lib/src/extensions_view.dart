@@ -14,6 +14,7 @@ class ExtensionsView extends StatelessWidget {
     super.key,
     required this.extensions,
     required this.problems,
+    required this.updates,
     required this.canChooseFolder,
     required this.dropFolderName,
     required this.busyWith,
@@ -21,6 +22,8 @@ class ExtensionsView extends StatelessWidget {
     required this.onInstallFromDropFolder,
     required this.onReload,
     required this.onRemove,
+    required this.onUpdate,
+    required this.onRollBack,
     required this.onOpenConsole,
   });
 
@@ -29,6 +32,11 @@ class ExtensionsView extends StatelessWidget {
 
   /// How many failures the console holds about each extension, by id.
   final Map<String, int> problems;
+
+  /// The version a repository is offering, by extension id, for the ones a check found something
+  /// newer for. Empty until a check has been run: this screen never asks the network on its own,
+  /// because opening Extensions should not cost a listener a dozen requests.
+  final Map<String, String> updates;
 
   /// Whether this device can show a folder picker (§5.1: not iOS).
   final bool canChooseFolder;
@@ -45,6 +53,8 @@ class ExtensionsView extends StatelessWidget {
   final VoidCallback onInstallFromDropFolder;
   final ValueChanged<ExtensionSummary> onReload;
   final ValueChanged<ExtensionSummary> onRemove;
+  final ValueChanged<ExtensionSummary> onUpdate;
+  final ValueChanged<ExtensionSummary> onRollBack;
 
   /// Opens the console, for every extension or for one.
   final ValueChanged<String?> onOpenConsole;
@@ -69,10 +79,13 @@ class ExtensionsView extends StatelessWidget {
         _ExtensionTile(
           extension: extension,
           problems: problems[extension.id] ?? 0,
+          offered: updates[extension.id],
           busy: busyWith == extension.id,
           anyBusy: _busy,
           onReload: () => onReload(extension),
           onRemove: () => onRemove(extension),
+          onUpdate: () => onUpdate(extension),
+          onRollBack: () => onRollBack(extension),
           onOpenConsole: () => onOpenConsole(extension.id),
         ),
     ],
@@ -145,19 +158,27 @@ class _ExtensionTile extends StatelessWidget {
   const _ExtensionTile({
     required this.extension,
     required this.problems,
+    required this.offered,
     required this.busy,
     required this.anyBusy,
     required this.onReload,
     required this.onRemove,
+    required this.onUpdate,
+    required this.onRollBack,
     required this.onOpenConsole,
   });
 
   final ExtensionSummary extension;
   final int problems;
+
+  /// The newer version waiting for it, or null when there is none.
+  final String? offered;
   final bool busy;
   final bool anyBusy;
   final VoidCallback onReload;
   final VoidCallback onRemove;
+  final VoidCallback onUpdate;
+  final VoidCallback onRollBack;
   final VoidCallback onOpenConsole;
 
   @override
@@ -185,7 +206,7 @@ class _ExtensionTile extends StatelessWidget {
             spacing: 6,
             runSpacing: 6,
             children: [
-              for (final label in _labels(extension, problems))
+              for (final label in _labels(extension, problems, offered))
                 _Chip(label: label.text, warn: label.warn),
             ],
           ),
@@ -193,9 +214,12 @@ class _ExtensionTile extends StatelessWidget {
       ),
       trailing: _Menu(
         extension: extension,
+        offered: offered,
         enabled: !anyBusy,
         onReload: onReload,
         onRemove: onRemove,
+        onUpdate: onUpdate,
+        onRollBack: onRollBack,
         onOpenConsole: onOpenConsole,
       ),
       onTap: onOpenConsole,
@@ -206,11 +230,17 @@ class _ExtensionTile extends StatelessWidget {
   static List<({String text, bool warn})> _labels(
     ExtensionSummary extension,
     int problems,
+    String? offered,
   ) => [
     if (!extension.isRunnable)
       (text: 'Could not be read', warn: true)
     else if (extension.row.status == ExtensionStatus.obsolete)
       (text: 'Too old for this app', warn: true),
+    // A withdrawal is the publisher saying this version should not be used, which is the most
+    // important thing on the tile when it is true.
+    if (extension.row.status == ExtensionStatus.revoked)
+      (text: 'Withdrawn by its repository', warn: true),
+    if (offered != null) (text: 'Update to $offered', warn: false),
     if (problems > 0)
       (text: problems == 1 ? '1 problem' : '$problems problems', warn: true),
     if (extension.isBundled)
@@ -250,16 +280,22 @@ class _Chip extends StatelessWidget {
 class _Menu extends StatelessWidget {
   const _Menu({
     required this.extension,
+    required this.offered,
     required this.enabled,
     required this.onReload,
     required this.onRemove,
+    required this.onUpdate,
+    required this.onRollBack,
     required this.onOpenConsole,
   });
 
   final ExtensionSummary extension;
+  final String? offered;
   final bool enabled;
   final VoidCallback onReload;
   final VoidCallback onRemove;
+  final VoidCallback onUpdate;
+  final VoidCallback onRollBack;
   final VoidCallback onOpenConsole;
 
   @override
@@ -268,17 +304,54 @@ class _Menu extends StatelessWidget {
     tooltip: 'More',
     onSelected: (action) => action(),
     itemBuilder: (context) => [
+      if (offered != null)
+        PopupMenuItem(value: onUpdate, child: Text('Update to $offered')),
       PopupMenuItem(value: onOpenConsole, child: const Text('What it logged')),
       if (extension.canReload)
         PopupMenuItem(
           value: onReload,
           child: const Text('Reload from its folder'),
         ),
+      if (extension.canRollBack)
+        PopupMenuItem(
+          value: onRollBack,
+          child: const Text('Go back to an earlier version'),
+        ),
       if (!extension.isBundled)
         PopupMenuItem(value: onRemove, child: const Text('Remove')),
     ],
   );
 }
+
+/// Which earlier version to go back to, or null if the listener changed their mind.
+///
+/// Every version still on disk is offered rather than only the one before, because "the last one"
+/// is not always the one that worked: an extension can be broken for two releases running, and a
+/// listener who has updated twice since it last worked needs to reach past the middle one.
+Future<int?> chooseEarlierVersion(
+  BuildContext context,
+  ExtensionSummary extension,
+) => showDialog<int>(
+  context: context,
+  builder: (context) => SimpleDialog(
+    title: Text('Go back to which version of ${extension.row.name}?'),
+    children: [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
+        child: Text(
+          'Nothing is downloaded: these are still on this device from when '
+          'they were installed. Your books and progress are not touched.',
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+      ),
+      for (final version in extension.earlierVersions)
+        SimpleDialogOption(
+          onPressed: () => Navigator.of(context).pop(version),
+          child: Text('Version code $version'),
+        ),
+    ],
+  ),
+);
 
 /// What removing an extension asks first.
 ///

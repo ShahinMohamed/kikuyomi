@@ -59,12 +59,14 @@ Not met — the app has never been run on Android at all.
       fetching with ETag caching, the `repository` table with its pinned key, a Repositories screen
       that adds one after showing its fingerprint, and downloading, verifying and installing a
       package from one. Used for real on Windows against the official repository
-- [ ] ExtensionManager: update checks
+- [x] ExtensionManager: update checks — every repository re-read on demand, a newer `versionCode`
+      offered rather than installed, a withdrawn version stopped and a reinstated one started again,
+      and one repository being down never losing what the others said
 - [x] ExtensionManager: signatures and trust — an index is refused unless the repository's published
       key signed every entry, and a package unless the **pinned** key signed the hash the index
       lists, checked before the download starts. A repository install is recorded `active`; a folder
       install stays `untrusted`, which is what a folder deserves (ADR-0018)
-- [ ] Rolling back to an earlier installed version, although the versioned directory keeps one
+- [x] Rolling back to an earlier installed version, off the disk and without the network
 - [x] Browse, and per-source search
 - [x] Extension-backed details and chapters
 - [x] Streaming, with re-resolve when an address goes stale
@@ -80,6 +82,20 @@ Not met — the app has never been run on Android at all.
 
 **Exit (M2, the MVP): browse → details → stream from an installed extension, end to end, installed
 by a tester from a public release.** The end-to-end path works; nothing has ever been released.
+
+The extension system itself is finished: the contract, the runtime, both doors in, signatures,
+updates, rollback, and four extensions in a signed repository. What is left of this phase is not
+extension work at all. The TypeScript SDK and CLI is a project of its own, and the last three items
+are release engineering, which needs a signing keystore created once and backed up in two safe
+places (§5.1) and a Play-independent release pipeline — and, for the last of them, an Android
+developer account only the project's owner can open.
+
+The extension system itself is finished: the contract, the runtime, both doors in, signatures,
+updates, rollback, and four extensions in a signed repository. What is left of this phase is not
+extension work at all. The TypeScript SDK and CLI is a project of its own, and the last three items
+are release engineering, which needs a signing keystore that must be created once and backed up in
+two safe places (§5.1) and a Play-independent release pipeline -- and, for the last of them, an
+Android developer account only the project's owner can open.
 
 ---
 

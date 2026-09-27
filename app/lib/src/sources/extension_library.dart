@@ -34,7 +34,11 @@ import 'source_registry.dart';
 /// that is installed but unreadable is still listed, with the reason in the console: quietly hiding it
 /// would leave a listener with a source that is gone and no way to see why.
 final class ExtensionSummary {
-  const ExtensionSummary({required this.row, required this.isRunnable});
+  const ExtensionSummary({
+    required this.row,
+    required this.isRunnable,
+    this.earlierVersions = const [],
+  });
 
   final ExtensionRow row;
 
@@ -47,6 +51,17 @@ final class ExtensionSummary {
 
   /// Whether nothing proved this code is what its author published (§3.8).
   bool get isUnverified => row.status == ExtensionStatus.untrusted;
+
+  /// The other versions of it still on disk, newest first (§3.9).
+  ///
+  /// An update is installed beside the version in use rather than over it, so what is here is every
+  /// version that ever installed and has not been uninstalled since. It is read from disk rather
+  /// than from the database, because the database holds the one version in use and the folders are
+  /// the only record of the rest.
+  final List<int> earlierVersions;
+
+  /// Whether there is a version to go back to.
+  bool get canRollBack => !isBundled && earlierVersions.isNotEmpty;
 
   /// Whether this extension can be reloaded from where it came from.
   bool get canReload =>
@@ -174,7 +189,7 @@ final class ExtensionLibrary {
 
   /// Every extension the app knows about, watched, so a screen follows an install or a removal (§2.5).
   Stream<List<ExtensionSummary>> watch() =>
-      watchInstalledExtensions(_database).map(_summarise);
+      watchInstalledExtensions(_database).asyncMap(_summarise);
 
   /// Every extension the app knows about, once.
   Future<List<ExtensionSummary>> read() async =>
@@ -309,6 +324,173 @@ final class ExtensionLibrary {
   );
 
   /// Reads the package [files] hold and takes it in, replacing any version of it already installed.
+  /// Stops [id] running, because the repository it came from withdrew the version installed (§3.8).
+  ///
+  /// The code is left on disk and the row is left in place. §3.9 is clear about what uninstalling
+  /// does and this is not that: a withdrawal is the publisher saying this version should not be
+  /// used, not the listener saying they are done with it. The library books, their progress and the
+  /// extension's stored settings all stay, so reinstating it or installing the next version puts
+  /// everything back.
+  ///
+  /// Saying so in the console matters more here than elsewhere, because a source disappearing from
+  /// Browse with no explanation is indistinguishable from a bug.
+  Future<void> withdraw(String id) async {
+    await setExtensionStatus(_database, id, ExtensionStatus.revoked);
+    await sources.forget(id);
+    console.note(
+      id,
+      'Withdrawn by the repository it came from, so it has stopped running. '
+      'Your books, progress and settings were kept.',
+    );
+  }
+
+  /// Lets [id] run again, because its repository is offering the installed version once more.
+  ///
+  /// Reads the package back off disk rather than trusting the row: the status says what the app
+  /// believed last time, and what decides whether an extension can run today is whether its files
+  /// are still there and still readable. This is the same path a restart takes, which is what makes
+  /// reinstating equivalent to restarting the app without having to.
+  ///
+  /// Hashes are checked, because this only ever applies to a repository install, whose manifest and
+  /// code were published together.
+  Future<ExtensionSummary> reinstate(String id) async {
+    final row = await readInstalledExtension(_database, id);
+    final installPath = row?.installPath;
+    if (row == null || installPath == null) {
+      throw ExtensionInstallException(
+        'There is nothing installed under $id to reinstate.',
+      );
+    }
+
+    final LoadedExtension read;
+    try {
+      read = LoadedExtension(
+        package: await readExtensionPackage(
+          _installs.filesAt(installPath),
+          checkHashes: true,
+        ),
+        origin: row.origin,
+        status: ExtensionStatus.active,
+        originHandle: row.originHandle,
+        originName: row.originName,
+        installPath: installPath,
+        installedAt: row.installedAt,
+      );
+    } on ExtensionPackageException catch (error) {
+      throw ExtensionInstallException(
+        '${row.name} could not be read back: ${error.message}',
+      );
+    } on ManifestException catch (error) {
+      throw ExtensionInstallException(
+        '${row.name} could not be read back: ${error.message}',
+      );
+    }
+
+    await setExtensionStatus(_database, id, ExtensionStatus.active);
+    await sources.adopt(read);
+    console.note(
+      id,
+      'Offered again by its repository, so it is running again.',
+    );
+    final updated = await readInstalledExtension(_database, id);
+    return ExtensionSummary(row: updated!, isRunnable: true);
+  }
+
+  /// The versions of [id] still on disk, newest first, for offering a way back.
+  Future<List<int>> versionsOf(String id) => _installs.versionsOf(id);
+
+  /// Puts [id] back to [versionCode], which an earlier install left on disk (§3.9).
+  ///
+  /// Nothing is downloaded. An extension is rolled back because the version in use has stopped
+  /// working, and that is exactly the moment to need no network: the files are already there,
+  /// beside the ones in use, because an update is written into a folder of its own rather than over
+  /// the last one.
+  ///
+  /// The row is rewritten rather than a second one added. One extension is one row holding the
+  /// version in use, so after this the app, the Extensions screen and the next update check all
+  /// agree about which version that is -- and a repository offering something newer will offer it
+  /// again, because the installed version code is lower once more. That is the point: rolling back
+  /// is not pinning, and a listener who rolls back and then updates gets the new one.
+  ///
+  /// Throws [ExtensionInstallException] when that version is not on disk or no longer reads.
+  Future<ExtensionSummary> rollBackTo(String id, int versionCode) async {
+    final row = await readInstalledExtension(_database, id);
+    if (row == null) {
+      throw ExtensionInstallException('There is nothing installed under $id.');
+    }
+    if (row.origin == ExtensionOrigin.bundled) {
+      throw ExtensionInstallException(
+        '${row.name} ships inside Kikuyomi, so there is no earlier version to '
+        'go back to.',
+      );
+    }
+    if (versionCode == row.versionCode) {
+      throw ExtensionInstallException(
+        '${row.name} ${row.version} is the version already in use.',
+      );
+    }
+
+    final installPath = ExtensionInstallFolder.installPathFor(id, versionCode);
+    final LoadedExtension read;
+    try {
+      read = LoadedExtension(
+        // Checked for a package and not for a folder, exactly as installing does: what makes a
+        // manifest's hashes worth checking is that the manifest and the code were published
+        // together, which is true of what a repository served and not of a folder being edited.
+        package: await readExtensionPackage(
+          _installs.filesAt(installPath),
+          checkHashes: row.origin == ExtensionOrigin.repository,
+        ),
+        origin: row.origin,
+        // The status the version being restored deserves, which is the status its origin earns:
+        // a repository install was verified when it arrived and its hashes are checked again here,
+        // a folder install never was.
+        status: row.origin == ExtensionOrigin.repository
+            ? ExtensionStatus.active
+            : ExtensionStatus.untrusted,
+        originHandle: row.originHandle,
+        originName: row.originName,
+        installPath: installPath,
+        installedAt: row.installedAt,
+      );
+    } on ExtensionPackageException catch (error) {
+      throw ExtensionInstallException(
+        '${row.name} $versionCode could not be read back: ${error.message}',
+      );
+    } on ManifestException catch (error) {
+      throw ExtensionInstallException(
+        '${row.name} $versionCode could not be read back: ${error.message}',
+      );
+    }
+
+    final refusal = SourceRegistry.refusalFor(read, sources.appVersion);
+    if (refusal != null) {
+      throw ExtensionInstallException(
+        'Kikuyomi cannot run ${read.manifest.name} ${read.manifest.version}: '
+        '${refusal.message}',
+      );
+    }
+
+    await recordInstalledExtension(
+      _database,
+      id: id,
+      name: read.manifest.name,
+      version: '${read.manifest.version}',
+      versionCode: read.manifest.versionCode,
+      apiVersion: '${read.manifest.apiVersion}',
+      status: read.status,
+      origin: read.origin,
+      originHandle: row.originHandle,
+      originName: row.originName,
+      installPath: installPath,
+      clock: _clock,
+    );
+    await sources.adopt(read);
+    console.note(id, 'Went back to ${read.manifest.version}.');
+    final updated = await readInstalledExtension(_database, id);
+    return ExtensionSummary(row: updated!, isRunnable: true);
+  }
+
   Future<ExtensionSummary> _install(
     ExtensionFiles files, {
     required String handle,
@@ -392,11 +574,25 @@ final class ExtensionLibrary {
         : UserFolderExtensionFiles(_folders.open(handle));
   }
 
-  List<ExtensionSummary> _summarise(List<ExtensionRow> rows) {
+  /// The rows, with what only disk can answer: which other versions are still there.
+  ///
+  /// One directory listing per extension, on a list that changes when something is installed or
+  /// removed. That is a few stat calls for a handful of folders, and the alternative is a menu that
+  /// offers a way back without knowing whether there is one.
+  Future<List<ExtensionSummary>> _summarise(List<ExtensionRow> rows) async {
     final runnable = {for (final e in sources.extensions) e.id};
     return [
       for (final row in rows)
-        ExtensionSummary(row: row, isRunnable: runnable.contains(row.id)),
+        ExtensionSummary(
+          row: row,
+          isRunnable: runnable.contains(row.id),
+          earlierVersions: row.origin == ExtensionOrigin.bundled
+              ? const []
+              : [
+                  for (final version in await _installs.versionsOf(row.id))
+                    if (version != row.versionCode) version,
+                ],
+        ),
     ];
   }
 }

@@ -19,6 +19,7 @@ ExtensionSummary summary({
   String? originHandle = r'G:\work\librivox',
   String? originName = r'G:\work\librivox',
   bool isRunnable = true,
+  List<int> earlierVersions = const [],
 }) => ExtensionSummary(
   row: ExtensionRow(
     id: id,
@@ -34,6 +35,7 @@ ExtensionSummary summary({
     installedAt: _at,
   ),
   isRunnable: isRunnable,
+  earlierVersions: earlierVersions,
 );
 
 final bundled = summary(
@@ -47,6 +49,8 @@ final bundled = summary(
 void main() {
   late List<String> reloaded;
   late List<String> removed;
+  late List<String> updated;
+  late List<String> rolledBack;
   late List<String?> consoles;
   late int pickerAsked;
   late int dropFolderAsked;
@@ -54,6 +58,8 @@ void main() {
   setUp(() {
     reloaded = [];
     removed = [];
+    updated = [];
+    rolledBack = [];
     consoles = [];
     pickerAsked = 0;
     dropFolderAsked = 0;
@@ -63,6 +69,7 @@ void main() {
     WidgetTester tester, {
     List<ExtensionSummary> extensions = const [],
     Map<String, int> problems = const {},
+    Map<String, String> updates = const {},
     bool canChooseFolder = true,
     String? dropFolderName,
     String? busyWith,
@@ -72,6 +79,7 @@ void main() {
         body: ExtensionsView(
           extensions: extensions,
           problems: problems,
+          updates: updates,
           canChooseFolder: canChooseFolder,
           dropFolderName: dropFolderName,
           busyWith: busyWith,
@@ -79,6 +87,8 @@ void main() {
           onInstallFromDropFolder: () => dropFolderAsked++,
           onReload: (e) => reloaded.add(e.id),
           onRemove: (e) => removed.add(e.id),
+          onUpdate: (e) => updated.add(e.id),
+          onRollBack: (e) => rolledBack.add(e.id),
           onOpenConsole: consoles.add,
         ),
       ),
@@ -89,6 +99,79 @@ void main() {
     await tester.tap(find.byIcon(Icons.more_vert));
     await tester.pumpAndSettle();
   }
+
+  group('updating one', () {
+    testWidgets('the menu offers it, naming the version', (tester) async {
+      await show(
+        tester,
+        extensions: [summary()],
+        updates: {'org.example.librivox': '1.5.0'},
+      );
+      await openMenu(tester);
+
+      expect(
+        find.widgetWithText(PopupMenuItem<VoidCallback>, 'Update to 1.5.0'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('and offers nothing when there is nothing waiting', (
+      tester,
+    ) async {
+      await show(tester, extensions: [summary()]);
+      await openMenu(tester);
+
+      expect(find.textContaining('Update to'), findsNothing);
+    });
+
+    testWidgets('choosing it asks for that extension', (tester) async {
+      await show(
+        tester,
+        extensions: [summary()],
+        updates: {'org.example.librivox': '1.5.0'},
+      );
+      await openMenu(tester);
+      // The menu item, not the chip on the tile: both say the same thing, which is the point, and
+      // only one of them can be pressed.
+      await tester.tap(
+        find.widgetWithText(PopupMenuItem<VoidCallback>, 'Update to 1.5.0'),
+      );
+      await tester.pumpAndSettle();
+
+      expect(updated, ['org.example.librivox']);
+    });
+  });
+
+  group('going back to an earlier version', () {
+    testWidgets('is offered when one is kept, and asks for it', (tester) async {
+      await show(
+        tester,
+        extensions: [
+          summary(earlierVersions: const [13, 12]),
+        ],
+      );
+      await openMenu(tester);
+      await tester.tap(find.text('Go back to an earlier version'));
+      await tester.pumpAndSettle();
+
+      expect(rolledBack, ['org.example.librivox']);
+    });
+
+    testWidgets('is not offered when nothing else is on disk', (tester) async {
+      await show(tester, extensions: [summary()]);
+      await openMenu(tester);
+
+      expect(find.text('Go back to an earlier version'), findsNothing);
+    });
+
+    testWidgets('is never offered for the one inside the app', (tester) async {
+      // Its code is part of the app, so there is no earlier copy of it anywhere to go back to.
+      await show(tester, extensions: [bundled]);
+      await openMenu(tester);
+
+      expect(find.text('Go back to an earlier version'), findsNothing);
+    });
+  });
 
   group('what it says about an extension', () {
     testWidgets('its name, version and id', (tester) async {
@@ -118,6 +201,37 @@ void main() {
       await show(tester, extensions: [summary()]);
 
       expect(find.text(r'G:\work\librivox'), findsOneWidget);
+    });
+
+    testWidgets('that a newer version is waiting, and which', (tester) async {
+      // The version matters as much as the fact. "Update available" tells a listener nothing about
+      // whether it is worth doing now.
+      await show(
+        tester,
+        extensions: [summary()],
+        updates: {'org.example.librivox': '1.5.0'},
+      );
+
+      expect(find.text('Update to 1.5.0'), findsOneWidget);
+    });
+
+    testWidgets('nothing about updates until a check has been run', (
+      tester,
+    ) async {
+      // This screen never asks the network on its own, so with no check run there is nothing to
+      // say, and saying nothing is right rather than saying "up to date".
+      await show(tester, extensions: [summary()]);
+
+      expect(find.textContaining('Update to'), findsNothing);
+    });
+
+    testWidgets('that its repository withdrew it (§3.8)', (tester) async {
+      await show(
+        tester,
+        extensions: [summary(status: ExtensionStatus.revoked)],
+      );
+
+      expect(find.text('Withdrawn by its repository'), findsOneWidget);
     });
 
     testWidgets('how many failures it has produced', (tester) async {

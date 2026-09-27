@@ -137,6 +137,117 @@ void main() {
   ExtensionSummary? summaryOf(List<ExtensionSummary> all, String id) =>
       all.where((e) => e.id == id).firstOrNull;
 
+  group('going back to an earlier version (§3.9)', () {
+    // The versioned directory is what makes this possible: an update is written into a folder of
+    // its own rather than over the last one, so the version that worked is still on disk. Nothing
+    // here touches the network, which is the point -- an extension is rolled back exactly when
+    // something has stopped working, and a listener may well be offline when it does.
+
+    /// Installs [versionCode] of the test extension from a folder.
+    Future<ExtensionSummary> installVersion(int versionCode) async {
+      final folder = await folderWith(
+        name: 'work-$versionCode',
+        changed: {'version': '1.$versionCode.0', 'versionCode': versionCode},
+      );
+      return library.installFromPath(folder.path);
+    }
+
+    test('an install keeps what was there before', () async {
+      await installVersion(14);
+      await installVersion(15);
+
+      expect(await installs.versionsOf(extensionId), [15, 14]);
+    });
+
+    test('the summary offers the ones that are not in use', () async {
+      await installVersion(14);
+      await installVersion(15);
+
+      final summary = summaryOf(await library.read(), extensionId)!;
+      expect(summary.earlierVersions, [14]);
+      expect(summary.canRollBack, isTrue);
+    });
+
+    test('a single install has nowhere to go back to', () async {
+      await installVersion(14);
+
+      expect(
+        summaryOf(await library.read(), extensionId)!.canRollBack,
+        isFalse,
+      );
+    });
+
+    test('rolling back puts the row and the source on the old one', () async {
+      await installVersion(14);
+      await installVersion(15);
+
+      final back = await library.rollBackTo(extensionId, 14);
+
+      expect(back.row.versionCode, 14);
+      expect(back.row.version, '1.14.0');
+      expect(back.isRunnable, isTrue);
+      // One extension is one row holding the version in use, so the app, the screen and the next
+      // update check all agree about which that is.
+      final row = await readInstalledExtension(db, extensionId);
+      expect(row!.versionCode, 14);
+    });
+
+    test('and the newer one is still there to come back to', () async {
+      await installVersion(14);
+      await installVersion(15);
+      await library.rollBackTo(extensionId, 14);
+
+      final summary = summaryOf(await library.read(), extensionId)!;
+      expect(summary.earlierVersions, [15]);
+    });
+
+    test('rolling back to the version in use is refused', () async {
+      await installVersion(14);
+
+      await expectLater(
+        library.rollBackTo(extensionId, 14),
+        throwsA(
+          isA<ExtensionInstallException>().having(
+            (e) => e.message,
+            'message',
+            contains('already in use'),
+          ),
+        ),
+      );
+    });
+
+    test('rolling back to one that was never installed is refused', () async {
+      await installVersion(14);
+
+      await expectLater(
+        library.rollBackTo(extensionId, 99),
+        throwsA(isA<ExtensionInstallException>()),
+      );
+    });
+
+    test('the extension inside the app cannot be rolled back', () async {
+      // Its code is part of the app. There is no earlier copy of it anywhere.
+      await expectLater(
+        library.rollBackTo('org.kikuyomi.librivox', 1),
+        throwsA(
+          isA<ExtensionInstallException>().having(
+            (e) => e.message,
+            'message',
+            contains('ships inside Kikuyomi'),
+          ),
+        ),
+      );
+    });
+
+    test('uninstalling takes every version with it', () async {
+      await installVersion(14);
+      await installVersion(15);
+      await library.remove(extensionId);
+
+      expect(await installs.versionsOf(extensionId), isEmpty);
+    });
+  });
+
   group('the extension that ships inside the app', () {
     test('is listed, and cannot be removed', () async {
       final bundled = summaryOf(await library.read(), 'org.kikuyomi.librivox');
