@@ -6,8 +6,10 @@
 library;
 
 import 'dart:io';
+import 'dart:isolate';
 
-import 'package:kikuyomi_data/kikuyomi_data.dart' show CoverImage;
+import 'package:kikuyomi_data/kikuyomi_data.dart'
+    show CoverImage, LocalEpubChapter, LocalEpubImport;
 import 'package:kikuyomi_domain/kikuyomi_domain.dart';
 import 'package:kikuyomi_sources_builtin/kikuyomi_sources_builtin.dart';
 
@@ -169,8 +171,45 @@ String summarizeImportScan(ImportScan scan) => [
 /// message, which names the format, and otherwise the error as it describes itself.
 String describeAddError(Object error) => switch (error) {
   UnplayableFormatException(:final message) => message,
+  EpubProtectedException(:final scheme) =>
+    'it is locked with $scheme. Kikuyomi does not open locked books; the app of the store it came '
+        'from does',
+  EpubFormatException(:final message) =>
+    'it is not an EPUB this app can read: $message',
   _ => '$error',
 };
+
+/// Whether [path] names an EPUB, by its extension.
+bool isEpubPath(String path) => _extension(path) == 'epub';
+
+/// Reads the EPUB [file] into what adding it to the library needs, with the book keyed by the
+/// file's own path.
+///
+/// On another isolate: a large EPUB takes long enough to unzip and parse to drop frames if the
+/// interface waited on it. Throws [EpubProtectedException] for a book locked with DRM, and
+/// [EpubFormatException] for a file that is not an EPUB this app can read.
+Future<LocalEpubImport> readEpubFile(File file) => Isolate.run(() async {
+  final book = EpubBook.read(await file.readAsBytes());
+  return LocalEpubImport(
+    path: file.path,
+    title: book.title,
+    authors: book.authors,
+    language: book.language,
+    description: book.description,
+    publisher: book.publisher,
+    chapters: [
+      for (final chapter in book.chapters)
+        LocalEpubChapter(key: chapter.path, title: chapter.title),
+    ],
+    cover: switch (book.cover) {
+      final picture? => CoverImage(
+        mimeType: picture.mimeType,
+        bytes: picture.bytes,
+      ),
+      null => null,
+    },
+  );
+});
 
 /// [words] as a phrase: "A", "A and B", "A, B and C".
 String _inWords(List<String> words) => words.length < 2

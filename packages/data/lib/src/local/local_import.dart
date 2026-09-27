@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:drift/drift.dart' hide isNull;
 import 'package:kikuyomi_domain/kikuyomi_domain.dart';
+import 'package:kikuyomi_source_api/kikuyomi_source_api.dart' show SourceKind;
 
 import '../database/database.dart';
 import 'local_covers.dart';
@@ -99,6 +100,44 @@ final class LocalFolderImport {
   final CoverImage? cover;
 }
 
+/// One chapter of a local EPUB: a document of its spine.
+final class LocalEpubChapter {
+  const LocalEpubChapter({required this.key, required this.title});
+
+  /// The document's path inside the EPUB, which is what the reader opens.
+  final String key;
+  final String title;
+}
+
+/// A local EPUB to add to the library as a book to read (ADR-0019).
+final class LocalEpubImport {
+  const LocalEpubImport({
+    required this.path,
+    required this.title,
+    required this.chapters,
+    this.authors = const [],
+    this.language,
+    this.description,
+    this.publisher,
+    this.cover,
+  });
+
+  /// Where the file is, written as file paths are: absolute, or relative to the media root. The
+  /// book's identity within the Local source, so importing the same file twice finds the same book.
+  final String path;
+  final String title;
+
+  /// In reading order.
+  final List<LocalEpubChapter> chapters;
+  final List<String> authors;
+  final String? language;
+  final String? description;
+  final String? publisher;
+
+  /// The book's cover image, or null when it names none. Kept as [importLocalBook] keeps one.
+  final CoverImage? cover;
+}
+
 /// Adds a single-file local book, such as an M4B, to the library and returns its id.
 ///
 /// It is stored the way §4.5 describes a single file with embedded markers: one source chapter
@@ -182,7 +221,7 @@ Future<int> importLocalFolderBook(
       db,
       key: book.key,
       title: book.title,
-      totalDurationMs: book.tracks.fold(
+      totalDurationMs: book.tracks.fold<int>(
         0,
         (total, track) => total + track.file.durationMs,
       ),
@@ -200,6 +239,67 @@ Future<int> importLocalFolderBook(
         file: track.file,
         now: now,
       );
+    }
+    return bookId;
+  });
+  await _keepCover(db, bookId, book.cover, covers: covers, clock: clock);
+  return bookId;
+}
+
+/// Adds a local EPUB to the library as a book to read, and returns its id.
+///
+/// Each document of its spine becomes a chapter, keyed by its path inside the EPUB. There are no
+/// media files: a book to read has nothing to play, and its text is read out of the EPUB when a
+/// chapter is opened rather than copied into the database, which keeps the database small and the
+/// EPUB the one copy of the book.
+///
+/// Importing a file that is already known returns the existing book, as [importLocalBook] does. The
+/// cover is kept as it keeps one, given [covers].
+///
+/// Fails with an [ArgumentError] for a book with no chapters.
+Future<int> importLocalEpub(
+  KikuyomiDatabase db,
+  LocalEpubImport book, {
+  required Clock clock,
+  CoverFiles? covers,
+}) async {
+  if (book.chapters.isEmpty) {
+    throw ArgumentError.value(book.path, 'book', 'has no chapters');
+  }
+  final now = clock.now();
+  final bookId = await db.transaction(() async {
+    final existing = await _findBook(db, book.path, now);
+    if (existing != null) return existing;
+
+    final bookId = await _addBook(
+      db,
+      key: book.path,
+      title: book.title,
+      kind: SourceKind.text,
+      authors: book.authors,
+      narrators: const [],
+      now: now,
+    );
+    await (db.update(db.books)..where((b) => b.id.equals(bookId))).write(
+      BooksCompanion(
+        language: Value(book.language),
+        description: Value(book.description),
+        publisher: Value(book.publisher),
+      ),
+    );
+    for (final (index, chapter) in book.chapters.indexed) {
+      await db
+          .into(db.chapters)
+          .insert(
+            ChaptersCompanion(
+              bookId: Value(bookId),
+              key: Value(chapter.key),
+              title: Value(chapter.title),
+              sourceIndex: Value(index),
+              createdAt: Value(now),
+              updatedAt: Value(now),
+            ),
+          );
     }
     return bookId;
   });
@@ -263,7 +363,8 @@ Future<int> _addBook(
   KikuyomiDatabase db, {
   required String key,
   required String title,
-  required int totalDurationMs,
+  int? totalDurationMs,
+  SourceKind kind = SourceKind.audio,
   required List<String> authors,
   required List<String> narrators,
   required DateTime now,
@@ -276,6 +377,7 @@ Future<int> _addBook(
           key: Value(key),
           title: Value(title),
           totalDurationMs: Value(totalDurationMs),
+          kind: Value(kind),
           inLibrary: const Value(true),
           dateAdded: Value(now),
           detailsFetched: const Value(true),

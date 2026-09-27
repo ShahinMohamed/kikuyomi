@@ -8,6 +8,7 @@ library;
 
 export 'src/local/embedded_chapter.dart';
 export 'src/local/embedded_picture.dart' show EmbeddedPicture;
+export 'src/local/epub.dart';
 export 'src/local/flac_info.dart';
 export 'src/local/folder_book.dart';
 export 'src/local/local_audio.dart';

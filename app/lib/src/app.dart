@@ -166,6 +166,12 @@ class _KikuyomiAppState extends ConsumerState<KikuyomiApp> {
   Future<void> _open(String path) async {
     final services = ref.read(servicesProvider);
     try {
+      if (isEpubPath(path)) {
+        // A book to read. There is no player to open it in, so it is added and named.
+        final bookId = await services.addEbookInPlace(path);
+        _tell('Added ${await services.bookTitle(bookId)}');
+        return;
+      }
       final bookId = await FileSystemEntity.isDirectory(path)
           ? (await services.addFolderBook(path)).bookId
           : await services.addBookInPlace(path);
