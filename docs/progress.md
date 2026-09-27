@@ -238,3 +238,41 @@ changes, and the list is a sliver that builds a row as it comes into view.
   - [x] Browse split into audio and ebook sources and extensions; Standard Ebooks as the first
         source of books to read, shipped and run on the real engine by the probe
   - [ ] Not yet: paged layout, themes and fonts for reading, and reading chapters offline
+- [ ] **Link Up**: link an audiobook and an ebook of the same book, and carry the place between
+      them. Discussed, not started. The decisions so far:
+  - **Design.** The two stay separate books, each from its own source with its own chapters and its
+    own progress. A link sits above them. They are not merged into one internal book: most books
+    will never be linked, and ADR-0019 already made a book one thing from one source
+  - **Tabs.** Both stay. A linked book sits on the Listen shelf and the Read shelf alike
+  - **Sync method.** A chapter map, not "chapter N = chapter N": ebooks carry front matter,
+    audiobooks carry credits, and both split and merge chapters freely. Within a chapter, the
+    same proportion (60% of the text is about 60% of the audio), landing 15–30 seconds early so
+    nothing is missed. Whole-book percentage only as a fallback, for a book with no usable map
+  - **Offered, never silent.** Opening the other copy offers to jump ("You read to Chapter 5, about
+    60%. Continue listening from there?"). Whichever copy was used most recently is the one ahead
+  - Steps, in order:
+    - [ ] A link table (one audiobook and one ebook, each book in at most one link) and a chapter
+          map table (ordered pairs of chapters, either side allowed empty, one-to-many allowed).
+          Progress stays in `playback_state` and `reading_state`; sync translates between them
+    - [ ] "Link up" in a book page's menu: pick the other copy from the library, likely matches
+          first by title and author, then review the proposed chapter map ("38 of 40 matched") and
+          fix what it got wrong. A warning when the match is poor. Unlink from the same menu
+    - [ ] The map proposed automatically: normalised titles first ("Chapter IV" = "Chapter 4"), then
+          order and length. Re-proposed for new chapters after a refresh
+    - [ ] The "continue from" offer when opening the other copy, with Continue and Stay here
+    - [ ] The reader's place as a position in the text for syncing. It is saved as a scroll
+          fraction, which headings and pictures make drift from the text
+    - [ ] A linked mark on both covers, and "Also as an ebook / audiobook" on each book's page
+    - [ ] Backups carry links by source and key and chapter keys, never database ids. Additive:
+          an older build loses only the link, so `min_reader_version` does not rise
+    - [ ] Finishing one copy offers to finish the other; a Continue card for the copy left behind
+          says so ("Ahead in the ebook")
+    - [ ] The whole-book percentage fallback, for a single-file audiobook with no markers
+    - [ ] A combined view on a linked book's page: a Read | Listen switcher, one "where you are"
+          line, and one Continue button that knows which copy was used last
+    - [ ] Links follow a book through source migration, as progress does
+    - [ ] Later, perhaps: precise alignment of text and audio (speech recognition or EPUB 3 media
+          overlays), which would only sharpen the within-chapter step
+  - Pitfalls to design against: mismatched editions (abridged, other translations), chapter lists
+    that change on refresh, positions pulled backwards by the copy that is behind, and future
+    cross-device sync bouncing positions between the two
