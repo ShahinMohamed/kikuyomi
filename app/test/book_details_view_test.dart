@@ -206,6 +206,56 @@ void main() {
     });
   });
 
+  group('a book with a great many chapters', () {
+    // A podcast the Podcasts source offers has four hundred and nineteen. Built as a Column of
+    // every row inside a ListView, that dropped a phone to about five frames a second whenever
+    // anything on the page changed -- and a running download changes it several times a second.
+    List<ChapterOverview> manyChapters(int count) => [
+      for (var i = 0; i < count; i++)
+        ChapterOverview(
+          chapterId: 1000 + i,
+          title: 'Chapter $i',
+          durationMs: 600000,
+          listened: false,
+          current: i == 0,
+        ),
+    ];
+
+    testWidgets('builds only the rows that are near the screen', (
+      tester,
+    ) async {
+      tallView(tester);
+      await tester.pumpWidget(details(book(chapters: manyChapters(400))));
+
+      final built = tester.widgetList(find.byType(ListTile)).length;
+      expect(
+        built,
+        lessThan(60),
+        reason: 'a lazy list builds what is on screen, not four hundred rows',
+      );
+      expect(built, greaterThan(0), reason: 'it still builds something');
+    });
+
+    testWidgets('and still counts all of them in the heading', (tester) async {
+      tallView(tester);
+      await tester.pumpWidget(details(book(chapters: manyChapters(400))));
+
+      expect(find.text('400 chapters'), findsOneWidget);
+    });
+
+    testWidgets('the ones further down are reachable by scrolling', (
+      tester,
+    ) async {
+      tallView(tester);
+      await tester.pumpWidget(details(book(chapters: manyChapters(400))));
+
+      expect(find.text('Chapter 300'), findsNothing);
+      await tester.scrollUntilVisible(find.text('Chapter 300'), 400);
+
+      expect(find.text('Chapter 300'), findsOneWidget);
+    });
+  });
+
   group('picking chapters out', () {
     testWidgets('holding one starts a selection', (tester) async {
       tallView(tester);

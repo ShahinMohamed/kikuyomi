@@ -4,12 +4,14 @@ Every scope item from `architecture.md` §8, ticked or not. It is the at-a-glanc
 `status.md` is the detailed one and says *how* each piece works and what has never been run.
 
 A box is ticked only when the thing is built **and** believed to work. "Built but never run on a
-device" is not ticked — that distinction is the whole reason this file is worth keeping. Six real
+device" is not ticked — that distinction is the whole reason this file is worth keeping. Seven real
 defects have now been found in code that a green test suite and a clean build both passed: a
 download queue that stopped at four of fifteen, downloaded files the player could not find, HTML
 left in descriptions, two extensions missing a field the contract requires, a settings key that
-threw on every read and made Browse untappable, and chapter rows that did nothing when tapped. Every
-one of them was found by running the app, and none by the suite.
+threw on every read and made Browse untappable, chapter rows that did nothing when tapped, and a
+chapter list that rebuilt all four hundred of its rows several times a second while a download ran.
+Every one was found by running the app, and none by the suite — the last one could not have been,
+because a test has no frame rate.
 
 Phases are not being done strictly in order. Some Phase 4 work has been pulled forward because the
 library is the screen used daily, and Phase 2 and Phase 3 both still have holes.
@@ -111,11 +113,10 @@ developer account only the project's owner can open.
 - [x] Queue UI: the Downloads screen, with total usage, per-book sizes and a book opened to its files
 - [x] Pause, resume, stop, retry, and remove in any state
 - [x] Whole-book downloads
-- [ ] Per-chapter downloads — **built, and not yet run.** Each row has its own arrow and its own
-      state, the Download button offers next / next 5 / next 10 / all unlistened / all, and chapters
-      can be held to pick several out. A chapter reads as downloaded only when every file it needs
-      is here, and downloading one chapter of an M4B downloads its neighbours because it is the same
-      bytes. Nothing has exercised any of it against a real source
+- [x] Per-chapter downloads — each row has its own arrow and its own state, the Download button
+      offers next / next 5 / next 10 / all unlistened / all, and chapters can be held to pick
+      several out. A chapter reads as downloaded only when every file it needs is here, and
+      downloading one chapter of an M4B downloads its neighbours because it is the same bytes
 - [x] Storage management: delete a file, delete a book, what it all comes to
 - [ ] Per-chapter delete — a file can hold thirty chapters and a chapter can span three files, so one that quietly took a neighbour with it would be worse than none
 - [ ] Auto-delete finished chapters
@@ -123,14 +124,22 @@ developer account only the project's owner can open.
 - [ ] Automatic downloads of new chapters on an unmetered connection
 - [ ] Download notifications
 - [ ] Battery-optimisation guidance
-- [ ] Airplane-mode test pass
+- [x] Airplane-mode test pass — confirmed on iOS: a downloaded book plays through with the network
+      off. Not repeated on Windows or Android
 - [ ] Diagnostics export
 - [ ] Probing a kept file for its real duration, format and markers
 - [ ] Repairing a task orphaned by a chapter-layout rewrite
 - [ ] A download-aware resolution, so a fetch asks its source as a download rather than as a stream
 
-**Exit (M3): a full book downloaded and finished with no network.** Everything it needs is built;
-nothing has confirmed it.
+**Exit (M3): a full book downloaded and finished with no network. Met**, on iOS. That is the first
+time the offline path has been proved end to end rather than argued from green tests.
+
+What it also turned up: downloading a chapter made the page it was downloaded from crawl. Two
+causes, both now fixed. Every `bytes_done` write — many a second — became a new reading of every
+chapter's state and a rebuild of the list, though none of those writes moves a chapter between
+states; and the list was a `Column` of every row inside a `ListView`, so a four-hundred-chapter
+podcast built all four hundred rows each time. The stream now emits only when something actually
+changes, and the list is a sliver that builds a row as it comes into view.
 
 ---
 

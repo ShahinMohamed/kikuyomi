@@ -269,6 +269,61 @@ void main() {
     });
   });
 
+  test('progress writes do not become emissions', () async {
+    // A running download writes `bytes_done` many times a second. None of those moves a chapter
+    // between states, and handing each one to a screen made a four-hundred-chapter book rebuild its
+    // whole list several times a second.
+    final book = await addBook();
+    final file = await addFile(book, fileKey: 'one.mp3');
+    await addChapter(book, key: 'c1', files: [file]);
+    await addTask(file, DownloadState.downloading);
+
+    var emissions = 0;
+    final sub = watchChapterDownloads(db, book).listen((_) => emissions++);
+    addTearDown(sub.cancel);
+    await pumpEventQueue();
+    expect(emissions, 1, reason: 'the first reading is worth having');
+
+    for (var bytes = 1; bytes <= 20; bytes++) {
+      await (db.update(db.downloadTasks)
+            ..where((t) => t.mediaFileId.equals(file)))
+          .write(DownloadTasksCompanion(bytesDone: Value(bytes * 1000)));
+      await pumpEventQueue();
+    }
+
+    expect(emissions, 1, reason: 'twenty progress writes said nothing new');
+  });
+
+  test('a state that really changes is still reported', () async {
+    // The other half: quietening the stream must not make it silent.
+    final book = await addBook();
+    final file = await addFile(book, fileKey: 'one.mp3');
+    await addChapter(book, key: 'c1', files: [file]);
+    await addTask(file, DownloadState.downloading);
+
+    final seen = <Map<int, ChapterDownload>>[];
+    final sub = watchChapterDownloads(db, book).listen(seen.add);
+    addTearDown(sub.cancel);
+    await pumpEventQueue();
+
+    await (db.update(db.downloadTasks)
+          ..where((t) => t.mediaFileId.equals(file)))
+        .write(const DownloadTasksCompanion(bytesDone: Value(4096)));
+    await pumpEventQueue();
+    await (db.update(db.mediaFiles)..where((f) => f.id.equals(file))).write(
+      const MediaFilesCompanion(localPath: Value('one.mp3')),
+    );
+    await pumpEventQueue();
+
+    expect(seen.first.values.single, ChapterDownload.working);
+    expect(seen.last.values.single, ChapterDownload.here);
+    expect(
+      seen,
+      hasLength(2),
+      reason: 'the byte write in between said nothing',
+    );
+  });
+
   test('it answers again when a file arrives', () async {
     final book = await addBook();
     final file = await addFile(book, fileKey: 'one.mp3');
