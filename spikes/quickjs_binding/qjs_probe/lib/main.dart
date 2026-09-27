@@ -1651,6 +1651,53 @@ final class _StorynoryFixtures implements HostBridge {
   }
 }
 
+/// Standard Ebooks' pages, recorded: a catalogue page, Frankenstein's page, its table of contents
+/// and its first chapter. Served as text, as the extension asks.
+final class _StandardEbooksFixtures implements HostBridge {
+  _StandardEbooksFixtures(this._pages);
+
+  static const base = 'https://standardebooks.org';
+
+  static Future<_StandardEbooksFixtures> load() async {
+    Future<String> page(String name) =>
+        rootBundle.loadString('assets/standardebooks/fixtures/$name');
+    return _StandardEbooksFixtures({
+      '$base/ebooks?per-page=48&page=1&sort=popularity': await page(
+        'popular.html',
+      ),
+      '$base/ebooks/mary-shelley/frankenstein': await page('book.html'),
+      '$base/ebooks/mary-shelley/frankenstein/text': await page('toc.html'),
+      '$base/ebooks/mary-shelley/frankenstein/text/chapter-1': await page(
+        'chapter-1.html',
+      ),
+    });
+  }
+
+  final Map<String, String> _pages;
+  final asked = <String>[];
+
+  @override
+  String get module => 'http';
+
+  @override
+  Future<Object?> call(String method, List<Object?> arguments) async {
+    if (method != 'fetch') throw HostCallException('there is no http.$method');
+    final request = arguments.objectAt(0, 'a request');
+    final url = '${request['url']}';
+    asked.add(url);
+    final page = _pages[url];
+    if (page == null) {
+      throw HostCallException('the probe has no fixture for $url');
+    }
+    return {
+      'status': 200,
+      'url': url,
+      'headers': const {'content-type': 'text/html; charset=utf-8'},
+      'body': page,
+    };
+  }
+}
+
 /// The Podcasts source's recorded answers.
 ///
 /// Four documents, because this source has four ways in: a feed, Apple's index by search, Apple's
@@ -1744,6 +1791,7 @@ Future<T> _withExtension<T>({
   required List<String> domains,
   required HostBridge http,
   required Future<T> Function(JsSourceAdapter source) body,
+  SourceKind kind = SourceKind.audio,
 }) async {
   final code = await rootBundle.loadString(asset);
   final runtime = await ExtensionRuntime.load(
@@ -1766,7 +1814,11 @@ Future<T> _withExtension<T>({
   );
   try {
     return await body(
-      await JsSourceAdapter.open(runtime: runtime, sourceKey: sourceKey),
+      await JsSourceAdapter.open(
+        runtime: runtime,
+        sourceKey: sourceKey,
+        kind: kind,
+      ),
     );
   } finally {
     await runtime.dispose();
@@ -2046,6 +2098,92 @@ Future<void> _runStorynoryProbes() async {
         throw StateError('format is ${segment.format}');
       }
       return 'audio on another host, allowed: ${segment.request.url.host}';
+    });
+  });
+}
+
+Future<void> _runStandardEbooksProbes() async {
+  Future<T> withSource<T>(
+    Future<T> Function(JsSourceAdapter source, _StandardEbooksFixtures http)
+    body,
+  ) async {
+    final http = await _StandardEbooksFixtures.load();
+    return _withExtension(
+      asset: 'assets/standardebooks/main.js',
+      extensionId: 'org.kikuyomi.standardebooks',
+      sourceKey: 'standardebooks',
+      domains: const ['standardebooks.org'],
+      http: http,
+      kind: SourceKind.text,
+      body: (source) => body(source, http),
+    );
+  }
+
+  const frankenstein = 'mary-shelley/frankenstein';
+
+  await _probe('standardebooks-popular', () async {
+    return withSource((source, http) async {
+      final page = await source.getPopular(1);
+      if (page.items.length != 48) {
+        throw StateError('expected a page of 48, got ${page.items.length}');
+      }
+      if (!page.hasNextPage) throw StateError('the catalogue has more pages');
+      final first = page.items.first;
+      if (first.authors.isEmpty || first.coverUrl == null) {
+        throw StateError('${first.title} has no author or cover');
+      }
+      return '48 books, first ${first.title} by ${first.authors.single}';
+    });
+  });
+
+  await _probe('standardebooks-book-details', () async {
+    return withSource((source, http) async {
+      final book = await source.getBookDetails(frankenstein);
+      if (book.title != 'Frankenstein' ||
+          book.authors.join() != 'Mary Shelley') {
+        throw StateError('read ${book.title} by ${book.authors}');
+      }
+      if (!(book.coverUrl?.path.endsWith('/cover.jpg') ?? false)) {
+        throw StateError('cover is ${book.coverUrl}, not the cover itself');
+      }
+      if ((book.description ?? '').contains('<')) {
+        throw StateError('the description still holds markup');
+      }
+      return 'decoded: ${book.genres.join(', ')}';
+    });
+  });
+
+  await _probe('standardebooks-chapters-leave-out-paperwork', () async {
+    return withSource((source, http) async {
+      final chapters = await source.getChapters(frankenstein);
+      final keys = [for (final c in chapters) c.key];
+      for (final paperwork in const ['titlepage', 'imprint', 'colophon']) {
+        if (keys.contains(paperwork)) {
+          throw StateError('listed $paperwork');
+        }
+      }
+      if (!keys.contains('chapter-1')) {
+        throw StateError('no chapter-1 in $keys');
+      }
+      return '${chapters.length} sections, from ${chapters.first.title}';
+    });
+  });
+
+  // The whole of 1.1 on the real engine: the extension hands over HTML, the adapter decodes it
+  // through the contract, and what comes back is blocks.
+  await _probe('standardebooks-chapter-content', () async {
+    return withSource((source, http) async {
+      final content = await source.getChapterContent(
+        const ChapterRef(bookKey: frankenstein, chapterKey: 'chapter-1'),
+      );
+      final heading = content.blocks.whereType<HeadingBlock>().firstOrNull;
+      final text = [
+        for (final run in heading?.runs ?? const <TextRun>[]) run.text,
+      ].join();
+      if (text != 'Chapter I') throw StateError('heading is "$text"');
+      final paragraphs = content.blocks.whereType<ParagraphBlock>().length;
+      if (paragraphs < 10) throw StateError('only $paragraphs paragraphs');
+      return '$paragraphs paragraphs under "$text"';
     });
   });
 }
@@ -2415,6 +2553,7 @@ Future<void> main() async {
   await _runLibriVoxProbes();
   await _runArchiveProbes();
   await _runStorynoryProbes();
+  await _runStandardEbooksProbes();
   await _runPodcastProbes();
 
   _emit('QJS_PROBE DONE passed=$_passed failed=$_failed');

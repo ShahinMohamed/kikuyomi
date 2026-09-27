@@ -17,6 +17,10 @@ that purpose and is kept — see [the probe](#the-probe) below.
 
 **Phase 2**, extensions, began with the contract and is where the work is now.
 
+**Reading** was added alongside listening (ADR-0019), as Aniyomi reads manga beside playing anime:
+books to read are the same books, with a kind, a reading place instead of a playback one, and a
+reader instead of a player. See [reading](#reading).
+
 All fifteen decisions in §9 of the architecture document have ADRs, and all fifteen are Accepted. Two
 more decisions have been made since: ADR-0016, the contract, and ADR-0017, installing an extension
 from a folder.
@@ -310,14 +314,15 @@ side panel on a wide window), speed, a sleep timer and keyboard shortcuts.
 `/settings/restore`, Browse at `/browse` with a source at `/browse/source` and one of its books at
 `/browse/source/book`, More at `/more`, all above the home, and first-start setup at `/setup`.
 
-§2.6's shell is five tabs — Library, History, Browse, Downloads, More — a bottom bar on a narrow
+§2.6's shell is six tabs — Listen, Read, History, Browse, Downloads, More — a bottom bar on a narrow
 window and a rail on a wide one. §2.6 asks for four, with History and Downloads under More. They
 were given tabs instead, because both were reached through the library's app bar and that is the
 wrong place for them twice over: neither is about the library, and an app bar changes as you move
 around, so a button in one is somewhere to be found rather than somewhere known. More keeps
 Settings, the extension screens and the version number.
 
-Browse is itself two tabs. Sources and Extensions are different questions — "where shall I look for
+Browse is itself four tabs: sources and extensions, each for listening and for reading. Sources and
+Extensions are different questions — "where shall I look for
 something to listen to" and "what is installed" — and Extensions was a button in Browse's app bar,
 which made the thing you want most and the thing you want rarely look equally important. Sources are
 grouped by last used, then pinned, then language; a source appears in every group it belongs to,
@@ -342,6 +347,36 @@ as damaged files are.
 imports and opens it at start. On iOS and Android the file dialog hands over only a temporary copy,
 so a picked book is moved into the app's `Import` folder, which on iOS is visible in the Files app.
 Books copied into that folder are added at start and whenever the app returns to the foreground.
+
+## Reading
+
+Books to read sit beside books to listen to: one library with a kind on each book, as ADR-0019
+decided, rather than a second set of tables.
+
+- **The contract.** SourceAPI 1.1 lets a source be `"text"` and answer `getChapterContent` with HTML
+  or plain text. What it sends is decoded into a closed set of blocks (paragraphs, headings, quotes,
+  list items, preformatted text, images, scene breaks) with bold and italic, and never rendered as
+  HTML. Images are held to the manifest's domains like every other URL. Audio extensions still
+  target 1.0.
+- **The data.** Schema version 5 gives `book` a `kind` and adds `reading_state`: a chapter and a
+  fraction through it, which survives a different text size or screen. A chapter finished by
+  reading sets the same `is_listened` a listened chapter does. Backups carry both from format
+  version 3; one holding a book to read names `min_reader_version` 3 so an older build refuses it
+  rather than restoring it as an audiobook (ADR-0020).
+- **Local EPUBs.** Read in `sources_builtin`: the spine as chapters, titles from the navigation
+  document or NCX. A book locked with Adobe DRM, Readium LCP, Apple FairPlay or any other encryption
+  is refused and the lock named; obfuscated fonts are not a lock. The text stays in the EPUB and is
+  read a chapter at a time, off the interface's isolate.
+- **The Read tab and the reader.** Listen and Read are side by side in the shell, six tabs in all.
+  The reader scrolls one chapter at a time, saves the place a moment after scrolling stops, and
+  marks a chapter finished when its end is reached or the next is opened.
+- **Browse** has four tabs: audio sources, ebook sources, audio extensions, ebook extensions.
+  Standard Ebooks is the first source of books to read, shipped from the official repository.
+  Shipping records which extensions were offered, so one added by a later version arrives on the
+  next start and one the listener removed stays removed.
+
+Not run on a device yet. The probe runs Standard Ebooks' `getChapterContent` on the real engine
+against recorded pages; everything else is unit and widget tested.
 
 ## Extensions
 

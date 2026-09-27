@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kikuyomi_extension_manager/kikuyomi_extension_manager.dart'
     show PackageRefused, RepositoryException;
 import 'package:kikuyomi_domain/kikuyomi_domain.dart';
+import 'package:kikuyomi_source_api/kikuyomi_source_api.dart' show SourceKind;
 import 'package:kikuyomi_source_runtime/kikuyomi_source_runtime.dart';
 
 import 'extensions_view.dart';
@@ -13,6 +14,27 @@ import 'routes.dart';
 import 'snack_bars.dart';
 import 'sources/extension_library.dart';
 import 'sources/repository_library.dart';
+import 'sources/source_registry.dart';
+
+/// The [installed] extensions offering a source of [kind], by what [sources] says each offers.
+///
+/// One offering both kinds is in both lists. One with no source in [sources], because its code could
+/// not be read this run, is in both as well, so the reason it cannot run is never out of sight.
+List<ExtensionSummary> extensionsOfKind(
+  List<ExtensionSummary> installed,
+  List<SourceDescription> sources,
+  SourceKind kind,
+) {
+  final kinds = <String, Set<SourceKind>>{};
+  for (final source in sources) {
+    final id = source.extensionId;
+    if (id != null) (kinds[id] ??= {}).add(source.kind);
+  }
+  return [
+    for (final extension in installed)
+      if (kinds[extension.id]?.contains(kind) ?? true) extension,
+  ];
+}
 
 /// Extensions on a screen of its own, reached from More.
 ///
@@ -41,7 +63,14 @@ class ExtensionsScreen extends StatelessWidget {
 /// app bar above it belongs to whichever of the two places is showing the panel, which would mean
 /// the same button living in two bars.
 class ExtensionsPanel extends ConsumerStatefulWidget {
-  const ExtensionsPanel({super.key});
+  const ExtensionsPanel({super.key, this.kind});
+
+  /// Only the extensions offering sources of this kind (ADR-0019), or every one when null.
+  ///
+  /// An extension offering both kinds is listed under both. One whose sources are not known this
+  /// run, because its code could not be read, is listed under both too: hiding it would hide the
+  /// console line that says what is wrong with it.
+  final SourceKind? kind;
 
   @override
   ConsumerState<ExtensionsPanel> createState() => _ExtensionsPanelState();
@@ -65,7 +94,15 @@ class _ExtensionsPanelState extends ConsumerState<ExtensionsPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final extensions = ref.watch(extensionsProvider).value ?? const [];
+    final installed = ref.watch(extensionsProvider).value ?? const [];
+    final kind = widget.kind;
+    final extensions = kind == null
+        ? installed
+        : extensionsOfKind(
+            installed,
+            ref.watch(sourceListProvider).value ?? const [],
+            kind,
+          );
     final library = ref.watch(servicesProvider).extensions;
     // The console is watched, not read, so a failure logged while this screen is open is counted here
     // the moment it happens.

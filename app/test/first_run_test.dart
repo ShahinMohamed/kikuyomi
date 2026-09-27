@@ -113,6 +113,7 @@ void main() {
           'org.kikuyomi.internetarchive',
           'org.kikuyomi.storynory',
           'org.kikuyomi.podcasts',
+          'org.kikuyomi.standardebooks',
         },
       );
     });
@@ -184,6 +185,33 @@ void main() {
       expect({
         for (final row in await installed()) row.id,
       }, isNot(contains('org.kikuyomi.storynory')));
+    });
+
+    test('installs an extension shipped since the last start', () async {
+      // An install seeded before Standard Ebooks shipped, recorded as the app then recorded it:
+      // seeded, with no list of what was offered.
+      await settings.write(AppSettings.shippedExtensionsSeeded, true);
+
+      await seed();
+
+      expect({
+        for (final row in await installed()) row.id,
+      }, contains('org.kikuyomi.standardebooks'));
+      expect(
+        settings.read(AppSettings.shippedExtensionsOffered),
+        containsAll(shippedExtensionNames),
+      );
+    });
+
+    test('does not put back a later extension the listener removed', () async {
+      await seed();
+      await library.remove('org.kikuyomi.standardebooks');
+
+      await seed();
+
+      expect({
+        for (final row in await installed()) row.id,
+      }, isNot(contains('org.kikuyomi.standardebooks')));
     });
 
     test('does not add the repository back after it was removed', () async {
