@@ -218,6 +218,25 @@ Future<LocalEpubImport> readEpubFile(File file) => Isolate.run(() async {
   );
 });
 
+/// What is inside the EPUB [file]: its chapters, in reading order, with their words counted.
+///
+/// For a book downloaded whole from a source (ADR-0021), where the title, author and cover come
+/// from the source and only the chapters come from the file. On another isolate, as
+/// [readEpubFile] is, and refusing a book locked with DRM in the same way.
+Future<List<LocalEpubChapter>> readEpubChapters(File file) =>
+    Isolate.run(() async {
+      final book = EpubBook.read(await file.readAsBytes());
+      final words = book.wordCounts();
+      return [
+        for (final chapter in book.chapters)
+          LocalEpubChapter(
+            key: chapter.path,
+            title: chapter.title,
+            wordCount: words[chapter.path],
+          ),
+      ];
+    });
+
 /// [words] as a phrase: "A", "A and B", "A, B and C".
 String _inWords(List<String> words) => words.length < 2
     ? words.join()

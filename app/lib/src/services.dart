@@ -299,6 +299,7 @@ final class AppServices {
   late final chapterTexts = ChapterTexts(
     database,
     mediaRoot: locations.mediaRoot,
+    bookFiles: locations.bookFiles,
     openSource: openSource,
   );
 
@@ -568,7 +569,11 @@ final class AppServices {
   previewSourceBook(int sourceId, String bookKey) async {
     final source = await openSource(sourceId);
     final details = await source.getBookDetails(bookKey);
-    final chapters = await source.getChapters(bookKey);
+    // A source whose books are one file is not asked for a chapter list: the chapters are the ones
+    // inside the file, and there is no file until the book is added (ADR-0021).
+    final chapters = publishesWholeBooks(sourceId)
+        ? const <api.ChapterInfo>[]
+        : await source.getChapters(bookKey);
     return (details: details, chapters: chapters);
   }
 
@@ -641,6 +646,123 @@ final class AppServices {
       mimeType: contentType ?? 'image/jpeg',
       bytes: response.body,
     );
+  }
+
+  /// Whether [sourceId] publishes each book as one file rather than chapters to fetch (ADR-0021).
+  bool publishesWholeBooks(int sourceId) =>
+      sources
+          .describe(sourceId)
+          ?.capabilities
+          .contains(api.SourceCapability.bookFile) ??
+      false;
+
+  /// The largest book file this app will download.
+  ///
+  /// An EPUB of a novel is a few megabytes; a heavily illustrated one can be a few dozen. Past this
+  /// something is wrong with what the source pointed at, and downloading it would be a surprise
+  /// rather than a book.
+  static const maxBookFileBytes = 256 * 1024 * 1024;
+
+  /// Adds a book whose source publishes it as one file (ADR-0021), and returns its id.
+  ///
+  /// The file is fetched first and the book saved second, so a download that fails leaves nothing
+  /// in the library. The chapters are the ones inside the file, because for such a source they are
+  /// the only ones there are; the title, author and cover are the source's.
+  ///
+  /// Fails with a [FormatException] for a file this app cannot read, and with whatever the source
+  /// or the network threw for a file it could not fetch.
+  Future<int> addSourceBookFile({
+    required int sourceId,
+    required api.BookDetails details,
+  }) async {
+    final source = await openSource(sourceId);
+    final file = await source.resolveBook(details.key);
+    if (file.format != api.BookFileFormat.epub) {
+      throw FormatException(
+        'this book is a ${file.format.name} file, and Kikuyomi reads EPUBs',
+      );
+    }
+    final bytes = await _fetchBookFile(sourceId, file);
+
+    final saved = await saveSourceBook(
+      database,
+      sourceId: sourceId,
+      details: details,
+      // The file's, written once it has been read.
+      chapters: const [],
+      clock: clock,
+      addToLibrary: true,
+      kind: api.SourceKind.text,
+    );
+    final stored = File(
+      '${locations.bookFiles.path}${Platform.pathSeparator}${saved.bookId}.epub',
+    );
+    await stored.parent.create(recursive: true);
+    await stored.writeAsBytes(bytes, flush: true);
+
+    // Reading the file is what refuses one locked with DRM, so it happens before the book is of any
+    // use and the book is left with no chapters if it does.
+    final chapters = await readEpubChapters(stored);
+    await saveBookFile(
+      database,
+      bookId: saved.bookId,
+      fileName: stored.uri.pathSegments.last,
+      chapters: chapters,
+      clock: clock,
+    );
+    unawaited(
+      lookForMissingCovers(
+        onError: (error, stack) => FlutterError.reportError(
+          FlutterErrorDetails(
+            exception: error,
+            stack: stack,
+            library: 'kikuyomi',
+            context: ErrorDescription("while fetching a book's cover"),
+          ),
+        ),
+      ),
+    );
+    return saved.bookId;
+  }
+
+  /// The bytes of [file], fetched as the source that published it, and held to its domains.
+  Future<Uint8List> _fetchBookFile(int sourceId, api.BookFile file) async {
+    final extensionId = sources.extensionIdOf(sourceId);
+    final domains = sources.domainsOf(sourceId);
+    if (extensionId == null || domains == null) {
+      throw StateError('source $sourceId is no longer installed');
+    }
+    if (file.sizeBytes != null && file.sizeBytes! > maxBookFileBytes) {
+      throw FormatException(
+        'this book is ${file.sizeBytes} bytes, which is more than Kikuyomi downloads',
+      );
+    }
+    final response = await sources
+        .httpClientFor(extensionId)
+        .send(
+          net.NetworkRequest(
+            url: file.request.url,
+            headers: file.request.headers,
+          ),
+          check: (url) {
+            final problem = domains.problemWith(url);
+            if (problem != null) throw FormatException('$url: $problem');
+          },
+        );
+    if (response.status != 200) {
+      throw FormatException(
+        'the book could not be downloaded: ${response.status}',
+      );
+    }
+    if (response.body.isEmpty) {
+      throw const FormatException('the book came back empty');
+    }
+    if (response.body.length > maxBookFileBytes) {
+      throw FormatException(
+        'the book is ${response.body.length} bytes, which is more than Kikuyomi downloads',
+      );
+    }
+    return response.body;
   }
 
   /// Queues every file of book [bookId] that is not already on the device, and sets the queue going.

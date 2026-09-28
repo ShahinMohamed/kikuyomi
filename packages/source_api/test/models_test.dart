@@ -20,6 +20,10 @@ final class EmptySource implements ContentSource {
       throw UnsupportedError('an audio source has no chapter text');
 
   @override
+  Future<BookFile> resolveBook(String bookKey) async =>
+      throw UnsupportedError('this source has no book files');
+
+  @override
   Future<PageResult<BookSummary>> getPopular(int page) async =>
       PageResult(items: const [], hasNextPage: false);
 

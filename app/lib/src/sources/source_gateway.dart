@@ -70,11 +70,14 @@ final class AppSourceGateway implements SourceGateway {
     required int sourceId,
     required BookDetails details,
     required List<ChapterInfo> chapters,
-  }) => _services.addSourceBook(
-    sourceId: sourceId,
-    details: details,
-    chapters: chapters,
-  );
+  }) => _services.publishesWholeBooks(sourceId)
+      // The book is one file: adding it downloads it, and its chapters are the file's own.
+      ? _services.addSourceBookFile(sourceId: sourceId, details: details)
+      : _services.addSourceBook(
+          sourceId: sourceId,
+          details: details,
+          chapters: chapters,
+        );
 
   @override
   SourceDescription? describe(int sourceId) =>

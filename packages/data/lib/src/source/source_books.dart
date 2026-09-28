@@ -18,7 +18,7 @@ import 'package:kikuyomi_domain/kikuyomi_domain.dart';
 import 'package:kikuyomi_source_api/kikuyomi_source_api.dart' as api;
 
 import '../database/database.dart';
-import '../local/local_import.dart' show localSourceId;
+import '../local/local_import.dart' show LocalEpubChapter, localSourceId;
 import '../merge/book_details.dart';
 import '../merge/chapter_sync.dart';
 import '../merge/credits.dart';
@@ -52,6 +52,51 @@ final class SavedSourceBook {
   /// The cover the book now names, for a caller that fetches it. Null for a book with none, or one
   /// whose cover the listener chose.
   final String? coverUrl;
+}
+
+/// Records [fileName] as book [bookId]'s own file, with the chapters inside it (ADR-0021).
+///
+/// The chapters are the EPUB's, because for a source whose books are one file they are the only
+/// ones there are. Written by key rather than replaced, so that downloading a book again — a new
+/// edition, or a file that went missing — keeps the chapter rows the reader's place points at.
+Future<void> saveBookFile(
+  KikuyomiDatabase db, {
+  required int bookId,
+  required String fileName,
+  required List<LocalEpubChapter> chapters,
+  required Clock clock,
+}) async {
+  final now = clock.now();
+  await db.transaction(() async {
+    await (db.update(db.books)..where((b) => b.id.equals(bookId))).write(
+      BooksCompanion(filePath: Value(fileName), updatedAt: Value(now)),
+    );
+    for (final (index, chapter) in chapters.indexed) {
+      await db
+          .into(db.chapters)
+          .insert(
+            ChaptersCompanion.insert(
+              bookId: bookId,
+              key: chapter.key,
+              title: chapter.title,
+              sourceIndex: index,
+              wordCount: Value(chapter.wordCount),
+              createdAt: now,
+              updatedAt: now,
+            ),
+            onConflict: DoUpdate(
+              (_) => ChaptersCompanion(
+                title: Value(chapter.title),
+                sourceIndex: Value(index),
+                wordCount: Value(chapter.wordCount),
+                removedFromSource: const Value(false),
+                updatedAt: Value(now),
+              ),
+              target: [db.chapters.bookId, db.chapters.key],
+            ),
+          );
+    }
+  });
 }
 
 /// A source the app knows about, as `source` holds it (§4.3).

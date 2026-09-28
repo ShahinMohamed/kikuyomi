@@ -11,6 +11,9 @@
 ///
 /// Version 5 makes room for reading (ADR-0019): `book.kind`, and `reading_state`. One model with a
 /// kind rather than a parallel set of tables, which is §1.2's lesson from Aniyomi taken literally.
+/// Version 8 adds `book.file_path`, for a book that is one file: an EPUB downloaded whole from a
+/// source (ADR-0021), or one added from this device.
+///
 /// Version 7 adds `reading_session`, so that History covers reading as well as listening.
 ///
 /// Version 6 adds `chapter.word_count`, so that a book to read can say how long a chapter is the
@@ -94,6 +97,15 @@ class Books extends Table {
 
   /// §4.3: playback speed is remembered per book.
   RealColumn get playbackSpeed => real().nullable()();
+
+  /// Where the book's own file is, for a book that is one file rather than chapters to fetch
+  /// (version 8, ADR-0021).
+  ///
+  /// A name within the book-files folder for a book downloaded from a source, and an absolute path,
+  /// or one relative to the media root, for a book added from this device. Null for every other
+  /// book: an audiobook is made of media files, and a text source that serves chapters has no file
+  /// at all.
+  TextColumn get filePath => text().nullable()();
 
   /// A book to listen to or a book to read (version 5, ADR-0019).
   ///

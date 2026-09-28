@@ -883,6 +883,17 @@ class $BooksTable extends Books with TableInfo<$BooksTable, BookRow> {
     type: DriftSqlType.double,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _filePathMeta = const VerificationMeta(
+    'filePath',
+  );
+  @override
+  late final GeneratedColumn<String> filePath = GeneratedColumn<String>(
+    'file_path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   late final GeneratedColumnWithTypeConverter<SourceKind, String> kind =
       GeneratedColumn<String>(
@@ -944,6 +955,7 @@ class $BooksTable extends Books with TableInfo<$BooksTable, BookRow> {
     detailsFetched,
     userOverrides,
     playbackSpeed,
+    filePath,
     kind,
     createdAt,
     updatedAt,
@@ -1143,6 +1155,12 @@ class $BooksTable extends Books with TableInfo<$BooksTable, BookRow> {
         ),
       );
     }
+    if (data.containsKey('file_path')) {
+      context.handle(
+        _filePathMeta,
+        filePath.isAcceptableOrUnknown(data['file_path']!, _filePathMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -1284,6 +1302,10 @@ class $BooksTable extends Books with TableInfo<$BooksTable, BookRow> {
         DriftSqlType.double,
         data['${effectivePrefix}playback_speed'],
       ),
+      filePath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}file_path'],
+      ),
       kind: $BooksTable.$converterkind.fromSql(
         attachedDatabase.typeMapping.read(
           DriftSqlType.string,
@@ -1346,6 +1368,15 @@ class BookRow extends DataClass implements Insertable<BookRow> {
   /// §4.3: playback speed is remembered per book.
   final double? playbackSpeed;
 
+  /// Where the book's own file is, for a book that is one file rather than chapters to fetch
+  /// (version 8, ADR-0021).
+  ///
+  /// A name within the book-files folder for a book downloaded from a source, and an absolute path,
+  /// or one relative to the media root, for a book added from this device. Null for every other
+  /// book: an audiobook is made of media files, and a text source that serves chapters has no file
+  /// at all.
+  final String? filePath;
+
   /// A book to listen to or a book to read (version 5, ADR-0019).
   ///
   /// On the book and not taken from its source, because the Local source offers both: a folder of
@@ -1382,6 +1413,7 @@ class BookRow extends DataClass implements Insertable<BookRow> {
     required this.detailsFetched,
     required this.userOverrides,
     this.playbackSpeed,
+    this.filePath,
     required this.kind,
     required this.createdAt,
     required this.updatedAt,
@@ -1462,6 +1494,9 @@ class BookRow extends DataClass implements Insertable<BookRow> {
     if (!nullToAbsent || playbackSpeed != null) {
       map['playback_speed'] = Variable<double>(playbackSpeed);
     }
+    if (!nullToAbsent || filePath != null) {
+      map['file_path'] = Variable<String>(filePath);
+    }
     {
       map['kind'] = Variable<String>($BooksTable.$converterkind.toSql(kind));
     }
@@ -1535,6 +1570,9 @@ class BookRow extends DataClass implements Insertable<BookRow> {
       playbackSpeed: playbackSpeed == null && nullToAbsent
           ? const Value.absent()
           : Value(playbackSpeed),
+      filePath: filePath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(filePath),
       kind: Value(kind),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
@@ -1574,6 +1612,7 @@ class BookRow extends DataClass implements Insertable<BookRow> {
       detailsFetched: serializer.fromJson<bool>(json['detailsFetched']),
       userOverrides: serializer.fromJson<Set<BookField>>(json['userOverrides']),
       playbackSpeed: serializer.fromJson<double?>(json['playbackSpeed']),
+      filePath: serializer.fromJson<String?>(json['filePath']),
       kind: $BooksTable.$converterkind.fromJson(
         serializer.fromJson<String>(json['kind']),
       ),
@@ -1612,6 +1651,7 @@ class BookRow extends DataClass implements Insertable<BookRow> {
       'detailsFetched': serializer.toJson<bool>(detailsFetched),
       'userOverrides': serializer.toJson<Set<BookField>>(userOverrides),
       'playbackSpeed': serializer.toJson<double?>(playbackSpeed),
+      'filePath': serializer.toJson<String?>(filePath),
       'kind': serializer.toJson<String>(
         $BooksTable.$converterkind.toJson(kind),
       ),
@@ -1648,6 +1688,7 @@ class BookRow extends DataClass implements Insertable<BookRow> {
     bool? detailsFetched,
     Set<BookField>? userOverrides,
     Value<double?> playbackSpeed = const Value.absent(),
+    Value<String?> filePath = const Value.absent(),
     SourceKind? kind,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -1693,6 +1734,7 @@ class BookRow extends DataClass implements Insertable<BookRow> {
     playbackSpeed: playbackSpeed.present
         ? playbackSpeed.value
         : this.playbackSpeed,
+    filePath: filePath.present ? filePath.value : this.filePath,
     kind: kind ?? this.kind,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
@@ -1750,6 +1792,7 @@ class BookRow extends DataClass implements Insertable<BookRow> {
       playbackSpeed: data.playbackSpeed.present
           ? data.playbackSpeed.value
           : this.playbackSpeed,
+      filePath: data.filePath.present ? data.filePath.value : this.filePath,
       kind: data.kind.present ? data.kind.value : this.kind,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
@@ -1786,6 +1829,7 @@ class BookRow extends DataClass implements Insertable<BookRow> {
           ..write('detailsFetched: $detailsFetched, ')
           ..write('userOverrides: $userOverrides, ')
           ..write('playbackSpeed: $playbackSpeed, ')
+          ..write('filePath: $filePath, ')
           ..write('kind: $kind, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
@@ -1822,6 +1866,7 @@ class BookRow extends DataClass implements Insertable<BookRow> {
     detailsFetched,
     userOverrides,
     playbackSpeed,
+    filePath,
     kind,
     createdAt,
     updatedAt,
@@ -1857,6 +1902,7 @@ class BookRow extends DataClass implements Insertable<BookRow> {
           other.detailsFetched == this.detailsFetched &&
           other.userOverrides == this.userOverrides &&
           other.playbackSpeed == this.playbackSpeed &&
+          other.filePath == this.filePath &&
           other.kind == this.kind &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
@@ -1890,6 +1936,7 @@ class BooksCompanion extends UpdateCompanion<BookRow> {
   final Value<bool> detailsFetched;
   final Value<Set<BookField>> userOverrides;
   final Value<double?> playbackSpeed;
+  final Value<String?> filePath;
   final Value<SourceKind> kind;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
@@ -1921,6 +1968,7 @@ class BooksCompanion extends UpdateCompanion<BookRow> {
     this.detailsFetched = const Value.absent(),
     this.userOverrides = const Value.absent(),
     this.playbackSpeed = const Value.absent(),
+    this.filePath = const Value.absent(),
     this.kind = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
@@ -1953,6 +2001,7 @@ class BooksCompanion extends UpdateCompanion<BookRow> {
     this.detailsFetched = const Value.absent(),
     this.userOverrides = const Value.absent(),
     this.playbackSpeed = const Value.absent(),
+    this.filePath = const Value.absent(),
     this.kind = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
@@ -1989,6 +2038,7 @@ class BooksCompanion extends UpdateCompanion<BookRow> {
     Expression<bool>? detailsFetched,
     Expression<String>? userOverrides,
     Expression<double>? playbackSpeed,
+    Expression<String>? filePath,
     Expression<String>? kind,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
@@ -2021,6 +2071,7 @@ class BooksCompanion extends UpdateCompanion<BookRow> {
       if (detailsFetched != null) 'details_fetched': detailsFetched,
       if (userOverrides != null) 'user_overrides': userOverrides,
       if (playbackSpeed != null) 'playback_speed': playbackSpeed,
+      if (filePath != null) 'file_path': filePath,
       if (kind != null) 'kind': kind,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
@@ -2055,6 +2106,7 @@ class BooksCompanion extends UpdateCompanion<BookRow> {
     Value<bool>? detailsFetched,
     Value<Set<BookField>>? userOverrides,
     Value<double?>? playbackSpeed,
+    Value<String?>? filePath,
     Value<SourceKind>? kind,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
@@ -2087,6 +2139,7 @@ class BooksCompanion extends UpdateCompanion<BookRow> {
       detailsFetched: detailsFetched ?? this.detailsFetched,
       userOverrides: userOverrides ?? this.userOverrides,
       playbackSpeed: playbackSpeed ?? this.playbackSpeed,
+      filePath: filePath ?? this.filePath,
       kind: kind ?? this.kind,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -2181,6 +2234,9 @@ class BooksCompanion extends UpdateCompanion<BookRow> {
     if (playbackSpeed.present) {
       map['playback_speed'] = Variable<double>(playbackSpeed.value);
     }
+    if (filePath.present) {
+      map['file_path'] = Variable<String>(filePath.value);
+    }
     if (kind.present) {
       map['kind'] = Variable<String>(
         $BooksTable.$converterkind.toSql(kind.value),
@@ -2225,6 +2281,7 @@ class BooksCompanion extends UpdateCompanion<BookRow> {
           ..write('detailsFetched: $detailsFetched, ')
           ..write('userOverrides: $userOverrides, ')
           ..write('playbackSpeed: $playbackSpeed, ')
+          ..write('filePath: $filePath, ')
           ..write('kind: $kind, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
@@ -10323,6 +10380,7 @@ typedef $$BooksTableCreateCompanionBuilder = BooksCompanion Function({
   Value<bool> detailsFetched,
   Value<Set<BookField>> userOverrides,
   Value<double?> playbackSpeed,
+  Value<String?> filePath,
   Value<SourceKind> kind,
   required DateTime createdAt,
   required DateTime updatedAt,
@@ -10355,6 +10413,7 @@ typedef $$BooksTableUpdateCompanionBuilder = BooksCompanion Function({
   Value<bool> detailsFetched,
   Value<Set<BookField>> userOverrides,
   Value<double?> playbackSpeed,
+  Value<String?> filePath,
   Value<SourceKind> kind,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
@@ -10691,6 +10750,11 @@ class $$BooksTableFilterComposer
 
   ColumnFilters<double> get playbackSpeed => $composableBuilder(
     column: $table.playbackSpeed,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get filePath => $composableBuilder(
+    column: $table.filePath,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -11098,6 +11162,11 @@ class $$BooksTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get filePath => $composableBuilder(
+    column: $table.filePath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get kind => $composableBuilder(
     column: $table.kind,
     builder: (column) => ColumnOrderings(column),
@@ -11248,6 +11317,9 @@ class $$BooksTableAnnotationComposer
     column: $table.playbackSpeed,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get filePath =>
+      $composableBuilder(column: $table.filePath, builder: (column) => column);
 
   GeneratedColumnWithTypeConverter<SourceKind, String> get kind =>
       $composableBuilder(column: $table.kind, builder: (column) => column);
@@ -11574,6 +11646,7 @@ class $$BooksTableTableManager
                 Value<bool> detailsFetched = const Value.absent(),
                 Value<Set<BookField>> userOverrides = const Value.absent(),
                 Value<double?> playbackSpeed = const Value.absent(),
+                Value<String?> filePath = const Value.absent(),
                 Value<SourceKind> kind = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
@@ -11605,6 +11678,7 @@ class $$BooksTableTableManager
                 detailsFetched: detailsFetched,
                 userOverrides: userOverrides,
                 playbackSpeed: playbackSpeed,
+                filePath: filePath,
                 kind: kind,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
@@ -11638,6 +11712,7 @@ class $$BooksTableTableManager
                 Value<bool> detailsFetched = const Value.absent(),
                 Value<Set<BookField>> userOverrides = const Value.absent(),
                 Value<double?> playbackSpeed = const Value.absent(),
+                Value<String?> filePath = const Value.absent(),
                 Value<SourceKind> kind = const Value.absent(),
                 required DateTime createdAt,
                 required DateTime updatedAt,
@@ -11669,6 +11744,7 @@ class $$BooksTableTableManager
                 detailsFetched: detailsFetched,
                 userOverrides: userOverrides,
                 playbackSpeed: playbackSpeed,
+                filePath: filePath,
                 kind: kind,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
