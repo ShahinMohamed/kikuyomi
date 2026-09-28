@@ -17,6 +17,7 @@
 library;
 
 import 'package:drift/drift.dart';
+import 'package:kikuyomi_source_api/kikuyomi_source_api.dart' show SourceKind;
 
 import '../database/database.dart';
 import 'watch_tables.dart';
@@ -169,25 +170,36 @@ Stream<Set<int>> watchBooksIn(KikuyomiDatabase db, int categoryId) =>
 /// For a screen that says what a shelf holds before it is opened. Categories with nothing in them
 /// are absent rather than zero, because a caller reading `?? 0` says the same thing with less
 /// counting.
-Stream<Map<int, int>> watchCategoryCounts(KikuyomiDatabase db) =>
-    watchTables(db, [db.bookCategories, db.books], () async {
-      final count = db.bookCategories.bookId.count();
-      final rows =
-          await (db.selectOnly(db.bookCategories).join([
-                  innerJoin(
-                    db.books,
-                    db.books.id.equalsExp(db.bookCategories.bookId),
-                  ),
-                ])
-                ..addColumns([db.bookCategories.categoryId, count])
-                ..where(db.books.inLibrary.equals(true))
-                ..groupBy([db.bookCategories.categoryId]))
-              .get();
-      return {
-        for (final row in rows)
-          row.read(db.bookCategories.categoryId)!: row.read(count)!,
-      };
-    });
+///
+/// [kind] counts only books of one kind, which is what each tab's bar wants: a category holding
+/// eleven audiobooks and one novel says "1" above the reading shelf, because one is what opening it
+/// there would show.
+Stream<Map<int, int>> watchCategoryCounts(
+  KikuyomiDatabase db, {
+  SourceKind? kind,
+}) => watchTables(db, [db.bookCategories, db.books], () async {
+  final count = db.bookCategories.bookId.count();
+  final rows =
+      await (db.selectOnly(db.bookCategories).join([
+              innerJoin(
+                db.books,
+                db.books.id.equalsExp(db.bookCategories.bookId),
+              ),
+            ])
+            ..addColumns([db.bookCategories.categoryId, count])
+            ..where(
+              db.books.inLibrary.equals(true) &
+                  (kind == null
+                      ? const CustomExpression<bool>('1')
+                      : db.books.kind.equalsValue(kind)),
+            )
+            ..groupBy([db.bookCategories.categoryId]))
+          .get();
+  return {
+    for (final row in rows)
+      row.read(db.bookCategories.categoryId)!: row.read(count)!,
+  };
+});
 
 /// Throws when [name] cannot be a category's, ignoring [except] when renaming one.
 Future<void> _refuseBadName(

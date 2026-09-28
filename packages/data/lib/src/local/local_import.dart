@@ -102,11 +102,19 @@ final class LocalFolderImport {
 
 /// One chapter of a local EPUB: a document of its spine.
 final class LocalEpubChapter {
-  const LocalEpubChapter({required this.key, required this.title});
+  const LocalEpubChapter({
+    required this.key,
+    required this.title,
+    this.wordCount,
+  });
 
   /// The document's path inside the EPUB, which is what the reader opens.
   final String key;
   final String title;
+
+  /// How many words it holds, or null when they were not counted. What a reader is shown as "about
+  /// twelve minutes" is worked out from this and their own pace.
+  final int? wordCount;
 }
 
 /// A local EPUB to add to the library as a book to read (ADR-0019).
@@ -296,6 +304,7 @@ Future<int> importLocalEpub(
               key: Value(chapter.key),
               title: Value(chapter.title),
               sourceIndex: Value(index),
+              wordCount: Value(chapter.wordCount),
               createdAt: Value(now),
               updatedAt: Value(now),
             ),

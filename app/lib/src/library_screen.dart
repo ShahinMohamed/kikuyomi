@@ -183,7 +183,11 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             children: [
               CategoryBar(
                 categories: ref.watch(categoriesProvider).value ?? const [],
-                counts: ref.watch(categoryCountsProvider).value ?? const {},
+                counts:
+                    ref
+                        .watch(categoryCountsByKindProvider(SourceKind.audio))
+                        .value ??
+                    const {},
                 selected: _category,
                 onSelected: (id) => setState(() => _category = id),
               ),

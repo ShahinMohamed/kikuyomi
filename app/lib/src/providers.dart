@@ -134,6 +134,16 @@ final readingPositionProvider = StreamProvider.autoDispose
           watchReadingPosition(ref.watch(servicesProvider).database, bookId),
     );
 
+/// How fast the reader reads, in words a minute, or zero for a reader who would rather not be told
+/// how long a chapter takes.
+final readingWordsPerMinuteProvider = StreamProvider<int>(
+  (ref) => ref
+      .watch(servicesProvider)
+      .settings
+      .watch(AppSettings.readingWordsPerMinute)
+      .map((rate) => rate ?? defaultReadingWordsPerMinute),
+);
+
 /// How large the reader draws text, as a multiple of the body size.
 final readerTextScaleProvider = StreamProvider<double>(
   (ref) => ref
@@ -296,6 +306,12 @@ final categoriesProvider = StreamProvider<List<CategoryRow>>(
 );
 
 /// How many books each category holds, by id.
+final categoryCountsByKindProvider =
+    StreamProvider.family<Map<int, int>, SourceKind>(
+      (ref, kind) =>
+          watchCategoryCounts(ref.watch(servicesProvider).database, kind: kind),
+    );
+
 final categoryCountsProvider = StreamProvider<Map<int, int>>(
   (ref) => watchCategoryCounts(ref.watch(servicesProvider).database),
 );

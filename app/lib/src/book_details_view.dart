@@ -4,10 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:kikuyomi_data/kikuyomi_data.dart'
     show BookOverview, ChapterDownload, CoverFiles;
 import 'package:kikuyomi_design_system/kikuyomi_design_system.dart';
+import 'package:kikuyomi_domain/kikuyomi_domain.dart'
+    show defaultReadingWordsPerMinute;
+import 'package:kikuyomi_source_api/kikuyomi_source_api.dart' show SourceKind;
 
 import 'downloads/book_downloads.dart';
 import 'format.dart';
 import 'listened_commands.dart';
+import 'reading/reading_time.dart';
 
 /// Where the play button starts a book.
 enum PlayFrom {
@@ -45,6 +49,7 @@ class BookDetailsView extends StatelessWidget {
     this.chapterDownloads = const {},
     this.onDownload,
     this.canDownload = true,
+    this.wordsPerMinute = defaultReadingWordsPerMinute,
     this.onStopDownloading,
     this.onAddToLibrary,
     this.onOpenAtSource,
@@ -76,6 +81,10 @@ class BookDetailsView extends StatelessWidget {
   /// Whether the book has anything to download at all. False for a book to read (ADR-0019), whose
   /// chapters are read as they are opened, and which shows no download cell rather than a dead one.
   final bool canDownload;
+
+  /// How fast the reader reads, for the time shown beside a chapter of a book to read. Zero for a
+  /// reader who would rather not be told.
+  final int wordsPerMinute;
 
   /// Gives up on what is queued or running.
   final VoidCallback? onStopDownloading;
@@ -230,6 +239,7 @@ class BookDetailsView extends StatelessWidget {
               book: book,
               finished: finished,
               side: side,
+              wordsPerMinute: wordsPerMinute,
               chapterDownloads: chapterDownloads,
               listenedCommands: listenedCommands,
               onPlayChapter: onPlayChapter,
@@ -298,6 +308,7 @@ class _ChapterList extends StatefulWidget {
     required this.side,
     required this.chapterDownloads,
     required this.listenedCommands,
+    required this.wordsPerMinute,
     required this.onPlayChapter,
     required this.onPlayFrom,
     required this.onDownloadChapters,
@@ -311,6 +322,14 @@ class _ChapterList extends StatefulWidget {
   final double side;
   final Map<int, ChapterDownload> chapterDownloads;
   final ListenedCommands listenedCommands;
+
+  /// How fast the reader reads, for a book to read.
+  final int wordsPerMinute;
+
+  /// Whether these are chapters of a book to read: read rather than listened to, and as long as
+  /// they take whoever is reading rather than as long as a recording.
+  bool get _reading => book.kind == SourceKind.text;
+
   final ValueChanged<int>? onPlayChapter;
   final ValueChanged<int>? onPlayFrom;
   final ValueChanged<List<int>>? onDownloadChapters;
@@ -410,6 +429,11 @@ class _ChapterListState extends State<_ChapterList> {
     return _EntryTile(
       title: chapter.title,
       durationMs: chapter.durationMs,
+      reading: widget._reading,
+      readingTime: readingTime(
+        chapter.wordCount,
+        wordsPerMinute: widget.wordsPerMinute,
+      ),
       listened: chapter.listened,
       current: chapter.current && !widget.finished,
       download:
@@ -498,6 +522,8 @@ class _EntryTile extends StatelessWidget {
     required this.durationMs,
     required this.listened,
     required this.current,
+    this.reading = false,
+    this.readingTime,
     this.download = ChapterDownload.absent,
     this.selected = false,
     this.onPlay,
@@ -508,6 +534,14 @@ class _EntryTile extends StatelessWidget {
 
   final String title;
   final int? durationMs;
+
+  /// Whether this is a chapter of a book to read: read rather than listened to, and as long as it
+  /// takes whoever is reading rather than as long as a recording.
+  final bool reading;
+
+  /// How long it takes to read, or null when that is not known or not wanted.
+  final Duration? readingTime;
+
   final bool listened;
 
   /// Where this chapter's audio is (§5.2).
@@ -537,7 +571,14 @@ class _EntryTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final duration = durationMs;
     final onMark = this.onMark;
-    final length = duration == null ? null : Text(formatClock(duration));
+    final length = reading
+        ? switch (readingTime) {
+            final time? => Text(formatReadingTime(time)),
+            null => null,
+          }
+        : duration == null
+        ? null
+        : Text(formatClock(duration));
     return ListTile(
       contentPadding: EdgeInsets.zero,
       // A picked row is marked by its tile, the way the row being played is. The two cannot be
@@ -553,12 +594,15 @@ class _EntryTile extends StatelessWidget {
         child: selected
             ? const Icon(Icons.check_circle, semanticLabel: 'Selected')
             : current
-            ? const Icon(Icons.graphic_eq, semanticLabel: 'Where you are')
+            ? Icon(
+                reading ? Icons.menu_book : Icons.graphic_eq,
+                semanticLabel: 'Where you are',
+              )
             : listened
             ? Icon(
                 Icons.check,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
-                semanticLabel: 'Listened',
+                semanticLabel: reading ? 'Read' : 'Listened',
               )
             : null,
       ),
@@ -583,9 +627,12 @@ class _EntryTile extends StatelessWidget {
                   itemBuilder: (context) => [
                     PopupMenuItem(
                       value: !listened,
-                      child: Text(
-                        listened ? 'Mark as not listened' : 'Mark as listened',
-                      ),
+                      child: Text(switch ((reading, listened)) {
+                        (true, true) => 'Mark as unread',
+                        (true, false) => 'Mark as read',
+                        (false, true) => 'Mark as not listened',
+                        (false, false) => 'Mark as listened',
+                      }),
                     ),
                   ],
                 ),

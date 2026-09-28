@@ -20,6 +20,7 @@ import 'generated/schema_v1.dart' as v1;
 import 'generated/schema_v2.dart' as v2;
 import 'generated/schema_v4.dart' as v4;
 import 'generated/schema_v5.dart' as v5;
+import 'generated/schema_v6.dart' as v6;
 
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -369,6 +370,67 @@ void main() {
       },
     );
   });
+
+  test(
+    'upgrading to version 6 leaves a chapter uncounted, not empty',
+    () async {
+      // Version 6 adds `chapter.word_count`, which nothing can know for a chapter already in the
+      // library: an EPUB's chapters are counted as the book is added, and a chapter from a source
+      // when its text is fetched. So it arrives null, and the chapter is otherwise untouched.
+      final source = v5.SourcesData(
+        id: 7,
+        key: 'novels',
+        name: 'Novels',
+        lang: 'en',
+        isEnabled: 1,
+        isPinned: 0,
+      );
+      final book = v5.BooksData(
+        id: 1,
+        sourceId: 7,
+        key: 'a-novel',
+        title: 'A Novel',
+        kind: 'text',
+        genres: '[]',
+        inLibrary: 1,
+        detailsFetched: 1,
+        userOverrides: '[]',
+        createdAt: _at,
+        updatedAt: _at,
+      );
+      final chapter = v5.ChaptersData(
+        id: 1,
+        bookId: 1,
+        key: 'chapter-1',
+        title: 'Chapter One',
+        sourceIndex: 0,
+        isListened: 1,
+        lastPositionMs: 0,
+        removedFromSource: 0,
+        createdAt: _at,
+        updatedAt: _at,
+      );
+
+      await verifier.testWithDataIntegrity(
+        oldVersion: 5,
+        newVersion: 6,
+        createOld: v5.DatabaseAtV5.new,
+        createNew: v6.DatabaseAtV6.new,
+        openTestedDatabase: KikuyomiDatabase.new,
+        createItems: (batch, db) {
+          batch.insert(db.sources, source);
+          batch.insert(db.books, book);
+          batch.insert(db.chapters, chapter);
+        },
+        validateItems: (db) async {
+          final migrated = await db.select(db.chapters).getSingle();
+          expect(migrated.wordCount, null);
+          expect(migrated.title, 'Chapter One');
+          expect(migrated.isListened, 1);
+        },
+      );
+    },
+  );
 
   test("an upgraded library can hold a reader's place", () async {
     // Version 5's other half, used for real: a book to read, a chapter, and where the reader is in

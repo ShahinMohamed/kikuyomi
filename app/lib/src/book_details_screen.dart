@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:kikuyomi_domain/kikuyomi_domain.dart'
+    show defaultReadingWordsPerMinute;
 import 'package:kikuyomi_source_api/kikuyomi_source_api.dart' show SourceKind;
 import 'package:kikuyomi_data/kikuyomi_data.dart'
     show
@@ -88,6 +90,9 @@ class BookDetailsScreen extends ConsumerWidget {
                 downloads: downloads,
                 chapterDownloads: chapterDownloads,
                 canDownload: !reading,
+                wordsPerMinute:
+                    ref.watch(readingWordsPerMinuteProvider).value ??
+                    defaultReadingWordsPerMinute,
                 onDownload: reading ? null : () => _download(context, ref),
                 onStopDownloading: () => _stopDownloading(ref),
                 onPlayChapter: (chapterId) => reading

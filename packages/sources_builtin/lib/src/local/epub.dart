@@ -240,6 +240,17 @@ final class EpubBook {
     );
   }
 
+  /// How many words each chapter holds, by [EpubChapter.path].
+  ///
+  /// Counted from the markup with the tags taken out rather than by parsing each document, because
+  /// a long book is hundreds of documents and parsing them all is seconds of work for a figure
+  /// that only ever becomes "about twelve minutes". Script and style are dropped whole, since what
+  /// is inside them is not words anyone reads.
+  Map<String, int> wordCounts() => {
+    for (final chapter in chapters)
+      chapter.path: _countWords(_text(_archive, chapter.path)),
+  };
+
   /// The bytes of the file at [path] in the book, such as an image a chapter shows, or null if the
   /// book has no such file.
   Uint8List? resource(String path) => _fileOf(_archive, path)?.readBytes();
@@ -496,3 +507,31 @@ String _resolve(String directory, String href) {
 }
 
 String _collapse(String text) => text.replaceAll(RegExp(r'\s+'), ' ').trim();
+
+final _dropWhole = RegExp(
+  r'<(script|style)\b[^>]*>.*?</\1\s*>',
+  caseSensitive: false,
+  dotAll: true,
+);
+final _tag = RegExp(r'<[^>]*>', dotAll: true);
+final _entity = RegExp(r'&(#x?[0-9a-fA-F]+|[a-zA-Z]+);');
+final _words = RegExp(r"[\p{L}\p{N}][\p{L}\p{N}'’-]*", unicode: true);
+
+final _body = RegExp(
+  r'<body[^>]*>(.*)</body\s*>',
+  caseSensitive: false,
+  dotAll: true,
+);
+
+/// The words in [markup]: what is left once the tags are gone.
+///
+/// The head is left out, because a document's title is not a word anyone reads in the chapter.
+int _countWords(String markup) => _words
+    .allMatches(
+      (_body.firstMatch(markup)?.group(1) ?? markup)
+          .replaceAll(_dropWhole, ' ')
+          .replaceAll(_tag, ' ')
+          // An entity stands for one character, and a character is not a word boundary.
+          .replaceAll(_entity, 'x'),
+    )
+    .length;

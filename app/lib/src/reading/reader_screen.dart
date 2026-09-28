@@ -10,6 +10,7 @@ import '../providers.dart';
 import '../services.dart';
 import 'chapter_texts.dart';
 import 'reader_view.dart';
+import 'reading_time.dart';
 
 /// Reading a book (ADR-0019), a chapter at a time. Reached through `ReaderRoute`.
 ///
@@ -87,11 +88,27 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   void _open(int chapterId, {required double at}) {
     _saveSoon?.cancel();
     _saveNow();
+    final loading = _services.chapterTexts.load(widget.bookId, chapterId);
     setState(() {
       _chapterId = chapterId;
       _openAt = at;
-      _text = _services.chapterTexts.load(widget.bookId, chapterId);
+      _text = loading;
     });
+    // How long the chapter takes to read is worked out from its words, and a chapter from a source
+    // cannot be counted until its text has been fetched. This is that moment. A local EPUB was
+    // counted as it was added, and the write leaves a count that is already there alone.
+    unawaited(
+      loading
+          .then(
+            (text) => _services.saveChapterWords(
+              chapterId,
+              wordsIn(text.content.plainText),
+            ),
+          )
+          // A chapter that would not load is reported by the screen; failing to count its words is
+          // not worth a second complaint.
+          .catchError((Object _) {}),
+    );
     unawaited(
       _services.saveReadingPlace(
         bookId: widget.bookId,

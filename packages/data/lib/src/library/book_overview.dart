@@ -111,6 +111,7 @@ final class ChapterOverview {
     required this.durationMs,
     required this.listened,
     required this.current,
+    this.wordCount,
   });
 
   final int chapterId;
@@ -119,6 +120,10 @@ final class ChapterOverview {
   /// Worked out from the files where the chapter's layout is known, as the player's Timeline does;
   /// otherwise what the source said, or null.
   final int? durationMs;
+
+  /// How many words it holds, for a book to read, or null when they are not known yet (§4.3's
+  /// `chapter.word_count`). A chapter from a source is counted the first time it is read.
+  final int? wordCount;
 
   /// §4.5: the chapter is recorded as listened, by playback reaching its threshold or by hand.
   ///
@@ -322,6 +327,7 @@ Future<BookOverview?> _loadBookOverview(KikuyomiDatabase db, int bookId) async {
           chapterId: chapter.id,
           title: chapter.title,
           durationMs: durationOf(chapter),
+          wordCount: chapter.wordCount,
           listened: chapter.isListened,
           current: currentChapterId == chapter.id,
         ),
