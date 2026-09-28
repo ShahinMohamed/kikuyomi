@@ -27,6 +27,7 @@ final class FakeContentSource implements ContentSource {
     this.imageRequest,
     this.failure,
     this.delay,
+    this.bookFiles = const {},
   });
 
   @override
@@ -34,6 +35,9 @@ final class FakeContentSource implements ContentSource {
 
   /// What `getChapterContent` answers, by chapter key, for a text source.
   final Map<String, ChapterContent> texts;
+
+  /// What `resolveBook` answers, by book key, for a source whose books are one file (1.2).
+  final Map<String, BookFile> bookFiles;
 
   @override
   final Set<SourceCapability> capabilities;
@@ -136,6 +140,17 @@ final class FakeContentSource implements ContentSource {
     }
     return found;
   });
+
+  @override
+  Future<BookFile> resolveBook(String bookKey) =>
+      _answer('resolveBook($bookKey)', () {
+        if (!capabilities.contains(SourceCapability.bookFile)) {
+          throw UnsupportedError('this source has no book files');
+        }
+        final found = bookFiles[bookKey];
+        if (found == null) throw NotFoundException('no file for $bookKey');
+        return found;
+      });
 
   @override
   Future<ChapterContent> getChapterContent(ChapterRef chapter) =>

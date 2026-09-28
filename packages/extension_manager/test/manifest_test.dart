@@ -46,6 +46,8 @@ Matcher refuses(String field) => throwsA(
 );
 
 void main() {
+  _bookFileCapability();
+
   test('reads the manifest the architecture writes down', () {
     final manifest = read();
 
@@ -461,5 +463,55 @@ void main() {
         );
       },
     );
+  });
+}
+
+/// The `bookFile` capability (SourceAPI 1.2, ADR-0021).
+void _bookFileCapability() {
+  group('the bookFile capability (1.2)', () {
+    test('is read when the manifest targets 1.2', () {
+      final manifest = read(
+        changed: {
+          'apiVersion': '1.2',
+          'capabilities': ['bookFile'],
+        },
+      );
+
+      expect(
+        manifest.declaredCapabilities,
+        contains(SourceCapability.bookFile),
+      );
+    });
+
+    test('is refused when the manifest targets an older version', () {
+      // An app that ignored it would read the source as one whose chapters it can ask for, and
+      // find there are none to ask for. Requiring 1.2 keeps it away from that app entirely.
+      for (final older in ['1.0', '1.1']) {
+        expect(
+          () => read(
+            changed: {
+              'apiVersion': older,
+              'capabilities': ['bookFile'],
+            },
+          ),
+          refuses('capabilities'),
+          reason: older,
+        );
+      }
+    });
+
+    test('a capability this build does not know is still kept', () {
+      // §3.7: a later minor version may add one, and an older app ignores it rather than refusing
+      // the extension. bookFile is the exception, and the only one.
+      final manifest = read(
+        changed: {
+          'apiVersion': '1.2',
+          'capabilities': ['latest', 'somethingLater'],
+        },
+      );
+
+      expect(manifest.capabilities, contains('somethingLater'));
+      expect(manifest.declaredCapabilities, {SourceCapability.latest});
+    });
   });
 }

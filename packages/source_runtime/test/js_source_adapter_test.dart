@@ -28,6 +28,8 @@ Future<JsSourceAdapter> _adapter(
 }
 
 void main() {
+  _bookFiles();
+
   group('a text source (1.1)', () {
     test('passes both keys and reads the chapter into blocks', () async {
       var asked = <Object?>[];
@@ -386,6 +388,68 @@ void main() {
       expect(
         () => adapter.getChapters('b1'),
         throwsA(isA<NotFoundException>()),
+      );
+    });
+  });
+}
+
+/// A source whose books are one file (SourceAPI 1.2, ADR-0021).
+void _bookFiles() {
+  group('a source whose books are one file (1.2)', () {
+    test('declares the capability by having the method', () async {
+      final adapter = await _adapter({
+        'resolveBook': (_) => {
+          'request': {'url': 'https://example.org/a.epub'},
+        },
+      }, kind: SourceKind.text);
+
+      expect(adapter.capabilities, contains(SourceCapability.bookFile));
+    });
+
+    test('passes the book key and reads where the file is', () async {
+      var asked = <Object?>[];
+      final adapter = await _adapter({
+        'resolveBook': (args) {
+          asked = args;
+          return {
+            'request': {'url': 'https://example.org/leviathan.epub'},
+            'format': 'epub',
+            'sizeBytes': 480000,
+          };
+        },
+      }, kind: SourceKind.text);
+
+      final file = await adapter.resolveBook('leviathan');
+
+      expect(asked, ['leviathan']);
+      expect(file.request.url.toString(), 'https://example.org/leviathan.epub');
+      expect(file.format, BookFileFormat.epub);
+      expect(file.sizeBytes, 480000);
+    });
+
+    test('a source without the method is not asked for one', () async {
+      // Calling an optional method a source does not have is a programming error, not a failure of
+      // the source.
+      final adapter = await _adapter({}, kind: SourceKind.text);
+
+      expect(adapter.capabilities, isNot(contains(SourceCapability.bookFile)));
+      expect(
+        () => adapter.resolveBook('a-book'),
+        throwsA(isA<UnsupportedError>()),
+      );
+    });
+
+    test('an audio source has no book file, whatever it offers', () async {
+      // A book to listen to is not one file to read.
+      final adapter = await _adapter({
+        'resolveBook': (_) => {
+          'request': {'url': 'https://example.org/a.epub'},
+        },
+      });
+
+      expect(
+        () => adapter.resolveBook('a-book'),
+        throwsA(isA<UnsupportedError>()),
       );
     });
   });

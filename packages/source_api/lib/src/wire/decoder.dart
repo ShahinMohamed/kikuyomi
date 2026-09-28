@@ -17,6 +17,7 @@ import '../domains.dart';
 import '../errors.dart';
 import '../limits.dart';
 import '../models/book.dart';
+import '../models/book_file.dart';
 import '../models/chapter.dart';
 import '../models/http_request.dart';
 import '../models/media.dart';
@@ -230,6 +231,24 @@ final class PlainDataDecoder {
           _segment(segments[i], 'segments[$i]'),
       ],
       expiresAt: resolution.optionalTime('expiresAt'),
+    );
+  }
+
+  /// The result of `resolveBook` (1.2).
+  ///
+  /// A format this build does not know reads as [BookFileFormat.unknown] rather than as an EPUB,
+  /// so that a file this app cannot open is refused by whoever asked for it instead of being
+  /// opened as something it is not.
+  BookFile decodeBookFile(Object? data) {
+    final file = Fields.of(data, '');
+    final size = file.optionalAmount('sizeBytes');
+    return BookFile(
+      request: _request(file['request'], file.pathOf('request')),
+      format: switch (file.optionalName('format')) {
+        null || 'epub' => BookFileFormat.epub,
+        _ => BookFileFormat.unknown,
+      },
+      sizeBytes: size,
     );
   }
 

@@ -7,6 +7,7 @@ library;
 
 import 'errors.dart';
 import 'models/book.dart';
+import 'models/book_file.dart';
 import 'models/chapter.dart';
 import 'models/http_request.dart';
 import 'models/media.dart';
@@ -25,6 +26,14 @@ enum SourceCapability {
   /// [ContentSource.getImageRequest]: covers need headers or cookies. Without it, a cover is
   /// fetched with a plain GET of its URL.
   imageRequest,
+
+  /// [ContentSource.resolveBook]: the book is one file to download and read, rather than chapters
+  /// fetched one at a time (1.2, ADR-0021).
+  ///
+  /// Only a text source may declare it, and a manifest that does needs `apiVersion` 1.2 or later:
+  /// an older app would read the source as one whose chapters it could ask for, and find nothing
+  /// to ask for.
+  bookFile,
 }
 
 /// A source of books: what an extension's `Source` is to the app.
@@ -46,9 +55,10 @@ abstract interface class ContentSource {
   /// Whether this source offers books to listen to or books to read (1.1). Fixed for the life of the
   /// source.
   ///
-  /// It decides which of [resolveMedia] and [getChapterContent] the source has: an audio source has
-  /// only the first and a text source only the second. Calling the other is a programming error and
-  /// fails with [UnsupportedError], as calling an undeclared optional method does.
+  /// It decides which of [resolveMedia], [getChapterContent] and [resolveBook] the source has: an
+  /// audio source has only the first, and a text source has one of the other two. Calling one the
+  /// source does not have is a programming error and fails with [UnsupportedError], as calling an
+  /// undeclared optional method does.
   SourceKind get kind;
 
   /// The optional methods this source has. Fixed for the life of the source.
@@ -79,8 +89,17 @@ abstract interface class ContentSource {
     ResolveContext context,
   );
 
-  /// What [chapter] says (1.1). Only when [kind] is [SourceKind.text].
+  /// What [chapter] says (1.1). Only when [kind] is [SourceKind.text] and [capabilities] does not
+  /// have [SourceCapability.bookFile], whose books say what they hold themselves.
   Future<ChapterContent> getChapterContent(ChapterRef chapter);
+
+  /// The whole book with [bookKey], as one file to download and read (1.2, ADR-0021). Only when
+  /// [capabilities] has [SourceCapability.bookFile].
+  ///
+  /// [getChapters] is not called for such a source: the chapters are the ones inside the file, and
+  /// a list from the source that disagreed with it would be a list whose entries could not be
+  /// opened.
+  Future<BookFile> resolveBook(String bookKey);
 
   /// How to fetch the cover at [url], with the headers or cookies it needs. Only when
   /// [capabilities] has [SourceCapability.imageRequest].

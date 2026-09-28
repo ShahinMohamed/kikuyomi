@@ -449,6 +449,43 @@ there is nothing to gain from sanitising: it is done for you, and it is not opti
 
 An empty chapter is `{ html: '' }`, not an error. Throw `NotFound` for a chapter that is gone.
 
+### `resolveBook(bookKey)` — a book that is one file (1.2)
+
+Most free-ebook sites publish a book as one EPUB and nothing else: a page about the book, a download
+link, and no per-chapter text anywhere. There is nothing for `getChapterContent` to fetch. Such a
+source says where the file is instead, and the app reads it with the same reader it uses for a book
+added from the device.
+
+Declare it in the manifest, and target 1.2 — `bookFile` is refused in an older manifest, because an
+app that ignored it would read your source as one whose chapters it can ask for and find none:
+
+```json
+{
+  "apiVersion": "1.2",
+  "capabilities": ["bookFile"],
+  "sources": [{ "key": "novels", "name": "Novels", "lang": "en", "versionId": 1, "kind": "text" }]
+}
+```
+
+```ts
+async resolveBook(bookKey) {
+  return {
+    request: { url: `https://example.org/books/${bookKey}.epub` },
+    format: 'epub',       // the only one so far; left out means the same
+    sizeBytes: 482113     // optional, so the size can be shown before the download
+  }
+}
+```
+
+- Only a **text** source may declare it, and such a source implements `resolveBook` **instead of**
+  `getChapterContent`, not as well.
+- **`getChapters` is not called for your source.** The chapters are the ones inside the file, read
+  from its spine, so a list of your own would be a list whose entries could not be opened. You still
+  implement `getBookDetails`, and the title, author, cover and description come from you.
+- The URL is held to your `domains` like every other one you hand over.
+- A book locked with DRM is refused when the file is read, the same way a locked file added from the
+  device is. There is no way in through this door either.
+
 ### `Filter[]` — the search controls, if you declare `filters`
 
 ```ts

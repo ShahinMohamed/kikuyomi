@@ -184,7 +184,7 @@ final class ExtensionManifest {
       author: _text(data, 'author', required: false),
       contentRating: _contentRating(data),
       domains: _domains(data),
-      capabilities: _capabilities(data),
+      capabilities: _capabilities(data, _apiVersion(data)),
       sources: _sources(data, apiVersion: _apiVersion(data)),
       files: _files(data),
     );
@@ -234,6 +234,7 @@ final class ExtensionManifest {
     if (capabilities.contains('latest')) SourceCapability.latest,
     if (capabilities.contains('filters')) SourceCapability.filters,
     if (capabilities.contains('imageRequest')) SourceCapability.imageRequest,
+    if (capabilities.contains('bookFile')) SourceCapability.bookFile,
   };
 
   /// Whether this app's contract version can run this extension (§3.7).
@@ -369,7 +370,17 @@ final class ExtensionManifest {
     }
   }
 
-  static Set<String> _capabilities(Map<String, Object?> data) {
+  /// The optional things an extension says it does.
+  ///
+  /// A name this build does not know is kept rather than refused: §3.7 makes a capability a later
+  /// minor version adds something an older app may ignore. `bookFile` is the exception, and for
+  /// `kind: "text"`'s reason — an app that ignored it would read the source as one whose chapters
+  /// it can ask for, and find there are none to ask for. So it is refused unless the manifest
+  /// targets the version that has it.
+  static Set<String> _capabilities(
+    Map<String, Object?> data,
+    ApiVersion apiVersion,
+  ) {
     final value = data['capabilities'];
     if (value == null) return const {};
     if (value is! List) {
@@ -385,6 +396,12 @@ final class ExtensionManifest {
         );
       }
       names.add(entry.trim());
+    }
+    if (names.contains('bookFile') && apiVersion < const ApiVersion(1, 2)) {
+      throw ManifestException(
+        'capabilities: "bookFile" needs apiVersion "1.2" or later, and this '
+        'manifest targets "$apiVersion"',
+      );
     }
     return Set.unmodifiable(names);
   }

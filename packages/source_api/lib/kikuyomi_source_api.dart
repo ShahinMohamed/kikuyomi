@@ -17,6 +17,7 @@ export 'src/domains.dart';
 export 'src/errors.dart';
 export 'src/limits.dart';
 export 'src/models/book.dart';
+export 'src/models/book_file.dart';
 export 'src/models/chapter.dart';
 export 'src/models/http_request.dart';
 export 'src/models/media.dart';

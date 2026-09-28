@@ -75,6 +75,9 @@ final class JsSourceAdapter implements ContentSource {
     if (await runtime.hasMethod(sourceKey, 'getImageRequest')) {
       capabilities.add(SourceCapability.imageRequest);
     }
+    if (await runtime.hasMethod(sourceKey, 'resolveBook')) {
+      capabilities.add(SourceCapability.bookFile);
+    }
     return JsSourceAdapter(
       runtime: runtime,
       sourceKey: sourceKey,
@@ -139,6 +142,15 @@ final class JsSourceAdapter implements ContentSource {
         encodeChapterRef(chapter),
         encodeResolveContext(context),
       ]),
+    );
+  }
+
+  @override
+  Future<BookFile> resolveBook(String bookKey) async {
+    _requireKind(SourceKind.text, 'resolveBook');
+    _require(SourceCapability.bookFile, 'resolveBook');
+    return _runtime.decoder.decodeBookFile(
+      await _invoke('resolveBook', [bookKey]),
     );
   }
 
