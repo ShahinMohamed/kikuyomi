@@ -395,6 +395,15 @@ const Book$json = {
       '6': '.kikuyomi.backup.ReadingSession',
       '10': 'readingSessions'
     },
+    {
+      '1': 'chapters_reversed',
+      '3': 37,
+      '4': 1,
+      '5': 8,
+      '9': 17,
+      '10': 'chaptersReversed',
+      '17': true
+    },
   ],
   '8': [
     {'1': '_subtitle'},
@@ -414,6 +423,7 @@ const Book$json = {
     {'1': '_date_added_at_ms'},
     {'1': '_last_refreshed_at_ms'},
     {'1': '_playback_speed'},
+    {'1': '_chapters_reversed'},
   ],
 };
 
@@ -446,12 +456,14 @@ final $typed_data.Uint8List bookDescriptor = $convert.base64Decode(
     'b3JpZXMYISADKAlSCmNhdGVnb3JpZXMSLQoEa2luZBgiIAEoDjIZLmtpa3V5b21pLmJhY2t1cC'
     '5Cb29rS2luZFIEa2luZBJCCg1yZWFkaW5nX3N0YXRlGCMgASgLMh0ua2lrdXlvbWkuYmFja3Vw'
     'LlJlYWRpbmdTdGF0ZVIMcmVhZGluZ1N0YXRlEkoKEHJlYWRpbmdfc2Vzc2lvbnMYJCADKAsyHy'
-    '5raWt1eW9taS5iYWNrdXAuUmVhZGluZ1Nlc3Npb25SD3JlYWRpbmdTZXNzaW9uc0ILCglfc3Vi'
-    'dGl0bGVCDgoMX2Rlc2NyaXB0aW9uQgwKCl9jb3Zlcl91cmxCDgoMX3Nlcmllc19uYW1lQg8KDV'
-    '9zZXJpZXNfaW5kZXhCCwoJX2xhbmd1YWdlQgwKCl9wdWJsaXNoZXJCEQoPX3B1Ymxpc2hlZF9k'
-    'YXRlQgcKBV9pc2JuQgsKCV9hYnJpZGdlZEIJCgdfc3RhdHVzQhEKD19jb250ZW50X3JhdGluZ0'
-    'IUChJfdG90YWxfZHVyYXRpb25fbXNCCgoIX3dlYl91cmxCEwoRX2RhdGVfYWRkZWRfYXRfbXNC'
-    'FwoVX2xhc3RfcmVmcmVzaGVkX2F0X21zQhEKD19wbGF5YmFja19zcGVlZA==');
+    '5raWt1eW9taS5iYWNrdXAuUmVhZGluZ1Nlc3Npb25SD3JlYWRpbmdTZXNzaW9ucxIwChFjaGFw'
+    'dGVyc19yZXZlcnNlZBglIAEoCEgRUhBjaGFwdGVyc1JldmVyc2VkiAEBQgsKCV9zdWJ0aXRsZU'
+    'IOCgxfZGVzY3JpcHRpb25CDAoKX2NvdmVyX3VybEIOCgxfc2VyaWVzX25hbWVCDwoNX3Nlcmll'
+    'c19pbmRleEILCglfbGFuZ3VhZ2VCDAoKX3B1Ymxpc2hlckIRCg9fcHVibGlzaGVkX2RhdGVCBw'
+    'oFX2lzYm5CCwoJX2FicmlkZ2VkQgkKB19zdGF0dXNCEQoPX2NvbnRlbnRfcmF0aW5nQhQKEl90'
+    'b3RhbF9kdXJhdGlvbl9tc0IKCghfd2ViX3VybEITChFfZGF0ZV9hZGRlZF9hdF9tc0IXChVfbG'
+    'FzdF9yZWZyZXNoZWRfYXRfbXNCEQoPX3BsYXliYWNrX3NwZWVkQhQKEl9jaGFwdGVyc19yZXZl'
+    'cnNlZA==');
 
 @$core.Deprecated('Use contributorDescriptor instead')
 const Contributor$json = {

@@ -107,6 +107,17 @@ Future<void> saveChapterWordCount(
       .write(ChaptersCompanion(wordCount: Value(words)));
 }
 
+/// Shows book [bookId]'s chapters last first, or with false in reading order.
+Future<void> setChaptersReversed(
+  KikuyomiDatabase db,
+  int bookId, {
+  required bool reversed,
+}) async {
+  await (db.update(db.books)..where((b) => b.id.equals(bookId))).write(
+    BooksCompanion(chaptersReversed: Value(reversed)),
+  );
+}
+
 /// Where the reader of [bookId] is, watched: null until it is first opened.
 Stream<ReadingStateRow?> watchReadingPosition(
   KikuyomiDatabase db,

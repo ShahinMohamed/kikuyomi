@@ -232,6 +232,10 @@ BookMerge _mergeBook({
     addToLibrary: addToLibrary,
     dateAdded: addToLibrary ? backedUp.dateAdded ?? here.dateAdded : null,
     playbackSpeed: here.playbackSpeed == null ? backedUp.playbackSpeed : null,
+    // Like a remembered speed: a choice made here wins, and one never made takes the backup's.
+    chaptersReversed: here.chaptersReversed == null
+        ? backedUp.chaptersReversed
+        : null,
     newFiles: List.unmodifiable(newFiles),
     newChapters: List.unmodifiable(newChapters),
     chapterProgress: List.unmodifiable(chapterProgress),

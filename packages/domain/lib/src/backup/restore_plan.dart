@@ -75,6 +75,7 @@ final class BookMerge {
     this.addToLibrary = false,
     this.dateAdded,
     this.playbackSpeed,
+    this.chaptersReversed,
     this.newFiles = const [],
     this.newChapters = const [],
     this.chapterProgress = const [],
@@ -99,6 +100,9 @@ final class BookMerge {
 
   /// A speed for a book with none remembered, or null to leave the book's speed alone.
   final double? playbackSpeed;
+
+  /// A chapter order for a book whose reader never chose one, or null to leave it alone.
+  final bool? chaptersReversed;
 
   /// The book's new `updatedAt`, for when [changesBook] is true.
   final DateTime updatedAt;
@@ -128,7 +132,10 @@ final class BookMerge {
 
   /// Whether the book's own row changes, rather than only what hangs off it.
   bool get changesBook =>
-      edits != null || addToLibrary || playbackSpeed != null;
+      edits != null ||
+      addToLibrary ||
+      playbackSpeed != null ||
+      chaptersReversed != null;
 
   /// True when nothing about the book changes.
   bool get isEmpty =>

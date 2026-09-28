@@ -92,6 +92,7 @@ Future<Iterable<int>> _insertBook(
           detailsFetched: Value(book.detailsFetched),
           playbackSpeed: Value(book.playbackSpeed),
           kind: Value(book.kind),
+          chaptersReversed: Value(book.chaptersReversed),
           createdAt: Value(book.createdAt),
           updatedAt: Value(book.updatedAt),
         ),
@@ -142,6 +143,9 @@ Future<Set<int>> _mergeBook(
     }
     if (merge.playbackSpeed case final speed?) {
       row = row.copyWith(playbackSpeed: Value(speed));
+    }
+    if (merge.chaptersReversed case final reversed?) {
+      row = row.copyWith(chaptersReversed: Value(reversed));
     }
     await (db.update(db.books)..where((b) => b.id.equals(book.id))).write(row);
   }

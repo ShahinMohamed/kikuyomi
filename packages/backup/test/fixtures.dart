@@ -71,6 +71,7 @@ LibrarySnapshot fullLibrary() => LibrarySnapshot(
       lastRefreshedAt: at(3),
       detailsFetched: true,
       playbackSpeed: 1.25,
+      chaptersReversed: true,
       // Text, because audio is the format's default and would not show up as written. A book to
       // read has no use for playback progress, but the format has no rule against both, and this
       // library's job is to fill every field.

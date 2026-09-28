@@ -14,6 +14,8 @@ import 'package:kikuyomi_test_support/kikuyomi_test_support.dart';
 import 'package:test/test.dart';
 
 void main() {
+  _chapterOrder();
+
   late KikuyomiDatabase db;
   late FakeClock clock;
 
@@ -286,6 +288,100 @@ void main() {
 
       final shelf = await watchContinueReading(db).first;
       expect([for (final c in shelf) c.bookId], [second, first]);
+    });
+  });
+}
+
+/// Which end of a book's chapter list is the top (version 9).
+void _chapterOrder() {
+  late KikuyomiDatabase db;
+  final at = DateTime.utc(2026, 9, 28);
+
+  setUp(() async {
+    db = KikuyomiDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    await db
+        .into(db.sources)
+        .insert(
+          const SourcesCompanion(
+            id: Value(9),
+            key: Value('novels'),
+            name: Value('Novels'),
+            lang: Value('en'),
+          ),
+        );
+  });
+
+  Future<int> addNovel() => db
+      .into(db.books)
+      .insert(
+        BooksCompanion.insert(
+          sourceId: 9,
+          key: 'a-novel',
+          title: 'A Novel',
+          kind: const Value(SourceKind.text),
+          inLibrary: const Value(true),
+          createdAt: at,
+          updatedAt: at,
+        ),
+      );
+
+  group('the order a chapter list is read in', () {
+    test('is reading order until someone chooses otherwise', () async {
+      final book = await addNovel();
+
+      final row = await (db.select(
+        db.books,
+      )..where((b) => b.id.equals(book))).getSingle();
+      expect(row.chaptersReversed, null, reason: 'nobody has chosen');
+      expect(
+        (await watchBookOverview(db, book).first)!.chaptersReversed,
+        isFalse,
+      );
+    });
+
+    test('is remembered for that book, and can be put back', () async {
+      // Per book: a four-hundred-chapter serial is easiest from the newest end, and a novel is not.
+      final book = await addNovel();
+
+      await setChaptersReversed(db, book, reversed: true);
+      expect(
+        (await watchBookOverview(db, book).first)!.chaptersReversed,
+        isTrue,
+      );
+
+      await setChaptersReversed(db, book, reversed: false);
+      expect(
+        (await watchBookOverview(db, book).first)!.chaptersReversed,
+        isFalse,
+      );
+      final row = await (db.select(
+        db.books,
+      )..where((b) => b.id.equals(book))).getSingle();
+      expect(row.chaptersReversed, isFalse, reason: 'chosen, not merely unset');
+    });
+
+    test('is one book\'s own', () async {
+      final mine = await addNovel();
+      final other = await db
+          .into(db.books)
+          .insert(
+            BooksCompanion.insert(
+              sourceId: 9,
+              key: 'another',
+              title: 'Another',
+              kind: const Value(SourceKind.text),
+              createdAt: at,
+              updatedAt: at,
+            ),
+          );
+
+      await setChaptersReversed(db, mine, reversed: true);
+
+      expect(
+        (await watchBookOverview(db, other).first)!.chaptersReversed,
+        isFalse,
+      );
     });
   });
 }

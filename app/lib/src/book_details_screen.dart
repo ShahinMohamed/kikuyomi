@@ -8,6 +8,7 @@ import 'package:kikuyomi_source_api/kikuyomi_source_api.dart' show SourceKind;
 import 'package:kikuyomi_data/kikuyomi_data.dart'
     show
         BookOverview,
+        setChaptersReversed,
         readBookCategories,
         removeBookFromLibrary,
         setBookCategories,
@@ -108,6 +109,13 @@ class BookDetailsScreen extends ConsumerWidget {
                     ? null
                     : (chapterIds) =>
                           _downloadChapters(context, ref, chapterIds),
+                onReverseChapters: reading
+                    ? () => setChaptersReversed(
+                        ref.read(servicesProvider).database,
+                        bookId,
+                        reversed: !book.chaptersReversed,
+                      )
+                    : null,
                 onRefresh: book.canRefresh
                     ? () => _refresh(context, ref)
                     : null,

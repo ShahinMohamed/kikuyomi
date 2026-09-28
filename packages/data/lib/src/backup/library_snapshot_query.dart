@@ -179,6 +179,7 @@ Future<LibrarySnapshot> readLibrarySnapshot(KikuyomiDatabase db) async {
       detailsFetched: book.detailsFetched,
       playbackSpeed: book.playbackSpeed,
       kind: book.kind,
+      chaptersReversed: book.chaptersReversed,
       createdAt: book.createdAt,
       updatedAt: book.updatedAt,
       mediaFiles: [

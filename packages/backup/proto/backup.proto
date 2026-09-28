@@ -63,6 +63,9 @@ message Backup {
   //    for books that were listened to. Additive: a version 3 reader skips them and restores
   //    everything else, losing only reading history, which it has nowhere to put anyway, so
   //    `min_reader_version` is unchanged.
+  // 5: `Book.chapters_reversed`, which end of a book's chapter list the reader put at the top.
+  //    Additive: a version 4 reader skips it and the list stays in reading order, which is what it
+  //    would have shown anyway, so `min_reader_version` is unchanged.
   uint32 format_version = 1;
 
   // The oldest format version a reader can implement and still restore this backup correctly.
@@ -176,6 +179,10 @@ message Book {
 
   // Stretches of reading, for History (format version 4).
   repeated ReadingSession reading_sessions = 36;
+
+  // Whether the chapter list is shown last chapter first (format version 5). Absent for a book
+  // whose reader never chose, which is not the same as one who chose reading order.
+  optional bool chapters_reversed = 37;
 }
 
 enum BookKind {

@@ -37,7 +37,7 @@ class KikuyomiDatabase extends _$KikuyomiDatabase {
   KikuyomiDatabase(super.executor);
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -73,6 +73,11 @@ class KikuyomiDatabase extends _$KikuyomiDatabase {
         await m.addColumn(schema.books, schema.books.kind);
         await m.createTable(schema.readingStates);
         await m.createIndex(schema.readingStatesRecent);
+      },
+      // Version 9: which end of a book's chapter list is the top. Nobody has chosen yet, so the
+      // column arrives null everywhere and every list stays in reading order.
+      from8To9: (m, schema) async {
+        await m.addColumn(schema.books, schema.books.chaptersReversed);
       },
       // Version 8: a book that is one file (ADR-0021). Every book to read added from this device
       // already had one — its key is the path — so the column is filled in from that, which leaves
