@@ -7,6 +7,7 @@ import 'package:kikuyomi_source_api/kikuyomi_source_api.dart' show SourceKind;
 import '../app_shell.dart';
 import '../book_files.dart';
 import '../home_view.dart';
+import '../library/category_bar.dart';
 import '../library/library_shelf.dart';
 import '../providers.dart';
 import '../routes.dart';
@@ -35,6 +36,10 @@ class ReadingScreen extends ConsumerStatefulWidget {
 class _ReadingScreenState extends ConsumerState<ReadingScreen> {
   final _search = TextEditingController();
   var _searching = false;
+
+  /// The category being shown, or null for all of them. Kept in memory for the Listen tab's
+  /// reason: which shelf you were last on is a place in a session, not a preference.
+  int? _category;
 
   @override
   void dispose() {
@@ -88,18 +93,46 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
         label: const Text('Add ebook'),
       ),
       body: shelf.when(
-        data: (books) => HomeView(
-          continueReading: ref.watch(continueReadingProvider).value ?? const [],
-          library: arrangeLibrary(books, query: _search.text, sort: sort),
-          searchQuery: _search.text,
-          covers: services.covers,
-          emptyMessage: services.locations.importFolderIsVisible
-              ? 'No books to read yet. Add an EPUB, or copy one into the Import '
-                    'folder under Kikuyomi in the Files app.'
-              : 'No books to read yet. Add an EPUB to start reading.',
-          onResume: (bookId) => ReaderRoute(bookId: bookId).push<void>(context),
-          onShowDetails: (bookId) =>
-              BookRoute(bookId: bookId).push<void>(context),
+        data: (books) => Column(
+          children: [
+            CategoryBar(
+              categories: ref.watch(categoriesProvider).value ?? const [],
+              counts:
+                  ref
+                      .watch(categoryCountsByKindProvider(SourceKind.text))
+                      .value ??
+                  const {},
+              selected: _category,
+              onSelected: (id) => setState(() => _category = id),
+            ),
+            Expanded(
+              child: HomeView(
+                continueReading:
+                    ref.watch(continueReadingProvider).value ?? const [],
+                library: arrangeLibrary(
+                  books,
+                  query: _search.text,
+                  sort: sort,
+                  // A category with nothing of this kind in it reads as an empty set rather than
+                  // as no filter, so an empty shelf says so instead of showing every book.
+                  onlyBookIds: _category == null
+                      ? null
+                      : ref.watch(booksInCategoryProvider(_category!)).value ??
+                            const <int>{},
+                ),
+                searchQuery: _search.text,
+                covers: services.covers,
+                emptyMessage: services.locations.importFolderIsVisible
+                    ? 'No books to read yet. Add an EPUB, or copy one into the Import '
+                          'folder under Kikuyomi in the Files app.'
+                    : 'No books to read yet. Add an EPUB to start reading.',
+                onResume: (bookId) =>
+                    ReaderRoute(bookId: bookId).push<void>(context),
+                onShowDetails: (bookId) =>
+                    BookRoute(bookId: bookId).push<void>(context),
+              ),
+            ),
+          ],
         ),
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) =>

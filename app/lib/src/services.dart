@@ -297,6 +297,10 @@ final class AppServices {
     openSource: openSource,
   );
 
+  /// Records how many words chapter [chapterId] holds, the first time its text is fetched.
+  Future<void> saveChapterWords(int chapterId, int words) =>
+      saveChapterWordCount(database, chapterId, words);
+
   /// Records that the reader of [bookId] is [progress] of the way through [chapterId].
   Future<void> saveReadingPlace({
     required int bookId,

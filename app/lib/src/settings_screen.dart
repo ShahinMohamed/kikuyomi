@@ -7,9 +7,10 @@ import 'backup_actions.dart';
 import 'backup_settings_view.dart';
 import 'backup_text.dart';
 import 'providers.dart';
+import 'reading/reading_settings_section.dart';
 import 'routes.dart';
 
-/// Settings, reached from the home's app bar through [SettingsRoute]. So far it holds only backups.
+/// Settings, reached from More through [SettingsRoute]: backups, and how fast you read.
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
@@ -64,6 +65,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             chooseBackupFolder(context, ref, backUpAfter: !libraryIsEmpty),
         onBackUpNow: _backUpNow,
         onRestore: () => const RestoreRoute().push<void>(context),
+        sections: [
+          ReadingSettingsSection(
+            wordsPerMinute:
+                ref.watch(readingWordsPerMinuteProvider).value ??
+                defaultReadingWordsPerMinute,
+            onChanged: (rate) => ref
+                .read(servicesProvider)
+                .settings
+                .write(AppSettings.readingWordsPerMinute, rate),
+          ),
+        ],
       ),
     );
   }

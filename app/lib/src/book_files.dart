@@ -190,6 +190,9 @@ bool isEpubPath(String path) => _extension(path) == 'epub';
 /// [EpubFormatException] for a file that is not an EPUB this app can read.
 Future<LocalEpubImport> readEpubFile(File file) => Isolate.run(() async {
   final book = EpubBook.read(await file.readAsBytes());
+  // Counted here, in the isolate that already has the book open, so that a chapter list can say
+  // how long each chapter takes from the moment the book is added.
+  final words = book.wordCounts();
   return LocalEpubImport(
     path: file.path,
     title: book.title,
@@ -199,7 +202,11 @@ Future<LocalEpubImport> readEpubFile(File file) => Isolate.run(() async {
     publisher: book.publisher,
     chapters: [
       for (final chapter in book.chapters)
-        LocalEpubChapter(key: chapter.path, title: chapter.title),
+        LocalEpubChapter(
+          key: chapter.path,
+          title: chapter.title,
+          wordCount: words[chapter.path],
+        ),
     ],
     cover: switch (book.cover) {
       final picture? => CoverImage(

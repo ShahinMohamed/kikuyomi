@@ -54,6 +54,7 @@ class BackupSettingsView extends StatelessWidget {
     required this.onChooseFolder,
     required this.onBackUpNow,
     required this.onRestore,
+    this.sections = const [],
   });
 
   final BackupFolderState folder;
@@ -76,6 +77,10 @@ class BackupSettingsView extends StatelessWidget {
 
   /// Called once the listener has confirmed they want to restore, where confirming is needed.
   final VoidCallback onRestore;
+
+  /// What Settings holds besides backups, shown under it. The screen owns one scrolling list, and
+  /// this is how the rest of it gets in without every section having to know about the others.
+  final List<Widget> sections;
 
   @override
   Widget build(BuildContext context) {
@@ -170,6 +175,7 @@ class BackupSettingsView extends StatelessWidget {
             ),
           ),
         ],
+        ...sections,
       ],
     );
   }

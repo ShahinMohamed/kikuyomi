@@ -99,6 +99,10 @@ void main() {
               coverUpdatedAt: Value(null),
             ),
           );
+      // Nor a chapter's word count, which is counted from the text again when it is read.
+      await original
+          .update(original.chapters)
+          .write(const ChaptersCompanion(wordCount: Value(null)));
       expect(await dumpLibrary(restored), await dumpLibrary(original));
     });
 

@@ -11,6 +11,14 @@ enum BackupSetup {
   skipped,
 }
 
+/// How fast an adult reads to themselves, in words a minute.
+///
+/// 250. Brysbaert's 2019 review of a century of reading studies puts silent reading at about 238
+/// words a minute for non-fiction and 260 for fiction; a round number between them is as honest as
+/// this gets for someone who has not said what theirs is, which is why the figure beside a chapter
+/// says "about".
+const defaultReadingWordsPerMinute = 250;
+
 /// Every setting the app keeps, in one place, as §4.3 asks.
 ///
 /// §4.3 also says that preferences which should survive a restore are included in backups
@@ -140,6 +148,18 @@ abstract final class AppSettings {
     decode: _decodeScale,
   );
 
+  /// How fast the reader reads, in words a minute, for the time shown beside a chapter of a book
+  /// to read. Zero means they would rather not be told.
+  ///
+  /// Not set until it is chosen, and then [defaultReadingWordsPerMinute] is used. A stored value
+  /// outside what a person could actually read is ignored, which is also what lets a build that
+  /// stored something else under the key be read by this one.
+  static const readingWordsPerMinute = Setting<int>(
+    'reader.wordsPerMinute',
+    encode: _encodeCount,
+    decode: _decodeWordsPerMinute,
+  );
+
   /// The order the tabs of the shell are shown in, by name, or not set for the order the app
   /// declares them in.
   ///
@@ -174,6 +194,7 @@ abstract final class AppSettings {
     listenedBackfilled,
     readerTextScale,
     tabOrder,
+    readingWordsPerMinute,
   ];
 }
 
@@ -214,6 +235,19 @@ BackupSetup? _decodeSetup(String stored) =>
 String _encodeSort(LibrarySort sort) => sort.name;
 
 String _encodeNumber(double value) => '$value';
+
+String _encodeCount(int value) => '$value';
+
+/// A reading pace, or null for anything that is not one.
+///
+/// Zero is kept: it is how "do not tell me" is stored, and it has to be told apart from not set.
+/// The upper bound is well past the fastest anyone reads with understanding, and the lower bound
+/// past the slowest; either way, a figure outside them would put nonsense beside every chapter.
+int? _decodeWordsPerMinute(String stored) => switch (int.tryParse(stored)) {
+  0 => 0,
+  final rate? when rate >= 50 && rate <= 2000 => rate,
+  _ => null,
+};
 
 String _encodeNames(List<String> names) => names.join(',');
 

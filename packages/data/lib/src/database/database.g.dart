@@ -2829,6 +2829,17 @@ class $ChaptersTable extends Chapters
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _wordCountMeta = const VerificationMeta(
+    'wordCount',
+  );
+  @override
+  late final GeneratedColumn<int> wordCount = GeneratedColumn<int>(
+    'word_count',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _publishedAtMeta = const VerificationMeta(
     'publishedAt',
   );
@@ -2924,6 +2935,7 @@ class $ChaptersTable extends Chapters
     sourceIndex,
     groupName,
     durationMs,
+    wordCount,
     publishedAt,
     isListened,
     listenedAt,
@@ -2992,6 +3004,12 @@ class $ChaptersTable extends Chapters
       context.handle(
         _durationMsMeta,
         durationMs.isAcceptableOrUnknown(data['duration_ms']!, _durationMsMeta),
+      );
+    }
+    if (data.containsKey('word_count')) {
+      context.handle(
+        _wordCountMeta,
+        wordCount.isAcceptableOrUnknown(data['word_count']!, _wordCountMeta),
       );
     }
     if (data.containsKey('published_at')) {
@@ -3090,6 +3108,10 @@ class $ChaptersTable extends Chapters
         DriftSqlType.int,
         data['${effectivePrefix}duration_ms'],
       ),
+      wordCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}word_count'],
+      ),
       publishedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}published_at'],
@@ -3135,6 +3157,18 @@ class ChapterRow extends DataClass implements Insertable<ChapterRow> {
   final int sourceIndex;
   final String? groupName;
   final int? durationMs;
+
+  /// How many words the chapter holds, for a book to read (version 6, ADR-0019).
+  ///
+  /// An audiobook chapter says how long it is in minutes because its length is a fact about the
+  /// recording. A chapter of text has no length in minutes of its own — it has a length in words,
+  /// and how long that takes is the reader's own pace. So the words are stored and the minutes are
+  /// worked out for whoever is reading.
+  ///
+  /// Null until it is known. A local EPUB's chapters are counted as the book is added; a chapter
+  /// from a source cannot be counted until its text has been fetched, so it is counted the first
+  /// time it is read. Derived from the text either way, which is why a backup does not carry it.
+  final int? wordCount;
   final DateTime? publishedAt;
   final bool isListened;
   final DateTime? listenedAt;
@@ -3155,6 +3189,7 @@ class ChapterRow extends DataClass implements Insertable<ChapterRow> {
     required this.sourceIndex,
     this.groupName,
     this.durationMs,
+    this.wordCount,
     this.publishedAt,
     required this.isListened,
     this.listenedAt,
@@ -3176,6 +3211,9 @@ class ChapterRow extends DataClass implements Insertable<ChapterRow> {
     }
     if (!nullToAbsent || durationMs != null) {
       map['duration_ms'] = Variable<int>(durationMs);
+    }
+    if (!nullToAbsent || wordCount != null) {
+      map['word_count'] = Variable<int>(wordCount);
     }
     if (!nullToAbsent || publishedAt != null) {
       map['published_at'] = Variable<DateTime>(publishedAt);
@@ -3204,6 +3242,9 @@ class ChapterRow extends DataClass implements Insertable<ChapterRow> {
       durationMs: durationMs == null && nullToAbsent
           ? const Value.absent()
           : Value(durationMs),
+      wordCount: wordCount == null && nullToAbsent
+          ? const Value.absent()
+          : Value(wordCount),
       publishedAt: publishedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(publishedAt),
@@ -3231,6 +3272,7 @@ class ChapterRow extends DataClass implements Insertable<ChapterRow> {
       sourceIndex: serializer.fromJson<int>(json['sourceIndex']),
       groupName: serializer.fromJson<String?>(json['groupName']),
       durationMs: serializer.fromJson<int?>(json['durationMs']),
+      wordCount: serializer.fromJson<int?>(json['wordCount']),
       publishedAt: serializer.fromJson<DateTime?>(json['publishedAt']),
       isListened: serializer.fromJson<bool>(json['isListened']),
       listenedAt: serializer.fromJson<DateTime?>(json['listenedAt']),
@@ -3251,6 +3293,7 @@ class ChapterRow extends DataClass implements Insertable<ChapterRow> {
       'sourceIndex': serializer.toJson<int>(sourceIndex),
       'groupName': serializer.toJson<String?>(groupName),
       'durationMs': serializer.toJson<int?>(durationMs),
+      'wordCount': serializer.toJson<int?>(wordCount),
       'publishedAt': serializer.toJson<DateTime?>(publishedAt),
       'isListened': serializer.toJson<bool>(isListened),
       'listenedAt': serializer.toJson<DateTime?>(listenedAt),
@@ -3269,6 +3312,7 @@ class ChapterRow extends DataClass implements Insertable<ChapterRow> {
     int? sourceIndex,
     Value<String?> groupName = const Value.absent(),
     Value<int?> durationMs = const Value.absent(),
+    Value<int?> wordCount = const Value.absent(),
     Value<DateTime?> publishedAt = const Value.absent(),
     bool? isListened,
     Value<DateTime?> listenedAt = const Value.absent(),
@@ -3284,6 +3328,7 @@ class ChapterRow extends DataClass implements Insertable<ChapterRow> {
     sourceIndex: sourceIndex ?? this.sourceIndex,
     groupName: groupName.present ? groupName.value : this.groupName,
     durationMs: durationMs.present ? durationMs.value : this.durationMs,
+    wordCount: wordCount.present ? wordCount.value : this.wordCount,
     publishedAt: publishedAt.present ? publishedAt.value : this.publishedAt,
     isListened: isListened ?? this.isListened,
     listenedAt: listenedAt.present ? listenedAt.value : this.listenedAt,
@@ -3305,6 +3350,7 @@ class ChapterRow extends DataClass implements Insertable<ChapterRow> {
       durationMs: data.durationMs.present
           ? data.durationMs.value
           : this.durationMs,
+      wordCount: data.wordCount.present ? data.wordCount.value : this.wordCount,
       publishedAt: data.publishedAt.present
           ? data.publishedAt.value
           : this.publishedAt,
@@ -3335,6 +3381,7 @@ class ChapterRow extends DataClass implements Insertable<ChapterRow> {
           ..write('sourceIndex: $sourceIndex, ')
           ..write('groupName: $groupName, ')
           ..write('durationMs: $durationMs, ')
+          ..write('wordCount: $wordCount, ')
           ..write('publishedAt: $publishedAt, ')
           ..write('isListened: $isListened, ')
           ..write('listenedAt: $listenedAt, ')
@@ -3355,6 +3402,7 @@ class ChapterRow extends DataClass implements Insertable<ChapterRow> {
     sourceIndex,
     groupName,
     durationMs,
+    wordCount,
     publishedAt,
     isListened,
     listenedAt,
@@ -3374,6 +3422,7 @@ class ChapterRow extends DataClass implements Insertable<ChapterRow> {
           other.sourceIndex == this.sourceIndex &&
           other.groupName == this.groupName &&
           other.durationMs == this.durationMs &&
+          other.wordCount == this.wordCount &&
           other.publishedAt == this.publishedAt &&
           other.isListened == this.isListened &&
           other.listenedAt == this.listenedAt &&
@@ -3391,6 +3440,7 @@ class ChaptersCompanion extends UpdateCompanion<ChapterRow> {
   final Value<int> sourceIndex;
   final Value<String?> groupName;
   final Value<int?> durationMs;
+  final Value<int?> wordCount;
   final Value<DateTime?> publishedAt;
   final Value<bool> isListened;
   final Value<DateTime?> listenedAt;
@@ -3406,6 +3456,7 @@ class ChaptersCompanion extends UpdateCompanion<ChapterRow> {
     this.sourceIndex = const Value.absent(),
     this.groupName = const Value.absent(),
     this.durationMs = const Value.absent(),
+    this.wordCount = const Value.absent(),
     this.publishedAt = const Value.absent(),
     this.isListened = const Value.absent(),
     this.listenedAt = const Value.absent(),
@@ -3422,6 +3473,7 @@ class ChaptersCompanion extends UpdateCompanion<ChapterRow> {
     required int sourceIndex,
     this.groupName = const Value.absent(),
     this.durationMs = const Value.absent(),
+    this.wordCount = const Value.absent(),
     this.publishedAt = const Value.absent(),
     this.isListened = const Value.absent(),
     this.listenedAt = const Value.absent(),
@@ -3443,6 +3495,7 @@ class ChaptersCompanion extends UpdateCompanion<ChapterRow> {
     Expression<int>? sourceIndex,
     Expression<String>? groupName,
     Expression<int>? durationMs,
+    Expression<int>? wordCount,
     Expression<DateTime>? publishedAt,
     Expression<bool>? isListened,
     Expression<DateTime>? listenedAt,
@@ -3459,6 +3512,7 @@ class ChaptersCompanion extends UpdateCompanion<ChapterRow> {
       if (sourceIndex != null) 'source_index': sourceIndex,
       if (groupName != null) 'group_name': groupName,
       if (durationMs != null) 'duration_ms': durationMs,
+      if (wordCount != null) 'word_count': wordCount,
       if (publishedAt != null) 'published_at': publishedAt,
       if (isListened != null) 'is_listened': isListened,
       if (listenedAt != null) 'listened_at': listenedAt,
@@ -3477,6 +3531,7 @@ class ChaptersCompanion extends UpdateCompanion<ChapterRow> {
     Value<int>? sourceIndex,
     Value<String?>? groupName,
     Value<int?>? durationMs,
+    Value<int?>? wordCount,
     Value<DateTime?>? publishedAt,
     Value<bool>? isListened,
     Value<DateTime?>? listenedAt,
@@ -3493,6 +3548,7 @@ class ChaptersCompanion extends UpdateCompanion<ChapterRow> {
       sourceIndex: sourceIndex ?? this.sourceIndex,
       groupName: groupName ?? this.groupName,
       durationMs: durationMs ?? this.durationMs,
+      wordCount: wordCount ?? this.wordCount,
       publishedAt: publishedAt ?? this.publishedAt,
       isListened: isListened ?? this.isListened,
       listenedAt: listenedAt ?? this.listenedAt,
@@ -3526,6 +3582,9 @@ class ChaptersCompanion extends UpdateCompanion<ChapterRow> {
     }
     if (durationMs.present) {
       map['duration_ms'] = Variable<int>(durationMs.value);
+    }
+    if (wordCount.present) {
+      map['word_count'] = Variable<int>(wordCount.value);
     }
     if (publishedAt.present) {
       map['published_at'] = Variable<DateTime>(publishedAt.value);
@@ -3561,6 +3620,7 @@ class ChaptersCompanion extends UpdateCompanion<ChapterRow> {
           ..write('sourceIndex: $sourceIndex, ')
           ..write('groupName: $groupName, ')
           ..write('durationMs: $durationMs, ')
+          ..write('wordCount: $wordCount, ')
           ..write('publishedAt: $publishedAt, ')
           ..write('isListened: $isListened, ')
           ..write('listenedAt: $listenedAt, ')
@@ -11985,6 +12045,7 @@ typedef $$ChaptersTableCreateCompanionBuilder = ChaptersCompanion Function({
   required int sourceIndex,
   Value<String?> groupName,
   Value<int?> durationMs,
+  Value<int?> wordCount,
   Value<DateTime?> publishedAt,
   Value<bool> isListened,
   Value<DateTime?> listenedAt,
@@ -12001,6 +12062,7 @@ typedef $$ChaptersTableUpdateCompanionBuilder = ChaptersCompanion Function({
   Value<int> sourceIndex,
   Value<String?> groupName,
   Value<int?> durationMs,
+  Value<int?> wordCount,
   Value<DateTime?> publishedAt,
   Value<bool> isListened,
   Value<DateTime?> listenedAt,
@@ -12166,6 +12228,11 @@ class $$ChaptersTableFilterComposer
 
   ColumnFilters<int> get durationMs => $composableBuilder(
     column: $table.durationMs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get wordCount => $composableBuilder(
+    column: $table.wordCount,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -12392,6 +12459,11 @@ class $$ChaptersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get wordCount => $composableBuilder(
+    column: $table.wordCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get publishedAt => $composableBuilder(
     column: $table.publishedAt,
     builder: (column) => ColumnOrderings(column),
@@ -12481,6 +12553,9 @@ class $$ChaptersTableAnnotationComposer
     column: $table.durationMs,
     builder: (column) => column,
   );
+
+  GeneratedColumn<int> get wordCount =>
+      $composableBuilder(column: $table.wordCount, builder: (column) => column);
 
   GeneratedColumn<DateTime> get publishedAt => $composableBuilder(
     column: $table.publishedAt,
@@ -12705,6 +12780,7 @@ class $$ChaptersTableTableManager
                 Value<int> sourceIndex = const Value.absent(),
                 Value<String?> groupName = const Value.absent(),
                 Value<int?> durationMs = const Value.absent(),
+                Value<int?> wordCount = const Value.absent(),
                 Value<DateTime?> publishedAt = const Value.absent(),
                 Value<bool> isListened = const Value.absent(),
                 Value<DateTime?> listenedAt = const Value.absent(),
@@ -12720,6 +12796,7 @@ class $$ChaptersTableTableManager
                 sourceIndex: sourceIndex,
                 groupName: groupName,
                 durationMs: durationMs,
+                wordCount: wordCount,
                 publishedAt: publishedAt,
                 isListened: isListened,
                 listenedAt: listenedAt,
@@ -12737,6 +12814,7 @@ class $$ChaptersTableTableManager
                 required int sourceIndex,
                 Value<String?> groupName = const Value.absent(),
                 Value<int?> durationMs = const Value.absent(),
+                Value<int?> wordCount = const Value.absent(),
                 Value<DateTime?> publishedAt = const Value.absent(),
                 Value<bool> isListened = const Value.absent(),
                 Value<DateTime?> listenedAt = const Value.absent(),
@@ -12752,6 +12830,7 @@ class $$ChaptersTableTableManager
                 sourceIndex: sourceIndex,
                 groupName: groupName,
                 durationMs: durationMs,
+                wordCount: wordCount,
                 publishedAt: publishedAt,
                 isListened: isListened,
                 listenedAt: listenedAt,

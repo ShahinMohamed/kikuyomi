@@ -11,6 +11,9 @@
 ///
 /// Version 5 makes room for reading (ADR-0019): `book.kind`, and `reading_state`. One model with a
 /// kind rather than a parallel set of tables, which is §1.2's lesson from Aniyomi taken literally.
+/// Version 6 adds `chapter.word_count`, so that a book to read can say how long a chapter is the
+/// way an audiobook says it in minutes.
+///
 /// `smart_collection` and the `book_fts` full-text index follow in Phase 4.
 ///
 /// Row classes are named `…Row`. §4.1 keeps database records, domain entities and extension DTOs as
@@ -143,6 +146,19 @@ class Chapters extends Table {
   IntColumn get sourceIndex => integer()();
   TextColumn get groupName => text().nullable()();
   IntColumn get durationMs => integer().nullable()();
+
+  /// How many words the chapter holds, for a book to read (version 6, ADR-0019).
+  ///
+  /// An audiobook chapter says how long it is in minutes because its length is a fact about the
+  /// recording. A chapter of text has no length in minutes of its own — it has a length in words,
+  /// and how long that takes is the reader's own pace. So the words are stored and the minutes are
+  /// worked out for whoever is reading.
+  ///
+  /// Null until it is known. A local EPUB's chapters are counted as the book is added; a chapter
+  /// from a source cannot be counted until its text has been fetched, so it is counted the first
+  /// time it is read. Derived from the text either way, which is why a backup does not carry it.
+  IntColumn get wordCount => integer().nullable()();
+
   DateTimeColumn get publishedAt => dateTime().nullable()();
   BoolColumn get isListened => boolean().withDefault(const Constant(false))();
   DateTimeColumn get listenedAt => dateTime().nullable()();

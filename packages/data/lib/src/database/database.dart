@@ -36,7 +36,7 @@ class KikuyomiDatabase extends _$KikuyomiDatabase {
   KikuyomiDatabase(super.executor);
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -72,6 +72,11 @@ class KikuyomiDatabase extends _$KikuyomiDatabase {
         await m.addColumn(schema.books, schema.books.kind);
         await m.createTable(schema.readingStates);
         await m.createIndex(schema.readingStatesRecent);
+      },
+      // Version 6: how long a chapter of a book to read is, in the only unit that means anything
+      // for text. Null everywhere to begin with, and filled in as books are added and read.
+      from5To6: (m, schema) async {
+        await m.addColumn(schema.chapters, schema.chapters.wordCount);
       },
     ),
     beforeOpen: (details) async {

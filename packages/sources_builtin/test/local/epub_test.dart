@@ -31,6 +31,8 @@ String doc(String id, String href) =>
     '<item id="$id" href="$href" media-type="application/xhtml+xml"/>';
 
 void main() {
+  _wordCounts();
+
   group('details', () {
     test('are read from the package document', () {
       final book = EpubBook.read(
@@ -381,3 +383,34 @@ String encryption(String algorithm) =>
     <enc:CipherData><enc:CipherReference URI="OEBPS/fonts/font.otf"/></enc:CipherData>
   </enc:EncryptedData>
 </encryption>''';
+
+void _wordCounts() {
+  group('word counts', () {
+    test('count the words a chapter holds, and nothing else', () {
+      final book = EpubBook.read(
+        simpleEpub(
+          extra: {
+            'OEBPS/text/one.xhtml': xhtml(
+              '<style>p { color: red; }</style>'
+              '<script>var hidden = "one two three four five";</script>'
+              '<h1>Chapter One</h1>'
+              '<p>It began on a <em>cold</em> morning &mdash; the coldest yet.</p>'
+              '<img src="x.png" alt="a picture of nothing"/>',
+            ),
+          },
+        ),
+      );
+
+      // "Chapter One" is two, and the sentence is ten: It began on a cold morning x the coldest
+      // yet. The alt text, the style and the script are not words anyone reads.
+      expect(book.wordCounts()['OEBPS/text/one.xhtml'], 12);
+    });
+
+    test('are given for every chapter of the book', () {
+      final counts = EpubBook.read(simpleEpub()).wordCounts();
+
+      expect(counts.keys, ['OEBPS/text/one.xhtml', 'OEBPS/text/two.xhtml']);
+      expect(counts.values, everyElement(greaterThan(0)));
+    });
+  });
+}

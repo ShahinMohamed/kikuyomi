@@ -92,6 +92,21 @@ Future<ReadingStateRow?> readReadingPosition(KikuyomiDatabase db, int bookId) =>
       db.readingStates,
     )..where((r) => r.bookId.equals(bookId))).getSingleOrNull();
 
+/// Records that chapter [chapterId] holds [words] words, for the reading time shown beside it.
+///
+/// Written once, the first time a chapter's text is fetched, and left alone after: the figure is
+/// about the text, which does not change, and rewriting it on every read would wake every stream
+/// watching the chapter list for nothing.
+Future<void> saveChapterWordCount(
+  KikuyomiDatabase db,
+  int chapterId,
+  int words,
+) async {
+  await (db.update(db.chapters)
+        ..where((c) => c.id.equals(chapterId) & c.wordCount.isNull()))
+      .write(ChaptersCompanion(wordCount: Value(words)));
+}
+
 /// Where the reader of [bookId] is, watched: null until it is first opened.
 Stream<ReadingStateRow?> watchReadingPosition(
   KikuyomiDatabase db,

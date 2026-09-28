@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kikuyomi/src/book_details_view.dart';
 import 'package:kikuyomi/src/listened_commands.dart';
+import 'package:kikuyomi_source_api/kikuyomi_source_api.dart' show SourceKind;
 import 'package:kikuyomi_data/kikuyomi_data.dart'
     show
         BookOverview,
@@ -167,6 +168,8 @@ Future<void> holdChapter(WidgetTester tester, String title) async {
 }
 
 void main() {
+  _aBookToRead();
+
   group('playing from a chapter', () {
     testWidgets('tapping a chapter row asks to play from it', (tester) async {
       tallView(tester);
@@ -851,6 +854,120 @@ void main() {
 
       expect(find.text('In library'), findsNothing);
       expect(find.text('Add to library'), findsOneWidget);
+    });
+  });
+}
+
+/// A book to read shows its chapters in its own words.
+///
+/// The details page was built for audiobooks, so it said "Mark as listened" over a novel and drew
+/// a waveform beside the chapter someone was reading. What is the same for both — the chapter list,
+/// marking one done, finishing a book — stays the same; the words and the figures do not.
+void _aBookToRead() {
+  const chapters = [
+    ChapterOverview(
+      chapterId: 10,
+      title: 'Chapter One',
+      durationMs: null,
+      wordCount: 2500,
+      listened: true,
+      current: false,
+    ),
+    ChapterOverview(
+      chapterId: 11,
+      title: 'Chapter Two',
+      durationMs: null,
+      wordCount: 5000,
+      listened: false,
+      current: true,
+    ),
+    ChapterOverview(
+      chapterId: 12,
+      title: 'Chapter Three',
+      durationMs: null,
+      listened: false,
+      current: false,
+    ),
+  ];
+
+  Widget reading({int wordsPerMinute = 250}) => MaterialApp(
+    home: Scaffold(
+      body: BookDetailsView(
+        book: BookOverview(
+          sourceId: 2,
+          bookId: 1,
+          title: 'A Novel',
+          kind: SourceKind.text,
+          authors: const ['An Author'],
+          narrators: const [],
+          totalDurationMs: null,
+          inLibrary: true,
+          chapters: chapters,
+          markers: const [],
+          progress: null,
+          finished: false,
+          coverFileName: null,
+        ),
+        covers: covers,
+        canDownload: false,
+        wordsPerMinute: wordsPerMinute,
+        chapterDownloads: const {},
+        onRemove: () {},
+        onOpenDownloadQueue: () {},
+        listenedCommands: ListenedCommands(
+          markChapters: (_, _) async => {},
+          markFinished: () async => {},
+          markNotFinished: () async {},
+        ),
+      ),
+    ),
+  );
+
+  group('a book to read', () {
+    testWidgets('says how long a chapter takes to read, not to play', (
+      tester,
+    ) async {
+      await tester.pumpWidget(reading());
+
+      expect(find.text('~10 m'), findsOneWidget);
+      expect(find.text('~20 m'), findsOneWidget);
+      // The one whose words have never been counted says nothing rather than guessing.
+      expect(find.text('~0 m'), findsNothing);
+    });
+
+    testWidgets(
+      'says nothing about length when the reader asked not to be told',
+      (tester) async {
+        await tester.pumpWidget(reading(wordsPerMinute: 0));
+
+        expect(find.textContaining('~'), findsNothing);
+      },
+    );
+
+    testWidgets('marks a chapter read rather than listened', (tester) async {
+      await tester.pumpWidget(reading());
+
+      await tester.tap(find.byType(PopupMenuButton<bool>).first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Mark as unread'), findsOneWidget);
+      expect(find.text('Mark as listened'), findsNothing);
+      expect(find.text('Mark as not listened'), findsNothing);
+    });
+
+    testWidgets('marks where the reader is with a book, not a waveform', (
+      tester,
+    ) async {
+      await tester.pumpWidget(reading());
+
+      expect(find.byIcon(Icons.menu_book), findsOneWidget);
+      expect(find.byIcon(Icons.graphic_eq), findsNothing);
+    });
+
+    testWidgets('offers nothing to download', (tester) async {
+      await tester.pumpWidget(reading());
+
+      expect(find.text('Download'), findsNothing);
     });
   });
 }
