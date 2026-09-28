@@ -29,6 +29,7 @@ class HistoryScreen extends ConsumerWidget {
     return AppShell(
       tab: AppTab.history,
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: const Text('History'),
         actions: [
           if ((history.value ?? const []).isNotEmpty)

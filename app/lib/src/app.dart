@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kikuyomi_backup/kikuyomi_backup.dart';
 
+import 'back_gesture.dart';
 import 'book_files.dart';
 import 'providers.dart';
 import 'routes.dart';
@@ -242,11 +243,13 @@ class _KikuyomiAppState extends ConsumerState<KikuyomiApp> {
       theme: ThemeData(
         colorSchemeSeed: seed,
         snackBarTheme: kikuyomiSnackBarTheme,
+        pageTransitionsTheme: kikuyomiPageTransitions,
       ),
       darkTheme: ThemeData(
         colorSchemeSeed: seed,
         brightness: Brightness.dark,
         snackBarTheme: kikuyomiSnackBarTheme,
+        pageTransitionsTheme: kikuyomiPageTransitions,
       ),
     );
   }

@@ -106,6 +106,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       child: AppShell(
         tab: AppTab.library,
         appBar: AppBar(
+          automaticallyImplyLeading: false,
           title: _searching
               ? TextField(
                   controller: _search,

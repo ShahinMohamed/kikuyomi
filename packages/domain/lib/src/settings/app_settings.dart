@@ -140,6 +140,18 @@ abstract final class AppSettings {
     decode: _decodeScale,
   );
 
+  /// The order the tabs of the shell are shown in, by name, or not set for the order the app
+  /// declares them in.
+  ///
+  /// Names rather than positions, so that a tab added by a later version can be put at the end
+  /// rather than silently taking someone else's place, and a name this build does not know — a tab
+  /// that has since been removed — is passed over.
+  static const tabOrder = Setting<List<String>>(
+    'shell.tabOrder',
+    encode: _encodeNames,
+    decode: _decodeNames,
+  );
+
   /// Every setting above. A store that has to be told its keys in advance, as `shared_preferences`'
   /// cached store does, is told these.
   /// Every setting above, for the stores that need to be told which keys exist.
@@ -161,6 +173,7 @@ abstract final class AppSettings {
     recentSources,
     listenedBackfilled,
     readerTextScale,
+    tabOrder,
   ];
 }
 

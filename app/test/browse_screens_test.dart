@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kikuyomi/src/browse_screen.dart';
+import 'package:kikuyomi/src/app_shell.dart';
 import 'package:kikuyomi/src/providers.dart';
 import 'package:kikuyomi/src/source_book_screen.dart';
 import 'package:kikuyomi/src/source_screen.dart';
@@ -11,6 +12,8 @@ import 'package:kikuyomi/src/sources/source_registry.dart';
 import 'package:kikuyomi_source_api/kikuyomi_source_api.dart';
 import 'package:kikuyomi_source_runtime/kikuyomi_source_runtime.dart';
 import 'package:kikuyomi_test_support/kikuyomi_test_support.dart';
+
+import 'tab_order_support.dart';
 
 import 'browse_test.dart' show booksPage, librivox, local;
 
@@ -79,7 +82,11 @@ final class FakeGateway implements SourceGateway {
 
 /// One screen, inside a router that knows the Browse routes, so pushing a book's route works.
 Widget screen(Widget child, FakeGateway gateway) => ProviderScope(
-  overrides: [sourceGatewayProvider.overrideWithValue(gateway)],
+  overrides: [
+    sourceGatewayProvider.overrideWithValue(gateway),
+    // The shell draws the tabs, and their order is a setting, which is a service away.
+    tabOrderProvider.overrideWith(FixedTabOrder.new),
+  ],
   child: MaterialApp.router(
     routerConfig: GoRouter(
       routes: [GoRoute(path: '/', builder: (context, state) => child)],

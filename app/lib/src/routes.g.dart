@@ -85,6 +85,13 @@ RouteBase get $homeRoute => GoRouteData.$route(
       path: 'more',
       hasOverriddenOnExit: false,
       factory: $MoreRoute._fromState,
+      routes: [
+        GoRouteData.$route(
+          path: 'tabs',
+          hasOverriddenOnExit: false,
+          factory: $TabsRoute._fromState,
+        ),
+      ],
     ),
     GoRouteData.$route(
       path: 'categories',
@@ -335,6 +342,26 @@ mixin $MoreRoute on GoRouteData {
 
   @override
   String get location => GoRouteData.$location('/more');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+mixin $TabsRoute on GoRouteData {
+  static TabsRoute _fromState(GoRouterState state) => const TabsRoute();
+
+  @override
+  String get location => GoRouteData.$location('/more/tabs');
 
   @override
   void go(BuildContext context) => context.go(location);

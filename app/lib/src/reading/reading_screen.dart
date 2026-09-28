@@ -50,6 +50,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
     return AppShell(
       tab: AppTab.reading,
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: _searching
             ? TextField(
                 controller: _search,

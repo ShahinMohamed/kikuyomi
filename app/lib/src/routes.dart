@@ -18,6 +18,7 @@ import 'restore_screen.dart';
 import 'settings_screen.dart';
 import 'setup_gate.dart';
 import 'setup_screen.dart';
+import 'tabs_screen.dart';
 import 'source_book_screen.dart';
 import 'source_screen.dart';
 
@@ -93,7 +94,10 @@ class SetupRoute extends GoRouteData with $SetupRoute {
     ),
     TypedGoRoute<DownloadsRoute>(path: 'downloads'),
     TypedGoRoute<HistoryRoute>(path: 'history'),
-    TypedGoRoute<MoreRoute>(path: 'more'),
+    TypedGoRoute<MoreRoute>(
+      path: 'more',
+      routes: [TypedGoRoute<TabsRoute>(path: 'tabs')],
+    ),
     TypedGoRoute<CategoriesRoute>(path: 'categories'),
     TypedGoRoute<BrowseRoute>(
       path: 'browse',
@@ -131,6 +135,14 @@ class BookRoute extends GoRouteData with $BookRoute {
   @override
   Widget build(BuildContext context, GoRouterState state) =>
       BookDetailsScreen(bookId: bookId);
+}
+
+/// Arranging the tabs of the shell.
+class TabsRoute extends GoRouteData with $TabsRoute {
+  const TabsRoute();
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) => const TabsScreen();
 }
 
 /// The Read tab: the books to read (ADR-0019).

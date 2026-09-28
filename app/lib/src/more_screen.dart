@@ -61,7 +61,10 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
   Widget build(BuildContext context) {
     return AppShell(
       tab: AppTab.more,
-      appBar: AppBar(title: const Text('More')),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        title: const Text('More'),
+      ),
       body: ListView(
         children: [
           ListTile(
@@ -70,6 +73,13 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
             subtitle: const Text('Backups, and where your books are kept'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => const SettingsRoute().push<void>(context),
+          ),
+          ListTile(
+            leading: const Icon(Icons.tab_outlined),
+            title: const Text('Tabs'),
+            subtitle: const Text('The order of the bar along the bottom'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => const TabsRoute().push<void>(context),
           ),
           ListTile(
             leading: const Icon(Icons.label_outline),

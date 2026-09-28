@@ -61,6 +61,7 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen>
     return AppShell(
       tab: AppTab.browse,
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: const Text('Browse'),
         // The actions belong to whichever tab is showing. Repositories and the console are about
         // extensions and mean nothing beside a list of sources.
