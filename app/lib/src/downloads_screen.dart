@@ -36,7 +36,10 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
     final rates = ref.watch(downloadRatesProvider).value ?? const {};
     return AppShell(
       tab: AppTab.downloads,
-      appBar: AppBar(title: const Text('Downloads')),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        title: const Text('Downloads'),
+      ),
       body: downloads.when(
         data: (books) => DownloadsView(
           books: books,

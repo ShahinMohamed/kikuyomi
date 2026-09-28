@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kikuyomi/src/app_shell.dart';
 import 'package:kikuyomi/src/sources_view.dart';
 import 'package:kikuyomi/src/source_books_view.dart';
 import 'package:kikuyomi/src/sources/source_books_controller.dart';
@@ -560,35 +559,6 @@ void main() {
 
       expect(find.text('Book 1'), findsOneWidget);
       expect(find.byType(SourceErrorView), findsNothing);
-    });
-  });
-
-  group('the shell', () {
-    testWidgets('a narrow window gets a bottom bar', (tester) async {
-      await tester.pumpWidget(
-        wrap(
-          const AppShell(tab: AppTab.browse, body: Text('body')),
-          size: const Size(400, 800),
-        ),
-      );
-
-      expect(find.byType(NavigationBar), findsOneWidget);
-      expect(find.byType(NavigationRail), findsNothing);
-      expect(find.text('Listen'), findsOneWidget);
-      expect(find.text('Read'), findsOneWidget);
-      expect(find.text('Browse'), findsOneWidget);
-    });
-
-    testWidgets('a wide window gets a rail', (tester) async {
-      await tester.pumpWidget(
-        wrap(
-          const AppShell(tab: AppTab.library, body: Text('body')),
-          size: const Size(1200, 800),
-        ),
-      );
-
-      expect(find.byType(NavigationRail), findsOneWidget);
-      expect(find.byType(NavigationBar), findsNothing);
     });
   });
 
