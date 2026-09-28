@@ -62,7 +62,10 @@ Not met — the app has never been run on Android at all.
 ## Phase 2 — Extension system and first public release
 
 - [x] SourceAPI 1.0
-- [ ] TypeScript SDK and CLI — does not exist; `docs/writing-an-extension.md` is the whole of the author's story
+- [ ] TypeScript SDK and CLI — does not exist. `docs/writing-an-extension.md` is the whole of the
+      author's story, alongside two prompts for having an assistant write one:
+      `docs/extension-authoring-prompt.md` for audiobooks and
+      `docs/ebook-extension-authoring-prompt.md` for books to read
 - [x] QuickJS runtime with worker isolates and bridges
 - [x] ExtensionManager: install, uninstall and reload from a folder (ADR-0017)
 - [x] ExtensionManager: repositories — the format and its parser (ADR-0018), the address handling,

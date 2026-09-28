@@ -1,4 +1,8 @@
-# A prompt for having an AI write a Kikuyomi extension
+# A prompt for having an AI write a Kikuyomi audiobook extension
+
+For a source of books to **read** rather than listen to, use its counterpart,
+[`ebook-extension-authoring-prompt.md`](ebook-extension-authoring-prompt.md): the contract is
+different enough that one prompt covering both would serve neither.
 
 Paste the text below into a coding assistant, attach
 [`docs/writing-an-extension.md`](writing-an-extension.md), and give it the site's URL. Everything
