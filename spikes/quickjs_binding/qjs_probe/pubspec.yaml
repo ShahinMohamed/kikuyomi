@@ -84,6 +84,8 @@ flutter:
     - assets/storynory/fixtures/
     - assets/standardebooks/
     - assets/standardebooks/fixtures/
+    - assets/gutenberg/
+    - assets/gutenberg/fixtures/
     - assets/podcasts/
     - assets/podcasts/fixtures/
 

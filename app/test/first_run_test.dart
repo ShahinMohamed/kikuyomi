@@ -114,6 +114,7 @@ void main() {
           'org.kikuyomi.storynory',
           'org.kikuyomi.podcasts',
           'org.kikuyomi.standardebooks',
+          'org.kikuyomi.gutenberg',
         },
       );
     });

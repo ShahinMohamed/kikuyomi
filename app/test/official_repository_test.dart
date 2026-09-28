@@ -42,6 +42,7 @@ void main() {
       'org.kikuyomi.librivox',
       'org.kikuyomi.podcasts',
       'org.kikuyomi.standardebooks',
+      'org.kikuyomi.gutenberg',
       'org.kikuyomi.storynory',
     });
   });

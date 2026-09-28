@@ -1698,6 +1698,62 @@ final class _StandardEbooksFixtures implements HostBridge {
   }
 }
 
+/// Project Gutenberg's answers, recorded: a page of the catalogue, a search, one book's catalogue
+/// entry, and the book itself.
+///
+/// The book is a real transcription with its own header, footer and chapter markup, and with the
+/// prose replaced: what the extension reads is the shape of a transcription, not what it says.
+final class _GutenbergFixtures implements HostBridge {
+  _GutenbergFixtures(this._json, this._book);
+
+  static Future<_GutenbergFixtures> load() async {
+    Future<String> asset(String name) =>
+        rootBundle.loadString('assets/gutenberg/fixtures/$name');
+    return _GutenbergFixtures({
+      'https://gutendex.com/books/?sort=popular&page=1': await asset(
+        'popular.json',
+      ),
+      'https://gutendex.com/books/?page=1&search=frankenstein': await asset(
+        'search.json',
+      ),
+      'https://gutendex.com/books/84': await asset('book.json'),
+    }, await asset('book.html'));
+  }
+
+  final Map<String, String> _json;
+  final String _book;
+  final asked = <String>[];
+
+  @override
+  String get module => 'http';
+
+  @override
+  Future<Object?> call(String method, List<Object?> arguments) async {
+    if (method != 'fetch') throw HostCallException('there is no http.$method');
+    final request = arguments.objectAt(0, 'a request');
+    final url = '${request['url']}';
+    asked.add(url);
+    if (url == 'https://www.gutenberg.org/ebooks/84.html.images') {
+      return {
+        'status': 200,
+        'url': url,
+        'headers': const {'content-type': 'text/html; charset=utf-8'},
+        'body': _book,
+      };
+    }
+    final body = _json[url];
+    if (body == null) {
+      throw HostCallException('the probe has no fixture for $url');
+    }
+    return {
+      'status': 200,
+      'url': url,
+      'headers': const {'content-type': 'application/json'},
+      'body': jsonDecode(body),
+    };
+  }
+}
+
 /// The Podcasts source's recorded answers.
 ///
 /// Four documents, because this source has four ways in: a feed, Apple's index by search, Apple's
@@ -2188,6 +2244,112 @@ Future<void> _runStandardEbooksProbes() async {
   });
 }
 
+Future<void> _runGutenbergProbes() async {
+  Future<T> withSource<T>(
+    Future<T> Function(JsSourceAdapter source, _GutenbergFixtures http) body,
+  ) async {
+    final http = await _GutenbergFixtures.load();
+    return _withExtension(
+      asset: 'assets/gutenberg/main.js',
+      extensionId: 'org.kikuyomi.gutenberg',
+      sourceKey: 'gutenberg',
+      // Two hosts, both load-bearing: the catalogue is Gutendex's and the books are Gutenberg's.
+      domains: const ['gutendex.com', 'gutenberg.org', '*.gutenberg.org'],
+      http: http,
+      kind: SourceKind.text,
+      body: (source) => body(source, http),
+    );
+  }
+
+  await _probe('gutenberg-popular', () async {
+    return withSource((source, http) async {
+      final page = await source.getPopular(1);
+      if (page.items.length != 3) {
+        throw StateError('expected three books, got ${page.items.length}');
+      }
+      if (!page.hasNextPage) throw StateError('the catalogue has more pages');
+      final first = page.items.first;
+      // The catalogue files a name for shelving; a shelf shows it as a person says it.
+      if (first.authors.single.contains(',')) {
+        throw StateError('the author is filed, not read: ${first.authors}');
+      }
+      return '${first.title} by ${first.authors.single}';
+    });
+  });
+
+  await _probe('gutenberg-search', () async {
+    return withSource((source, http) async {
+      final page = await source.search(
+        const SearchQuery(text: 'frankenstein'),
+        1,
+      );
+      if (page.items.isEmpty) throw StateError('found nothing');
+      if (page.hasNextPage) throw StateError('the fixture is one page');
+      return 'found ${page.items.first.title}';
+    });
+  });
+
+  await _probe('gutenberg-book-details', () async {
+    return withSource((source, http) async {
+      final book = await source.getBookDetails('84');
+      if (!book.title.toLowerCase().startsWith('frankenstein')) {
+        throw StateError('read ${book.title}');
+      }
+      if (book.authors.single != 'Mary Wollstonecraft Shelley') {
+        throw StateError('the author is ${book.authors}');
+      }
+      if ((book.description ?? '').isEmpty) throw StateError('no description');
+      if (book.genres.isEmpty) throw StateError('no genres');
+      return 'decoded: ${book.genres.take(2).join(', ')}';
+    });
+  });
+
+  await _probe('gutenberg-chapters-are-found-in-one-file', () async {
+    return withSource((source, http) async {
+      final chapters = await source.getChapters('84');
+      final keys = [for (final c in chapters) c.key];
+      // Gutenberg's own boilerplate and the table of contents are not chapters of the book.
+      if (keys.contains('pg-header-heading')) {
+        throw StateError('listed the Gutenberg header');
+      }
+      for (final chapter in chapters) {
+        if (chapter.title.toUpperCase() == 'CONTENTS') {
+          throw StateError('listed the table of contents');
+        }
+      }
+      if (keys.join(' ') != 'letter1 chap01 chap02') {
+        throw StateError('the chapters are $keys');
+      }
+      return '${chapters.length} sections, from ${chapters.first.title}';
+    });
+  });
+
+  await _probe('gutenberg-a-chapter-is-a-slice-of-the-book', () async {
+    return withSource((source, http) async {
+      await source.getChapters('84');
+      final before = http.asked.length;
+      final content = await source.getChapterContent(
+        const ChapterRef(bookKey: '84', chapterKey: 'chap01'),
+      );
+      // A book is one file, so a chapter of the book already in hand must not fetch it again.
+      if (http.asked.length != before) {
+        throw StateError(
+          'a chapter cost ${http.asked.length - before} requests',
+        );
+      }
+      final heading = content.blocks.whereType<HeadingBlock>().firstOrNull;
+      final text = [
+        for (final run in heading?.runs ?? const <TextRun>[]) run.text,
+      ].join();
+      if (text != 'Chapter 1') throw StateError('the heading is "$text"');
+      if (content.blocks.whereType<ParagraphBlock>().isEmpty) {
+        throw StateError('no prose under the heading');
+      }
+      return 'one file, ${content.blocks.length} blocks under "$text"';
+    });
+  });
+}
+
 Future<void> _runPodcastProbes() async {
   // The manifest names sixty-three hosts. These are the ones the fixtures actually reach, plus the
   // CloudFront wildcard the audio needs: a probe is not the place to restate a list the app's own
@@ -2554,6 +2716,7 @@ Future<void> main() async {
   await _runArchiveProbes();
   await _runStorynoryProbes();
   await _runStandardEbooksProbes();
+  await _runGutenbergProbes();
   await _runPodcastProbes();
 
   _emit('QJS_PROBE DONE passed=$_passed failed=$_failed');

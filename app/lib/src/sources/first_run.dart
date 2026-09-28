@@ -48,6 +48,7 @@ const shippedExtensionNames = [
   'storynory',
   'podcasts',
   'standardebooks',
+  'gutenberg',
 ];
 
 /// What an install seeded before [AppSettings.shippedExtensionsOffered] was recorded had been
