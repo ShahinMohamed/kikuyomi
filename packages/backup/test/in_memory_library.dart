@@ -61,6 +61,7 @@ BookSnapshot _merge(BookSnapshot book, BookMerge merge) {
     lastRefreshedAt: book.lastRefreshedAt,
     detailsFetched: book.detailsFetched,
     playbackSpeed: merge.playbackSpeed ?? book.playbackSpeed,
+    chaptersReversed: merge.chaptersReversed ?? book.chaptersReversed,
     kind: book.kind,
     createdAt: book.createdAt,
     updatedAt: merge.changesBook ? merge.updatedAt : book.updatedAt,

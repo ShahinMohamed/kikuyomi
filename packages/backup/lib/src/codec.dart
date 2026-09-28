@@ -30,7 +30,7 @@ import 'gzip_frame.dart';
 /// Raise it with every change to `proto/backup.proto` that a reader could care about, additive or
 /// not, including a change in what a field means. `proto/backup.proto` lists what each version
 /// changed.
-const backupFormatVersion = 4;
+const backupFormatVersion = 5;
 
 /// The first format version whose chapters' `is_listened` is recorded, and so to be restored as
 /// written (§4.5).
@@ -386,6 +386,7 @@ pb.Book _encodeBook(BookSnapshot book) {
     lastRefreshedAtMs: _optionalMs(book.lastRefreshedAt),
     detailsFetched: book.detailsFetched,
     playbackSpeed: book.playbackSpeed,
+    chaptersReversed: book.chaptersReversed,
     kind: switch (book.kind) {
       SourceKind.audio => pb.BookKind.BOOK_KIND_AUDIO,
       SourceKind.text => pb.BookKind.BOOK_KIND_TEXT,
@@ -714,6 +715,9 @@ final class _Decoder {
       lastRefreshedAt: lastRefreshedAt,
       detailsFetched: book.detailsFetched,
       playbackSpeed: playbackSpeed,
+      chaptersReversed: book.hasChaptersReversed()
+          ? book.chaptersReversed
+          : null,
       kind: switch (book.kind) {
         pb.BookKind.BOOK_KIND_TEXT => SourceKind.text,
         // A kind from a newer build arrives here as the default. A backup holding one names a

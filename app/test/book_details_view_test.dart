@@ -168,6 +168,8 @@ Future<void> holdChapter(WidgetTester tester, String title) async {
 }
 
 void main() {
+  _reversingChapters();
+
   _aBookToRead();
 
   group('playing from a chapter', () {
@@ -968,6 +970,125 @@ void _aBookToRead() {
       await tester.pumpWidget(reading());
 
       expect(find.text('Download'), findsNothing);
+    });
+  });
+}
+
+/// Turning a book's chapter list round.
+void _reversingChapters() {
+  const chapters = [
+    ChapterOverview(
+      chapterId: 10,
+      title: 'Chapter One',
+      durationMs: null,
+      listened: false,
+      current: false,
+    ),
+    ChapterOverview(
+      chapterId: 11,
+      title: 'Chapter Two',
+      durationMs: null,
+      listened: false,
+      current: false,
+    ),
+    ChapterOverview(
+      chapterId: 12,
+      title: 'Chapter Three',
+      durationMs: null,
+      listened: false,
+      current: false,
+    ),
+  ];
+
+  Widget novel({
+    required bool reversed,
+    VoidCallback? onReverse,
+    SourceKind kind = SourceKind.text,
+  }) => MaterialApp(
+    home: Scaffold(
+      body: BookDetailsView(
+        book: BookOverview(
+          sourceId: 2,
+          bookId: 1,
+          title: 'A Novel',
+          kind: kind,
+          chaptersReversed: reversed,
+          authors: const [],
+          narrators: const [],
+          totalDurationMs: null,
+          inLibrary: true,
+          chapters: chapters,
+          markers: const [],
+          progress: null,
+          finished: false,
+          coverFileName: null,
+        ),
+        covers: covers,
+        canDownload: false,
+        chapterDownloads: const {},
+        onRemove: () {},
+        onOpenDownloadQueue: () {},
+        onReverseChapters: onReverse,
+        listenedCommands: ListenedCommands(
+          markChapters: (_, _) async => {},
+          markFinished: () async => {},
+          markNotFinished: () async {},
+        ),
+      ),
+    ),
+  );
+
+  /// The chapter titles down the screen, top first.
+  List<String> rows(WidgetTester tester) {
+    final found = tester
+        .widgetList<Text>(find.byType(Text))
+        .map((t) => t.data)
+        .whereType<String>()
+        .where((t) => t.startsWith('Chapter '))
+        .toList();
+    return found;
+  }
+
+  group('the chapter list', () {
+    testWidgets('reads first chapter at the top until it is turned round', (
+      tester,
+    ) async {
+      await tester.pumpWidget(novel(reversed: false, onReverse: () {}));
+
+      expect(rows(tester), ['Chapter One', 'Chapter Two', 'Chapter Three']);
+    });
+
+    testWidgets('turned round, reads last chapter at the top', (tester) async {
+      await tester.pumpWidget(novel(reversed: true, onReverse: () {}));
+
+      expect(rows(tester), ['Chapter Three', 'Chapter Two', 'Chapter One']);
+    });
+
+    testWidgets('the arrow says which way round it is, and turns it', (
+      tester,
+    ) async {
+      var pressed = 0;
+      await tester.pumpWidget(
+        novel(reversed: false, onReverse: () => pressed++),
+      );
+      expect(find.byIcon(Icons.arrow_downward), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.arrow_downward));
+      expect(pressed, 1);
+
+      await tester.pumpWidget(novel(reversed: true, onReverse: () {}));
+      expect(find.byIcon(Icons.arrow_upward), findsOneWidget);
+      expect(find.byIcon(Icons.arrow_downward), findsNothing);
+    });
+
+    testWidgets('an audiobook is not offered it', (tester) async {
+      // Asked for books to read. An audiobook's chapters stay in listening order.
+      await tester.pumpWidget(
+        novel(reversed: false, onReverse: () {}, kind: SourceKind.audio),
+      );
+
+      expect(find.byIcon(Icons.arrow_downward), findsNothing);
+      expect(find.byIcon(Icons.arrow_upward), findsNothing);
     });
   });
 }

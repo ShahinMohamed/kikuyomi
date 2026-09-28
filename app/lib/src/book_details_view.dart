@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:kikuyomi_data/kikuyomi_data.dart'
-    show BookOverview, ChapterDownload, CoverFiles;
+    show BookOverview, ChapterDownload, ChapterOverview, CoverFiles;
 import 'package:kikuyomi_design_system/kikuyomi_design_system.dart';
 import 'package:kikuyomi_domain/kikuyomi_domain.dart'
     show defaultReadingWordsPerMinute;
@@ -56,6 +56,7 @@ class BookDetailsView extends StatelessWidget {
     this.onPlayChapter,
     this.onPlayFrom,
     this.onDownloadChapters,
+    this.onReverseChapters,
     this.onRefresh,
     this.onOpenDownloadQueue,
   });
@@ -112,6 +113,9 @@ class BookDetailsView extends StatelessWidget {
 
   /// Queues the files behind these chapters, in the order given.
   final ValueChanged<List<int>>? onDownloadChapters;
+
+  /// Turns the chapter list round, for a book to read. Null where it is not offered.
+  final VoidCallback? onReverseChapters;
 
   /// Asks the source for the book again. Null for a book with no source to ask.
   final Future<void> Function()? onRefresh;
@@ -240,6 +244,7 @@ class BookDetailsView extends StatelessWidget {
               finished: finished,
               side: side,
               wordsPerMinute: wordsPerMinute,
+              onReverseChapters: onReverseChapters,
               chapterDownloads: chapterDownloads,
               listenedCommands: listenedCommands,
               onPlayChapter: onPlayChapter,
@@ -309,6 +314,7 @@ class _ChapterList extends StatefulWidget {
     required this.chapterDownloads,
     required this.listenedCommands,
     required this.wordsPerMinute,
+    required this.onReverseChapters,
     required this.onPlayChapter,
     required this.onPlayFrom,
     required this.onDownloadChapters,
@@ -325,6 +331,9 @@ class _ChapterList extends StatefulWidget {
 
   /// How fast the reader reads, for a book to read.
   final int wordsPerMinute;
+
+  /// Turns the list round. Null where it is not offered.
+  final VoidCallback? onReverseChapters;
 
   /// Whether these are chapters of a book to read: read rather than listened to, and as long as
   /// they take whoever is reading rather than as long as a recording.
@@ -372,6 +381,7 @@ class _ChapterListState extends State<_ChapterList> {
     final book = widget.book;
     final markers = book.markers;
     final rows = markers.isNotEmpty ? markers.length : book.chapters.length;
+    final reversed = book.chaptersReversed;
     return SliverPadding(
       padding: EdgeInsets.symmetric(horizontal: widget.side),
       sliver: SliverMainAxisGroup(
@@ -386,12 +396,32 @@ class _ChapterListState extends State<_ChapterList> {
                     onSelectAll: _selectAll,
                     onClear: _clear,
                   )
-                : Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      _countLabel(),
-                      style: theme.textTheme.titleMedium,
-                    ),
+                : Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _countLabel(),
+                          style: theme.textTheme.titleMedium,
+                        ),
+                      ),
+                      if (widget._reading && widget.onReverseChapters != null)
+                        IconButton(
+                          // The tooltip says what pressing it will do, not what the list is now:
+                          // the arrow already shows that.
+                          tooltip: reversed
+                              ? 'First chapter first'
+                              : 'Last chapter first',
+                          icon: Icon(
+                            reversed
+                                ? Icons.arrow_upward
+                                : Icons.arrow_downward,
+                            semanticLabel: reversed
+                                ? 'Showing the last chapter first'
+                                : 'Showing the first chapter first',
+                          ),
+                          onPressed: widget.onReverseChapters,
+                        ),
+                    ],
                   ),
           ),
           const SliverToBoxAdapter(child: SizedBox(height: 8)),
@@ -424,8 +454,19 @@ class _ChapterListState extends State<_ChapterList> {
     );
   }
 
+  /// The chapter in row [index], which is counted from the end when the list is turned round.
+  ///
+  /// Only the list is turned round. The reader still goes forward through the book from whichever
+  /// chapter it is opened at, because a book is read in one direction however it is listed.
+  ChapterOverview _chapterAt(int index) {
+    final chapters = widget.book.chapters;
+    return widget.book.chaptersReversed
+        ? chapters[chapters.length - 1 - index]
+        : chapters[index];
+  }
+
   Widget _chapter(int index) {
-    final chapter = widget.book.chapters[index];
+    final chapter = _chapterAt(index);
     return _EntryTile(
       title: chapter.title,
       durationMs: chapter.durationMs,

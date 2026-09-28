@@ -112,6 +112,9 @@ class Backup extends $pb.GeneratedMessage {
   ///    for books that were listened to. Additive: a version 3 reader skips them and restores
   ///    everything else, losing only reading history, which it has nowhere to put anyway, so
   ///    `min_reader_version` is unchanged.
+  /// 5: `Book.chapters_reversed`, which end of a book's chapter list the reader put at the top.
+  ///    Additive: a version 4 reader skips it and the list stays in reading order, which is what it
+  ///    would have shown anyway, so `min_reader_version` is unchanged.
   @$pb.TagNumber(1)
   $core.int get formatVersion => $_getIZ(0);
   @$pb.TagNumber(1)
@@ -452,6 +455,7 @@ class Book extends $pb.GeneratedMessage {
     BookKind? kind,
     ReadingState? readingState,
     $core.Iterable<ReadingSession>? readingSessions,
+    $core.bool? chaptersReversed,
   }) {
     final result = Book._();
     if (sourceId != null) result.sourceId = sourceId;
@@ -491,6 +495,7 @@ class Book extends $pb.GeneratedMessage {
     if (kind != null) result.kind = kind;
     if (readingState != null) result.readingState = readingState;
     if (readingSessions != null) result.readingSessions.addAll(readingSessions);
+    if (chaptersReversed != null) result.chaptersReversed = chaptersReversed;
     return result;
   }
 
@@ -555,6 +560,7 @@ class Book extends $pb.GeneratedMessage {
         subBuilder: ReadingState.$_createMessage)
     ..pPM<ReadingSession>(36, _omitFieldNames ? '' : 'readingSessions',
         subBuilder: ReadingSession.$_createMessage)
+    ..aOB(37, _omitFieldNames ? '' : 'chaptersReversed')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -863,6 +869,17 @@ class Book extends $pb.GeneratedMessage {
   /// Stretches of reading, for History (format version 4).
   @$pb.TagNumber(36)
   $pb.PbList<ReadingSession> get readingSessions => $_getList(35);
+
+  /// Whether the chapter list is shown last chapter first (format version 5). Absent for a book
+  /// whose reader never chose, which is not the same as one who chose reading order.
+  @$pb.TagNumber(37)
+  $core.bool get chaptersReversed => $_getBF(36);
+  @$pb.TagNumber(37)
+  set chaptersReversed($core.bool value) => $_setBool(36, value);
+  @$pb.TagNumber(37)
+  $core.bool hasChaptersReversed() => $_has(36);
+  @$pb.TagNumber(37)
+  void clearChaptersReversed() => $_clearField(37);
 }
 
 /// An author or narrator credit. §4.3 normalises people in the database; here a credit carries the

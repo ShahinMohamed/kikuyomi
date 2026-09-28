@@ -11,6 +11,8 @@
 ///
 /// Version 5 makes room for reading (ADR-0019): `book.kind`, and `reading_state`. One model with a
 /// kind rather than a parallel set of tables, which is §1.2's lesson from Aniyomi taken literally.
+/// Version 9 adds `book.chapters_reversed`, the order one book's chapter list is read in.
+///
 /// Version 8 adds `book.file_path`, for a book that is one file: an EPUB downloaded whole from a
 /// source (ADR-0021), or one added from this device.
 ///
@@ -97,6 +99,16 @@ class Books extends Table {
 
   /// §4.3: playback speed is remembered per book.
   RealColumn get playbackSpeed => real().nullable()();
+
+  /// Whether this book's chapter list is shown last chapter first (version 9).
+  ///
+  /// Per book, because it is a fact about the book rather than a preference about the app: a
+  /// four-hundred-chapter serial is easiest to use from the newest end, and a novel is not.
+  ///
+  /// Nullable, so that "never chosen" can be told from "chosen to read in order". That is what lets
+  /// a restore carry a choice over without overwriting one made since, the way a remembered playback
+  /// speed does.
+  BoolColumn get chaptersReversed => boolean().nullable()();
 
   /// Where the book's own file is, for a book that is one file rather than chapters to fetch
   /// (version 8, ADR-0021).

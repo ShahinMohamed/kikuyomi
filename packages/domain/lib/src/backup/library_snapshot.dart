@@ -216,6 +216,7 @@ final class BookSnapshot {
     this.detailsFetched = false,
     this.playbackSpeed,
     this.kind = SourceKind.audio,
+    this.chaptersReversed,
     this.mediaFiles = const [],
     this.chapters = const [],
     this.progress,
@@ -246,6 +247,9 @@ final class BookSnapshot {
 
   /// A book to listen to or a book to read (ADR-0019).
   final SourceKind kind;
+
+  /// Whether the chapter list is shown last chapter first, or null for a reader who never chose.
+  final bool? chaptersReversed;
 
   final DateTime createdAt;
   final DateTime updatedAt;

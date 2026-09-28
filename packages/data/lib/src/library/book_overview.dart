@@ -31,12 +31,16 @@ final class BookOverview {
     this.webUrl,
     this.sourceName,
     this.kind = SourceKind.audio,
+    this.chaptersReversed = false,
   });
 
   final int bookId;
 
   /// A book to listen to or a book to read (ADR-0019), which decides what opening it does.
   final SourceKind kind;
+
+  /// Whether the chapter list is shown last chapter first.
+  final bool chaptersReversed;
   final String title;
 
   /// The name of the book's cover in the covers folder, or null for a book with no cover. `CoverFiles`
@@ -310,6 +314,7 @@ Future<BookOverview?> _loadBookOverview(KikuyomiDatabase db, int bookId) async {
     bookId: book.id,
     sourceId: book.sourceId,
     kind: book.kind,
+    chaptersReversed: book.chaptersReversed ?? false,
     title: book.title,
     description: book.description,
     genres: book.genres,

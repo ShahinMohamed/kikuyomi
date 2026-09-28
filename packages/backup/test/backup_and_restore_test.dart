@@ -81,6 +81,7 @@ BookSnapshot playedOn(
   lastRefreshedAt: book.lastRefreshedAt,
   detailsFetched: book.detailsFetched,
   playbackSpeed: book.playbackSpeed,
+  chaptersReversed: book.chaptersReversed,
   kind: book.kind,
   createdAt: book.createdAt,
   updatedAt: book.updatedAt,

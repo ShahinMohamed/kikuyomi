@@ -23,6 +23,7 @@ import 'generated/schema_v5.dart' as v5;
 import 'generated/schema_v6.dart' as v6;
 import 'generated/schema_v7.dart' as v7;
 import 'generated/schema_v8.dart' as v8;
+import 'generated/schema_v9.dart' as v9;
 
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -429,6 +430,53 @@ void main() {
           expect(migrated.wordCount, null);
           expect(migrated.title, 'Chapter One');
           expect(migrated.isListened, 1);
+        },
+      );
+    },
+  );
+
+  test(
+    'upgrading to version 9 leaves every chapter list in reading order',
+    () async {
+      // Version 9 adds `book.chapters_reversed`, and nobody has chosen yet, so it arrives null
+      // everywhere. Null is not false: it is what lets a restore carry a choice over without
+      // overwriting one made since.
+      final source = v8.SourcesData(
+        id: 9,
+        key: 'novels',
+        name: 'Novels',
+        lang: 'en',
+        isEnabled: 1,
+        isPinned: 0,
+      );
+      final novel = v8.BooksData(
+        id: 1,
+        sourceId: 9,
+        key: 'a-novel',
+        title: 'A Novel',
+        kind: 'text',
+        genres: '[]',
+        inLibrary: 1,
+        detailsFetched: 1,
+        userOverrides: '[]',
+        createdAt: _at,
+        updatedAt: _at,
+      );
+
+      await verifier.testWithDataIntegrity(
+        oldVersion: 8,
+        newVersion: 9,
+        createOld: v8.DatabaseAtV8.new,
+        createNew: v9.DatabaseAtV9.new,
+        openTestedDatabase: KikuyomiDatabase.new,
+        createItems: (batch, db) {
+          batch.insert(db.sources, source);
+          batch.insert(db.books, novel);
+        },
+        validateItems: (db) async {
+          final migrated = await db.select(db.books).getSingle();
+          expect(migrated.chaptersReversed, null);
+          expect(migrated.title, 'A Novel');
         },
       );
     },
