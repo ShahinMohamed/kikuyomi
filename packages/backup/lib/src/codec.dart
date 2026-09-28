@@ -30,7 +30,7 @@ import 'gzip_frame.dart';
 /// Raise it with every change to `proto/backup.proto` that a reader could care about, additive or
 /// not, including a change in what a field means. `proto/backup.proto` lists what each version
 /// changed.
-const backupFormatVersion = 3;
+const backupFormatVersion = 4;
 
 /// The first format version whose chapters' `is_listened` is recorded, and so to be restored as
 /// written (§4.5).
@@ -412,6 +412,15 @@ pb.Book _encodeBook(BookSnapshot book) {
       ),
       null => null,
     },
+    readingSessions: [
+      for (final session in book.readingSessions)
+        pb.ReadingSession(
+          chapterKey: session.chapterKey,
+          startedAtMs: _ms(session.startedAt),
+          endedAtMs: _ms(session.endedAt),
+          deviceId: session.deviceId,
+        ),
+    ],
     listeningSessions: [
       for (final session in book.sessions)
         pb.ListeningSession(
@@ -666,6 +675,12 @@ final class _Decoder {
       ).firstOrNull;
     }
 
+    final readingSessions = _each(
+      book.readingSessions,
+      describe: (_) => 'a stretch of reading of $what',
+      decode: (session) => _readingSession(session, chapterKeys),
+    );
+
     final sessions = _each(
       book.listeningSessions,
       describe: (_) => 'a listening session of $what',
@@ -712,6 +727,7 @@ final class _Decoder {
       progress: progress,
       reading: reading,
       sessions: sessions,
+      readingSessions: readingSessions,
       bookmarks: bookmarks,
       categories: List.unmodifiable(memberships),
     );
@@ -833,6 +849,27 @@ final class _Decoder {
       chapterKey: state.chapterKey,
       progress: state.progress,
       updatedAt: _time(state.updatedAtMs),
+    );
+  }
+
+  ReadingSessionSnapshot _readingSession(
+    pb.ReadingSession session,
+    Set<String> chapterKeys,
+  ) {
+    final startedAt = _time(session.startedAtMs);
+    final endedAt = _time(session.endedAtMs);
+    if (endedAt.isBefore(startedAt)) {
+      throw const _Skip('it ends before it starts');
+    }
+    return ReadingSessionSnapshot(
+      // A chapter the backup lacks does not cost the stretch: history outlives chapters.
+      chapterKey:
+          session.hasChapterKey() && chapterKeys.contains(session.chapterKey)
+          ? session.chapterKey
+          : null,
+      startedAt: startedAt,
+      endedAt: endedAt,
+      deviceId: session.deviceId,
     );
   }
 

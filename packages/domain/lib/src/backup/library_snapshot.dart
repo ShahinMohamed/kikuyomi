@@ -221,6 +221,7 @@ final class BookSnapshot {
     this.progress,
     this.reading,
     this.sessions = const [],
+    this.readingSessions = const [],
     this.bookmarks = const [],
     this.categories = const [],
   });
@@ -258,6 +259,9 @@ final class BookSnapshot {
   final ReadingSnapshot? reading;
 
   final List<SessionSnapshot> sessions;
+
+  /// Stretches of reading, for History (ADR-0019).
+  final List<ReadingSessionSnapshot> readingSessions;
   final List<BookmarkSnapshot> bookmarks;
 
   /// The names of the categories the book belongs to.
@@ -270,6 +274,7 @@ final class BookSnapshot {
       progress != null ||
       reading != null ||
       sessions.isNotEmpty ||
+      readingSessions.isNotEmpty ||
       bookmarks.isNotEmpty ||
       categories.isNotEmpty ||
       chapters.any((chapter) => chapter.hasProgress);
@@ -405,6 +410,26 @@ final class ReadingSnapshot {
   final double progress;
 
   final DateTime updatedAt;
+}
+
+/// One stretch of reading, for History (ADR-0019).
+///
+/// [SessionSnapshot] without the parts that mean something only for a recording.
+final class ReadingSessionSnapshot {
+  const ReadingSessionSnapshot({
+    required this.startedAt,
+    required this.endedAt,
+    required this.deviceId,
+    this.chapterKey,
+  });
+
+  final DateTime startedAt;
+  final DateTime endedAt;
+  final String deviceId;
+
+  /// The chapter read, or null when it is no longer known: history outlives the chapters it
+  /// covered.
+  final String? chapterKey;
 }
 
 /// One stretch of listening, for history and statistics.

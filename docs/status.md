@@ -375,8 +375,20 @@ decided, rather than a second set of tables.
   Shipping records which extensions were offered, so one added by a later version arrives on the
   next start and one the listener removed stays removed.
 
-Not run on a device yet. The probe runs Standard Ebooks' `getChapterContent` on the real engine
-against recorded pages; everything else is unit and widget tested.
+- **Its own words.** A chapter of a book to read is marked read rather than listened, and says how
+  long it takes in the only unit that means anything for text: `chapter.word_count` (version 6) over
+  a pace the reader sets in Settings, defaulting to 250 words a minute. A local EPUB is counted as
+  it is added, a chapter from a source the first time it is fetched, and one never counted says
+  nothing rather than guessing.
+- **History** covers reading (version 7's `reading_session`), merged with listening into one record
+  of time spent with books. A stretch of reading runs from opening a chapter to the last scroll plus
+  three minutes, so a book left open on a table is not recorded as an afternoon of reading. Backups
+  carry it from format version 4, additively.
+
+First run on an iPhone found what a green suite could not: the ebook side still spoke the
+audiobook's language, History and categories did not cover it, and Flutter's own back-swipe strip
+is 20 logical pixels wide — about three millimetres — which made the gesture feel broken on every
+screen. All three are fixed; the reader itself has still not been used on a device for long.
 
 ## Extensions
 

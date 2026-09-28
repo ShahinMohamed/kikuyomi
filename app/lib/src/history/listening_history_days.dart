@@ -1,4 +1,4 @@
-/// Listening history as a screen reads it: newest first, under a heading per day (§6.4).
+/// History as a screen reads it: what was listened to and what was read: newest first, under a heading per day (§6.4).
 ///
 /// A pure function, because every interesting case here is a calendar one. "Today" and "Yesterday"
 /// are relative to the listener's own midnight, not to a fixed number of hours, so a session at
@@ -26,9 +26,9 @@ final class HistoryDay {
   /// Its entries, newest first.
   final List<HistoryEntry> entries;
 
-  /// Everything heard that day, added up.
-  Duration get listened =>
-      entries.fold(Duration.zero, (total, entry) => total + entry.listened);
+  /// Everything heard and read that day, added up.
+  Duration get spent =>
+      entries.fold(Duration.zero, (total, entry) => total + entry.spent);
 }
 
 /// [entries] grouped under a heading per day, newest day first.

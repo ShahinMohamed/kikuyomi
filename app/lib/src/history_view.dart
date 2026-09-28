@@ -81,13 +81,13 @@ class _NothingHeard extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'Nothing heard yet',
+            'Nothing here yet',
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 8),
           Text(
-            'Once you have listened to something, it appears here with when '
-            'you heard it.',
+            'Once you have listened to something, or read it, it appears here '
+            'with when.',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyMedium,
           ),
@@ -119,7 +119,7 @@ class _DayHeading extends StatelessWidget {
           // What the day came to. The reason anyone keeps a listening history at all is to see this
           // number, and adding it up by hand from a dozen rows is not a thing anyone does.
           Text(
-            formatDuration(day.listened),
+            formatDuration(day.spent),
             style: theme.textTheme.labelMedium?.copyWith(
               color: theme.colorScheme.outline,
             ),
@@ -191,12 +191,14 @@ class _EntryTile extends StatelessWidget {
   /// When it was heard, for how long, and at what speed if that was not ordinary.
   String _when() {
     final at = formatTimeOfDay(entry.startedAt);
-    final length = formatDuration(entry.listened);
-    // Shown only when it is not 1x. A history of a book heard at 1.8x is a different record of time
-    // from one heard at normal speed, and the figure explains why an hour of listening covered two.
-    final speed = entry.speed == 1.0
+    final length = formatDuration(entry.spent);
+    // Shown only when it is not 1x, and never for a book that was read, which has no speed. A
+    // history of a book heard at 1.8x is a different record of time from one heard at normal speed,
+    // and the figure explains why an hour of listening covered two.
+    final rate = entry.speed;
+    final speed = rate == null || rate == 1.0
         ? ''
-        : ' · ${entry.speed.toStringAsFixed(entry.speed.truncateToDouble() == entry.speed ? 0 : 1)}x';
+        : ' · ${rate.toStringAsFixed(rate.truncateToDouble() == rate ? 0 : 1)}x';
     return '$at · $length$speed';
   }
 }

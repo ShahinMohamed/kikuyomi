@@ -87,7 +87,7 @@ void main() {
         ),
       );
 
-  test('creates exactly the tables of version 5', () {
+  test('creates exactly the tables of version 7', () {
     expect(
       {for (final table in db.allTables) table.actualTableName},
       {
@@ -101,6 +101,7 @@ void main() {
         'playback_states',
         'reading_states',
         'listening_sessions',
+        'reading_sessions',
         'bookmarks',
         'categories',
         'book_categories',

@@ -81,6 +81,7 @@ final class BookMerge {
     this.progress,
     this.reading,
     this.newSessions = const [],
+    this.newReadingSessions = const [],
     this.newBookmarks = const [],
     this.newCategories = const [],
   });
@@ -119,6 +120,7 @@ final class BookMerge {
   final ReadingSnapshot? reading;
 
   final List<SessionSnapshot> newSessions;
+  final List<ReadingSessionSnapshot> newReadingSessions;
   final List<BookmarkSnapshot> newBookmarks;
 
   /// The names of categories to add the book to.
@@ -137,6 +139,7 @@ final class BookMerge {
       progress == null &&
       reading == null &&
       newSessions.isEmpty &&
+      newReadingSessions.isEmpty &&
       newBookmarks.isEmpty &&
       newCategories.isEmpty;
 }

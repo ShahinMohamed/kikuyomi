@@ -62,6 +62,7 @@ BookSnapshot reversed(BookSnapshot book) => BookSnapshot(
   progress: book.progress,
   reading: book.reading,
   sessions: book.sessions.reversed.toList(),
+  readingSessions: book.readingSessions.reversed.toList(),
   bookmarks: book.bookmarks.reversed.toList(),
   categories: book.categories.reversed.toList(),
 );

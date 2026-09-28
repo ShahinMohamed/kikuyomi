@@ -202,6 +202,14 @@ BookMerge _mergeBook({
     ...chaptersHere.keys,
     for (final chapter in newChapters) chapter.key,
   };
+  final readingHere = {
+    for (final session in here.readingSessions) _identifyReading(session),
+  };
+  final newReadingSessions = [
+    for (final session in backedUp.readingSessions)
+      if (!readingHere.contains(_identifyReading(session))) session,
+  ];
+
   final sessionsHere = {
     for (final session in here.sessions) _identifySession(session),
   };
@@ -230,6 +238,7 @@ BookMerge _mergeBook({
     progress: progress,
     reading: reading,
     newSessions: List.unmodifiable(newSessions),
+    newReadingSessions: List.unmodifiable(newReadingSessions),
     newBookmarks: List.unmodifiable(newBookmarks),
     newCategories: List.unmodifiable([
       for (final name in backedUp.categories)
@@ -279,6 +288,12 @@ bool _sameMoment(DateTime? a, DateTime? b) =>
 
 (String, int, int) _identifyMark(BookmarkSnapshot mark) =>
     (mark.chapterKey, mark.positionMs, mark.createdAt.millisecondsSinceEpoch);
+
+(String, int, int) _identifyReading(ReadingSessionSnapshot session) => (
+  session.deviceId,
+  session.startedAt.millisecondsSinceEpoch,
+  session.endedAt.millisecondsSinceEpoch,
+);
 
 (String, int, int) _identifySession(SessionSnapshot session) => (
   session.deviceId,

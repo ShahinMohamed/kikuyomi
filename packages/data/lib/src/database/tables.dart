@@ -11,6 +11,8 @@
 ///
 /// Version 5 makes room for reading (ADR-0019): `book.kind`, and `reading_state`. One model with a
 /// kind rather than a parallel set of tables, which is §1.2's lesson from Aniyomi taken literally.
+/// Version 7 adds `reading_session`, so that History covers reading as well as listening.
+///
 /// Version 6 adds `chapter.word_count`, so that a book to read can say how long a chapter is the
 /// way an audiobook says it in minutes.
 ///
@@ -306,6 +308,34 @@ class ListeningSessions extends Table {
   IntColumn get startGlobalMs => integer()();
   IntColumn get endGlobalMs => integer()();
   RealColumn get speed => real()();
+  TextColumn get deviceId => text()();
+}
+
+/// One stretch of reading, for History (version 7, ADR-0019).
+///
+/// `listening_session`'s counterpart, and deliberately not the same table: half its columns are a
+/// global position in milliseconds and a playback speed, which mean nothing for text. What both
+/// have in common is what History shows — a book, a chapter, and when.
+///
+/// There is no "covered" figure. A listening session covers a stretch of a recording, which is a
+/// fact; how much of a chapter was read in eleven minutes is a guess, and History is a record of
+/// what happened rather than a place to guess.
+@DataClassName('ReadingSessionRow')
+@TableIndex(name: 'reading_sessions_started', columns: {#startedAt})
+class ReadingSessions extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get bookId =>
+      integer().references(Books, #id, onDelete: KeyAction.cascade)();
+
+  /// Nullable and cleared when the chapter is purged, for `listening_session`'s reason: history
+  /// outlives the chapters it covered.
+  IntColumn get chapterId => integer().nullable().references(
+    Chapters,
+    #id,
+    onDelete: KeyAction.setNull,
+  )();
+  DateTimeColumn get startedAt => dateTime()();
+  DateTimeColumn get endedAt => dateTime()();
   TextColumn get deviceId => text()();
 }
 

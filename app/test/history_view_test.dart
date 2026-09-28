@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kikuyomi/src/history/listening_history_days.dart';
 import 'package:kikuyomi/src/history_view.dart';
 import 'package:kikuyomi_data/kikuyomi_data.dart';
+import 'package:kikuyomi_source_api/kikuyomi_source_api.dart' show SourceKind;
 
 var _nextId = 0;
 
@@ -20,6 +21,7 @@ HistoryEntry entry({
   final id = ++_nextId;
   return HistoryEntry(
     sessionId: id,
+    kind: SourceKind.audio,
     bookId: bookId,
     bookTitle: title,
     chapterTitle: chapterTitle,
@@ -32,6 +34,8 @@ HistoryEntry entry({
 }
 
 void main() {
+  _reading();
+
   setUp(() => _nextId = 0);
 
   late List<HistoryEntry> opened;
@@ -66,7 +70,7 @@ void main() {
   testWidgets('with nothing heard, says so', (tester) async {
     await pumpView(tester, const []);
 
-    expect(find.text('Nothing heard yet'), findsOneWidget);
+    expect(find.text('Nothing here yet'), findsOneWidget);
   });
 
   testWidgets('shows the book, the chapter and when it was heard', (
@@ -137,5 +141,61 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(removed, hasLength(1));
+  });
+}
+
+/// History shows reading beside listening (ADR-0019).
+void _reading() {
+  HistoryEntry read({
+    required DateTime startedAt,
+    Duration spent = const Duration(minutes: 25),
+  }) => HistoryEntry(
+    sessionId: ++_nextId,
+    kind: SourceKind.text,
+    bookId: 2,
+    bookTitle: 'A Novel',
+    chapterTitle: 'Chapter One',
+    startedAt: startedAt,
+    endedAt: startedAt.add(spent),
+  );
+
+  Future<void> pump(WidgetTester tester, List<HistoryEntry> entries) =>
+      tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: HistoryView(
+              days: groupHistoryByDay(entries, now: DateTime(2026, 9, 28, 23)),
+              coverOf: (_) => null,
+              onOpenBook: (_) {},
+              onRemove: (_) {},
+            ),
+          ),
+        ),
+      );
+
+  group('a stretch of reading', () {
+    testWidgets('says how long it was, and nothing about speed', (
+      tester,
+    ) async {
+      await pump(tester, [read(startedAt: DateTime(2026, 9, 28, 21))]);
+
+      expect(find.text('A Novel'), findsOneWidget);
+      expect(find.text('Chapter One'), findsOneWidget);
+      expect(find.textContaining('25 m'), findsWidgets);
+      expect(find.textContaining('x'), findsNothing);
+    });
+
+    testWidgets('counts towards the day it was read in', (tester) async {
+      await pump(tester, [
+        read(startedAt: DateTime(2026, 9, 28, 21)),
+        entry(
+          startedAt: DateTime(2026, 9, 28, 20),
+          listened: const Duration(minutes: 35),
+        ),
+      ]);
+
+      // An evening of reading and listening is one evening, and one total.
+      expect(find.textContaining('1 h'), findsOneWidget);
+    });
   });
 }
