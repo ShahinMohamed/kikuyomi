@@ -37,7 +37,7 @@ class KikuyomiDatabase extends _$KikuyomiDatabase {
   KikuyomiDatabase(super.executor);
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -73,6 +73,15 @@ class KikuyomiDatabase extends _$KikuyomiDatabase {
         await m.addColumn(schema.books, schema.books.kind);
         await m.createTable(schema.readingStates);
         await m.createIndex(schema.readingStatesRecent);
+      },
+      // Version 8: a book that is one file (ADR-0021). Every book to read added from this device
+      // already had one — its key is the path — so the column is filled in from that, which leaves
+      // one way to find a book's file rather than two.
+      from7To8: (m, schema) async {
+        await m.addColumn(schema.books, schema.books.filePath);
+        await m.database.customStatement(
+          "UPDATE books SET file_path = key WHERE kind = 'text' AND source_id = 1",
+        );
       },
       // Version 7: History covers reading too, and a stretch of reading is not a stretch of
       // listening with the audio columns left empty, so it gets a table of its own.

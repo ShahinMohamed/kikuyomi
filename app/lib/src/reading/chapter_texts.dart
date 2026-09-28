@@ -39,12 +39,20 @@ final class ChapterTextException implements Exception {
 
 /// Reads chapters of books to read.
 final class ChapterTexts {
-  ChapterTexts(this._db, {required this.mediaRoot, required this.openSource});
+  ChapterTexts(
+    this._db, {
+    required this.mediaRoot,
+    required this.bookFiles,
+    required this.openSource,
+  });
 
   final KikuyomiDatabase _db;
 
   /// What a local book's stored path is relative to, when it is not absolute.
   final Directory mediaRoot;
+
+  /// Where a book downloaded whole from a source is kept (ADR-0021).
+  final Directory bookFiles;
 
   /// Opens the source a book came from.
   final Future<api.ContentSource> Function(int sourceId) openSource;
@@ -62,11 +70,19 @@ final class ChapterTexts {
     if (book == null || chapter == null || chapter.bookId != bookId) {
       throw const ChapterTextException('This chapter is no longer here.');
     }
-    if (book.sourceId == localSourceId) {
-      final file = File(resolveLocalPath(book.key, mediaRoot: mediaRoot));
+    // A book that is one file: one added from this device, whose key is its path, or one
+    // downloaded whole from a source (ADR-0021). Either way the text is in the file, not on the web.
+    final onDevice = book.sourceId == localSourceId;
+    final path = book.filePath ?? (onDevice ? book.key : null);
+    if (path != null) {
+      final file = File(
+        resolveLocalPath(path, mediaRoot: onDevice ? mediaRoot : bookFiles),
+      );
       if (!await file.exists()) {
         throw ChapterTextException(
-          'The book is no longer at ${file.path}. Add it again from where it is now.',
+          onDevice
+              ? 'The book is no longer at ${file.path}. Add it again from where it is now.'
+              : 'This book is no longer on the device. Add it again to download it.',
         );
       }
       return readEpubChapter(file, chapter.key);

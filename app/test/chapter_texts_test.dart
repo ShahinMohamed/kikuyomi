@@ -75,6 +75,7 @@ void main() {
     final texts = ChapterTexts(
       db,
       mediaRoot: folder,
+      bookFiles: folder,
       openSource: (_) => throw StateError('a local book has no source'),
     );
     final text = await texts.load(bookId, await chapterOf(bookId));
@@ -96,6 +97,7 @@ void main() {
     final texts = ChapterTexts(
       db,
       mediaRoot: folder,
+      bookFiles: folder,
       openSource: (_) => throw StateError('unused'),
     );
     await expectLater(
@@ -141,6 +143,7 @@ void main() {
     final texts = ChapterTexts(
       db,
       mediaRoot: folder,
+      bookFiles: folder,
       openSource: (_) async => source,
     );
 

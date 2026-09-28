@@ -9,6 +9,7 @@ final class StorageLocations {
   const StorageLocations._({
     required this.appData,
     required this.covers,
+    required this.bookFiles,
     required this.installedExtensions,
     required this.extensionDrop,
     required this.downloads,
@@ -31,6 +32,11 @@ final class StorageLocations {
     // §5.1 keeps library covers in internal storage on every platform. Application Support is that
     // on iOS too, where Documents would show them in the Files app beside the imported books.
     final covers = Directory('${appData.path}${Platform.pathSeparator}covers');
+    // A book downloaded whole from a source (ADR-0021). Internal storage, like covers: it is the
+    // app's copy of the book, not something the reader put there or should have to tidy up.
+    final bookFiles = Directory(
+      '${appData.path}${Platform.pathSeparator}book_files',
+    );
     final installedExtensions = Directory(
       '${appData.path}${Platform.pathSeparator}installed_extensions',
     );
@@ -42,6 +48,7 @@ final class StorageLocations {
       return StorageLocations._(
         appData: appData,
         covers: covers,
+        bookFiles: bookFiles,
         installedExtensions: installedExtensions,
         extensionDrop: Directory(
           '${documents.path}${Platform.pathSeparator}Extensions',
@@ -61,6 +68,7 @@ final class StorageLocations {
     return StorageLocations._(
       appData: appData,
       covers: covers,
+      bookFiles: bookFiles,
       installedExtensions: installedExtensions,
       extensionDrop: Directory(
         '${appData.path}${Platform.pathSeparator}Extensions',
@@ -77,6 +85,13 @@ final class StorageLocations {
 
   /// App-internal data: the database and the device id.
   final Directory appData;
+
+  /// The files of books downloaded whole from a source (ADR-0021), inside [appData]. It may not
+  /// exist yet: whatever writes the first book creates it.
+  ///
+  /// Book rows record the file by its name in this folder, never by an absolute path, for the
+  /// reason covers are recorded that way: on iOS the app's container moves when the app is updated.
+  final Directory bookFiles;
 
   /// The covers of books in the library (§5.1), inside [appData]. It may not exist yet: whatever
   /// writes the first cover creates it.

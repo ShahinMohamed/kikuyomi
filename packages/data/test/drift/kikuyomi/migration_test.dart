@@ -22,6 +22,7 @@ import 'generated/schema_v4.dart' as v4;
 import 'generated/schema_v5.dart' as v5;
 import 'generated/schema_v6.dart' as v6;
 import 'generated/schema_v7.dart' as v7;
+import 'generated/schema_v8.dart' as v8;
 
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -432,6 +433,70 @@ void main() {
       );
     },
   );
+
+  test('upgrading to version 8 gives a local book its file back', () async {
+    // Version 8 adds `book.file_path`. A book to read added from this device already had one - its
+    // key is the path - so the migration fills the column in from that, leaving one way to find a
+    // book's file rather than two. Every other book has none.
+    final local = v7.SourcesData(
+      id: 1,
+      key: 'local',
+      name: 'Local files',
+      lang: 'und',
+      isEnabled: 1,
+      isPinned: 0,
+    );
+    final novel = v7.BooksData(
+      id: 1,
+      sourceId: 1,
+      key: r'C:\Books\A Novel.epub',
+      title: 'A Novel',
+      kind: 'text',
+      genres: '[]',
+      inLibrary: 1,
+      detailsFetched: 1,
+      userOverrides: '[]',
+      createdAt: _at,
+      updatedAt: _at,
+    );
+    final audiobook = v7.BooksData(
+      id: 2,
+      sourceId: 1,
+      key: r'C:\Books\A Book.m4b',
+      title: 'A Book',
+      kind: 'audio',
+      genres: '[]',
+      inLibrary: 1,
+      detailsFetched: 1,
+      userOverrides: '[]',
+      createdAt: _at,
+      updatedAt: _at,
+    );
+
+    await verifier.testWithDataIntegrity(
+      oldVersion: 7,
+      newVersion: 8,
+      createOld: v7.DatabaseAtV7.new,
+      createNew: v8.DatabaseAtV8.new,
+      openTestedDatabase: KikuyomiDatabase.new,
+      createItems: (batch, db) {
+        batch.insert(db.sources, local);
+        batch.insert(db.books, novel);
+        batch.insert(db.books, audiobook);
+      },
+      validateItems: (db) async {
+        final migrated = await (db.select(
+          db.books,
+        )..orderBy([(b) => OrderingTerm.asc(b.id)])).get();
+        expect(migrated[0].filePath, r'C:\Books\A Novel.epub');
+        expect(
+          migrated[1].filePath,
+          null,
+          reason: 'an audiobook is made of media files, not one file',
+        );
+      },
+    );
+  });
 
   test(
     'upgrading to version 7 leaves listening history where it was',
