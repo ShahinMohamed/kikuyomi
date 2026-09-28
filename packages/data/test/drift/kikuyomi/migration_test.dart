@@ -21,6 +21,7 @@ import 'generated/schema_v2.dart' as v2;
 import 'generated/schema_v4.dart' as v4;
 import 'generated/schema_v5.dart' as v5;
 import 'generated/schema_v6.dart' as v6;
+import 'generated/schema_v7.dart' as v7;
 
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -432,6 +433,66 @@ void main() {
     },
   );
 
+  test(
+    'upgrading to version 7 leaves listening history where it was',
+    () async {
+      // Version 7 adds `reading_session`. Listening history is a separate table and must not be
+      // touched by a migration that adds one beside it.
+      final source = v6.SourcesData(
+        id: 7,
+        key: 'librivox',
+        name: 'LibriVox',
+        lang: 'en',
+        isEnabled: 1,
+        isPinned: 0,
+      );
+      final book = v6.BooksData(
+        id: 1,
+        sourceId: 7,
+        key: 'a-book',
+        title: 'A Book',
+        kind: 'audio',
+        genres: '[]',
+        inLibrary: 1,
+        detailsFetched: 1,
+        userOverrides: '[]',
+        createdAt: _at,
+        updatedAt: _at,
+      );
+      final session = v6.ListeningSessionsData(
+        id: 1,
+        bookId: 1,
+        startedAt: _at,
+        endedAt: _tenMinutesLater,
+        startGlobalMs: 0,
+        endGlobalMs: 600000,
+        speed: 1.25,
+        deviceId: 'this-pc',
+      );
+
+      await verifier.testWithDataIntegrity(
+        oldVersion: 6,
+        newVersion: 7,
+        createOld: v6.DatabaseAtV6.new,
+        createNew: v7.DatabaseAtV7.new,
+        openTestedDatabase: KikuyomiDatabase.new,
+        createItems: (batch, db) {
+          batch.insert(db.sources, source);
+          batch.insert(db.books, book);
+          batch.insert(db.listeningSessions, session);
+        },
+        validateItems: (db) async {
+          expect(await db.select(db.listeningSessions).get(), hasLength(1));
+          expect(
+            await db.select(db.readingSessions).get(),
+            isEmpty,
+            reason: 'nobody has read anything yet',
+          );
+        },
+      );
+    },
+  );
+
   test("an upgraded library can hold a reader's place", () async {
     // Version 5's other half, used for real: a book to read, a chapter, and where the reader is in
     // it, with the connection's foreign keys on.
@@ -509,3 +570,8 @@ final _when = DateTime.utc(2026, 9, 13, 12, 30, 45, 123);
 /// [_when] as a version-1 row holds it: the snapshot row classes are generated from the schema
 /// alone, so every column is the SQLite type it really is, and a timestamp is the text drift writes.
 final _at = _when.toIso8601String();
+
+/// Ten minutes after [_at], in the same form, for a row that spans a stretch of time.
+final _tenMinutesLater = _when
+    .add(const Duration(minutes: 10))
+    .toIso8601String();

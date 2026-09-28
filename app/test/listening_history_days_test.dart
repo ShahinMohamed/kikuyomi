@@ -8,6 +8,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kikuyomi/src/history/listening_history_days.dart';
 import 'package:kikuyomi_data/kikuyomi_data.dart';
+import 'package:kikuyomi_source_api/kikuyomi_source_api.dart' show SourceKind;
 
 var _nextId = 0;
 
@@ -22,6 +23,7 @@ HistoryEntry entry({
   final id = ++_nextId;
   return HistoryEntry(
     sessionId: id,
+    kind: SourceKind.audio,
     bookId: bookId,
     bookTitle: title,
     chapterTitle: chapterTitle,
@@ -82,7 +84,7 @@ void main() {
         entry(startedAt: local(25, 11), listened: const Duration(minutes: 25)),
       ], now: now);
 
-      expect(days.single.listened, const Duration(minutes: 45));
+      expect(days.single.spent, const Duration(minutes: 45));
     });
 
     test('nothing heard is no days, not an empty day', () {

@@ -71,6 +71,10 @@ Future<LibrarySnapshot> readLibrarySnapshot(KikuyomiDatabase db) async {
     for (final state in await db.select(db.readingStates).get())
       state.bookId: state,
   };
+  final readingSessionsByBook = _groupBy(
+    await db.select(db.readingSessions).get(),
+    (session) => session.bookId,
+  );
   final sessionsByBook = _groupBy(
     await db.select(db.listeningSessions).get(),
     (session) => session.bookId,
@@ -110,6 +114,20 @@ Future<LibrarySnapshot> readLibrarySnapshot(KikuyomiDatabase db) async {
           deviceId: session.deviceId,
         ),
     ]..sort(_bySession);
+
+    final readingSessions = [
+      for (final session
+          in readingSessionsByBook[book.id] ?? const <ReadingSessionRow>[])
+        ReadingSessionSnapshot(
+          chapterKey: switch (session.chapterId) {
+            final id? => chapterKeys[id]!,
+            null => null,
+          },
+          startedAt: session.startedAt,
+          endedAt: session.endedAt,
+          deviceId: session.deviceId,
+        ),
+    ]..sort(_byReadingSession);
 
     final bookmarks = [
       for (final bookmark in bookmarksByBook[book.id] ?? const <BookmarkRow>[])
@@ -220,6 +238,7 @@ Future<LibrarySnapshot> readLibrarySnapshot(KikuyomiDatabase db) async {
               updatedAt: reading.updatedAt,
             ),
       sessions: sessions,
+      readingSessions: readingSessions,
       bookmarks: bookmarks,
       categories: [
         for (final membership in memberships)
@@ -271,6 +290,13 @@ int _byCredit(ContributorSnapshot a, ContributorSnapshot b) {
 }
 
 int _bySession(SessionSnapshot a, SessionSnapshot b) {
+  final byStart = a.startedAt.compareTo(b.startedAt);
+  if (byStart != 0) return byStart;
+  final byEnd = a.endedAt.compareTo(b.endedAt);
+  return byEnd != 0 ? byEnd : a.deviceId.compareTo(b.deviceId);
+}
+
+int _byReadingSession(ReadingSessionSnapshot a, ReadingSessionSnapshot b) {
   final byStart = a.startedAt.compareTo(b.startedAt);
   if (byStart != 0) return byStart;
   final byEnd = a.endedAt.compareTo(b.endedAt);

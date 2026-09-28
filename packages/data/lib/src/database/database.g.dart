@@ -5413,6 +5413,415 @@ class ReadingStatesCompanion extends UpdateCompanion<ReadingStateRow> {
   }
 }
 
+class $ReadingSessionsTable extends ReadingSessions
+    with TableInfo<$ReadingSessionsTable, ReadingSessionRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ReadingSessionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _bookIdMeta = const VerificationMeta('bookId');
+  @override
+  late final GeneratedColumn<int> bookId = GeneratedColumn<int>(
+    'book_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES books (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _chapterIdMeta = const VerificationMeta(
+    'chapterId',
+  );
+  @override
+  late final GeneratedColumn<int> chapterId = GeneratedColumn<int>(
+    'chapter_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES chapters (id) ON DELETE SET NULL',
+    ),
+  );
+  static const VerificationMeta _startedAtMeta = const VerificationMeta(
+    'startedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> startedAt = GeneratedColumn<DateTime>(
+    'started_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _endedAtMeta = const VerificationMeta(
+    'endedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> endedAt = GeneratedColumn<DateTime>(
+    'ended_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _deviceIdMeta = const VerificationMeta(
+    'deviceId',
+  );
+  @override
+  late final GeneratedColumn<String> deviceId = GeneratedColumn<String>(
+    'device_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    bookId,
+    chapterId,
+    startedAt,
+    endedAt,
+    deviceId,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'reading_sessions';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ReadingSessionRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('book_id')) {
+      context.handle(
+        _bookIdMeta,
+        bookId.isAcceptableOrUnknown(data['book_id']!, _bookIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_bookIdMeta);
+    }
+    if (data.containsKey('chapter_id')) {
+      context.handle(
+        _chapterIdMeta,
+        chapterId.isAcceptableOrUnknown(data['chapter_id']!, _chapterIdMeta),
+      );
+    }
+    if (data.containsKey('started_at')) {
+      context.handle(
+        _startedAtMeta,
+        startedAt.isAcceptableOrUnknown(data['started_at']!, _startedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_startedAtMeta);
+    }
+    if (data.containsKey('ended_at')) {
+      context.handle(
+        _endedAtMeta,
+        endedAt.isAcceptableOrUnknown(data['ended_at']!, _endedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_endedAtMeta);
+    }
+    if (data.containsKey('device_id')) {
+      context.handle(
+        _deviceIdMeta,
+        deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_deviceIdMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ReadingSessionRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ReadingSessionRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      bookId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}book_id'],
+      )!,
+      chapterId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}chapter_id'],
+      ),
+      startedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}started_at'],
+      )!,
+      endedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}ended_at'],
+      )!,
+      deviceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}device_id'],
+      )!,
+    );
+  }
+
+  @override
+  $ReadingSessionsTable createAlias(String alias) {
+    return $ReadingSessionsTable(attachedDatabase, alias);
+  }
+}
+
+class ReadingSessionRow extends DataClass
+    implements Insertable<ReadingSessionRow> {
+  final int id;
+  final int bookId;
+
+  /// Nullable and cleared when the chapter is purged, for `listening_session`'s reason: history
+  /// outlives the chapters it covered.
+  final int? chapterId;
+  final DateTime startedAt;
+  final DateTime endedAt;
+  final String deviceId;
+  const ReadingSessionRow({
+    required this.id,
+    required this.bookId,
+    this.chapterId,
+    required this.startedAt,
+    required this.endedAt,
+    required this.deviceId,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['book_id'] = Variable<int>(bookId);
+    if (!nullToAbsent || chapterId != null) {
+      map['chapter_id'] = Variable<int>(chapterId);
+    }
+    map['started_at'] = Variable<DateTime>(startedAt);
+    map['ended_at'] = Variable<DateTime>(endedAt);
+    map['device_id'] = Variable<String>(deviceId);
+    return map;
+  }
+
+  ReadingSessionsCompanion toCompanion(bool nullToAbsent) {
+    return ReadingSessionsCompanion(
+      id: Value(id),
+      bookId: Value(bookId),
+      chapterId: chapterId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(chapterId),
+      startedAt: Value(startedAt),
+      endedAt: Value(endedAt),
+      deviceId: Value(deviceId),
+    );
+  }
+
+  factory ReadingSessionRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ReadingSessionRow(
+      id: serializer.fromJson<int>(json['id']),
+      bookId: serializer.fromJson<int>(json['bookId']),
+      chapterId: serializer.fromJson<int?>(json['chapterId']),
+      startedAt: serializer.fromJson<DateTime>(json['startedAt']),
+      endedAt: serializer.fromJson<DateTime>(json['endedAt']),
+      deviceId: serializer.fromJson<String>(json['deviceId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'bookId': serializer.toJson<int>(bookId),
+      'chapterId': serializer.toJson<int?>(chapterId),
+      'startedAt': serializer.toJson<DateTime>(startedAt),
+      'endedAt': serializer.toJson<DateTime>(endedAt),
+      'deviceId': serializer.toJson<String>(deviceId),
+    };
+  }
+
+  ReadingSessionRow copyWith({
+    int? id,
+    int? bookId,
+    Value<int?> chapterId = const Value.absent(),
+    DateTime? startedAt,
+    DateTime? endedAt,
+    String? deviceId,
+  }) => ReadingSessionRow(
+    id: id ?? this.id,
+    bookId: bookId ?? this.bookId,
+    chapterId: chapterId.present ? chapterId.value : this.chapterId,
+    startedAt: startedAt ?? this.startedAt,
+    endedAt: endedAt ?? this.endedAt,
+    deviceId: deviceId ?? this.deviceId,
+  );
+  ReadingSessionRow copyWithCompanion(ReadingSessionsCompanion data) {
+    return ReadingSessionRow(
+      id: data.id.present ? data.id.value : this.id,
+      bookId: data.bookId.present ? data.bookId.value : this.bookId,
+      chapterId: data.chapterId.present ? data.chapterId.value : this.chapterId,
+      startedAt: data.startedAt.present ? data.startedAt.value : this.startedAt,
+      endedAt: data.endedAt.present ? data.endedAt.value : this.endedAt,
+      deviceId: data.deviceId.present ? data.deviceId.value : this.deviceId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ReadingSessionRow(')
+          ..write('id: $id, ')
+          ..write('bookId: $bookId, ')
+          ..write('chapterId: $chapterId, ')
+          ..write('startedAt: $startedAt, ')
+          ..write('endedAt: $endedAt, ')
+          ..write('deviceId: $deviceId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, bookId, chapterId, startedAt, endedAt, deviceId);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ReadingSessionRow &&
+          other.id == this.id &&
+          other.bookId == this.bookId &&
+          other.chapterId == this.chapterId &&
+          other.startedAt == this.startedAt &&
+          other.endedAt == this.endedAt &&
+          other.deviceId == this.deviceId);
+}
+
+class ReadingSessionsCompanion extends UpdateCompanion<ReadingSessionRow> {
+  final Value<int> id;
+  final Value<int> bookId;
+  final Value<int?> chapterId;
+  final Value<DateTime> startedAt;
+  final Value<DateTime> endedAt;
+  final Value<String> deviceId;
+  const ReadingSessionsCompanion({
+    this.id = const Value.absent(),
+    this.bookId = const Value.absent(),
+    this.chapterId = const Value.absent(),
+    this.startedAt = const Value.absent(),
+    this.endedAt = const Value.absent(),
+    this.deviceId = const Value.absent(),
+  });
+  ReadingSessionsCompanion.insert({
+    this.id = const Value.absent(),
+    required int bookId,
+    this.chapterId = const Value.absent(),
+    required DateTime startedAt,
+    required DateTime endedAt,
+    required String deviceId,
+  }) : bookId = Value(bookId),
+       startedAt = Value(startedAt),
+       endedAt = Value(endedAt),
+       deviceId = Value(deviceId);
+  static Insertable<ReadingSessionRow> custom({
+    Expression<int>? id,
+    Expression<int>? bookId,
+    Expression<int>? chapterId,
+    Expression<DateTime>? startedAt,
+    Expression<DateTime>? endedAt,
+    Expression<String>? deviceId,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (bookId != null) 'book_id': bookId,
+      if (chapterId != null) 'chapter_id': chapterId,
+      if (startedAt != null) 'started_at': startedAt,
+      if (endedAt != null) 'ended_at': endedAt,
+      if (deviceId != null) 'device_id': deviceId,
+    });
+  }
+
+  ReadingSessionsCompanion copyWith({
+    Value<int>? id,
+    Value<int>? bookId,
+    Value<int?>? chapterId,
+    Value<DateTime>? startedAt,
+    Value<DateTime>? endedAt,
+    Value<String>? deviceId,
+  }) {
+    return ReadingSessionsCompanion(
+      id: id ?? this.id,
+      bookId: bookId ?? this.bookId,
+      chapterId: chapterId ?? this.chapterId,
+      startedAt: startedAt ?? this.startedAt,
+      endedAt: endedAt ?? this.endedAt,
+      deviceId: deviceId ?? this.deviceId,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (bookId.present) {
+      map['book_id'] = Variable<int>(bookId.value);
+    }
+    if (chapterId.present) {
+      map['chapter_id'] = Variable<int>(chapterId.value);
+    }
+    if (startedAt.present) {
+      map['started_at'] = Variable<DateTime>(startedAt.value);
+    }
+    if (endedAt.present) {
+      map['ended_at'] = Variable<DateTime>(endedAt.value);
+    }
+    if (deviceId.present) {
+      map['device_id'] = Variable<String>(deviceId.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ReadingSessionsCompanion(')
+          ..write('id: $id, ')
+          ..write('bookId: $bookId, ')
+          ..write('chapterId: $chapterId, ')
+          ..write('startedAt: $startedAt, ')
+          ..write('endedAt: $endedAt, ')
+          ..write('deviceId: $deviceId')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $ListeningSessionsTable extends ListeningSessions
     with TableInfo<$ListeningSessionsTable, ListeningSessionRow> {
   @override
@@ -9335,6 +9744,9 @@ abstract class _$KikuyomiDatabase extends GeneratedDatabase {
   );
   late final $PlaybackStatesTable playbackStates = $PlaybackStatesTable(this);
   late final $ReadingStatesTable readingStates = $ReadingStatesTable(this);
+  late final $ReadingSessionsTable readingSessions = $ReadingSessionsTable(
+    this,
+  );
   late final $ListeningSessionsTable listeningSessions =
       $ListeningSessionsTable(this);
   late final $BookmarksTable bookmarks = $BookmarksTable(this);
@@ -9361,6 +9773,10 @@ abstract class _$KikuyomiDatabase extends GeneratedDatabase {
     'reading_states_recent',
     'CREATE INDEX reading_states_recent ON reading_states (updated_at)',
   );
+  late final Index readingSessionsStarted = Index(
+    'reading_sessions_started',
+    'CREATE INDEX reading_sessions_started ON reading_sessions (started_at)',
+  );
   late final Index listeningSessionsStarted = Index(
     'listening_sessions_started',
     'CREATE INDEX listening_sessions_started ON listening_sessions (started_at)',
@@ -9383,6 +9799,7 @@ abstract class _$KikuyomiDatabase extends GeneratedDatabase {
     chapterSegments,
     playbackStates,
     readingStates,
+    readingSessions,
     listeningSessions,
     bookmarks,
     categories,
@@ -9395,6 +9812,7 @@ abstract class _$KikuyomiDatabase extends GeneratedDatabase {
     chaptersOrder,
     playbackStatesRecent,
     readingStatesRecent,
+    readingSessionsStarted,
     listeningSessionsStarted,
     downloadTasksPending,
   ];
@@ -9441,6 +9859,20 @@ abstract class _$KikuyomiDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('reading_states', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'books',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('reading_sessions', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'chapters',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('reading_sessions', kind: UpdateKind.update)],
     ),
     WritePropagation(
       on: TableUpdateQuery.onTableName(
@@ -10041,6 +10473,27 @@ final class $$BooksTableReferences
     );
   }
 
+  static MultiTypedResultKey<$ReadingSessionsTable, List<ReadingSessionRow>>
+  _readingSessionsRefsTable(_$KikuyomiDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.readingSessions,
+        aliasName: 'books__id__reading_sessions__book_id',
+      );
+
+  $$ReadingSessionsTableProcessedTableManager get readingSessionsRefs {
+    final manager = $$ReadingSessionsTableTableManager(
+      $_db,
+      $_db.readingSessions,
+    ).filter((f) => f.bookId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _readingSessionsRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
   static MultiTypedResultKey<$ListeningSessionsTable, List<ListeningSessionRow>>
   _listeningSessionsRefsTable(_$KikuyomiDatabase db) =>
       MultiTypedResultKey.fromTable(
@@ -10396,6 +10849,31 @@ class $$BooksTableFilterComposer
           }) => $$ReadingStatesTableFilterComposer(
             $db: $db,
             $table: $db.readingStates,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> readingSessionsRefs(
+    Expression<bool> Function($$ReadingSessionsTableFilterComposer f) f,
+  ) {
+    final $$ReadingSessionsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.readingSessions,
+      getReferencedColumn: (t) => t.bookId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ReadingSessionsTableFilterComposer(
+            $db: $db,
+            $table: $db.readingSessions,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -10928,6 +11406,31 @@ class $$BooksTableAnnotationComposer
     return f(composer);
   }
 
+  Expression<T> readingSessionsRefs<T extends Object>(
+    Expression<T> Function($$ReadingSessionsTableAnnotationComposer a) f,
+  ) {
+    final $$ReadingSessionsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.readingSessions,
+      getReferencedColumn: (t) => t.bookId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ReadingSessionsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.readingSessions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
   Expression<T> listeningSessionsRefs<T extends Object>(
     Expression<T> Function($$ListeningSessionsTableAnnotationComposer a) f,
   ) {
@@ -11025,6 +11528,7 @@ class $$BooksTableTableManager
             bool mediaFilesRefs,
             bool playbackStatesRefs,
             bool readingStatesRefs,
+            bool readingSessionsRefs,
             bool listeningSessionsRefs,
             bool bookmarksRefs,
             bool bookCategoriesRefs,
@@ -11185,6 +11689,7 @@ class $$BooksTableTableManager
                 mediaFilesRefs = false,
                 playbackStatesRefs = false,
                 readingStatesRefs = false,
+                readingSessionsRefs = false,
                 listeningSessionsRefs = false,
                 bookmarksRefs = false,
                 bookCategoriesRefs = false,
@@ -11197,6 +11702,7 @@ class $$BooksTableTableManager
                     if (mediaFilesRefs) db.mediaFiles,
                     if (playbackStatesRefs) db.playbackStates,
                     if (readingStatesRefs) db.readingStates,
+                    if (readingSessionsRefs) db.readingSessions,
                     if (listeningSessionsRefs) db.listeningSessions,
                     if (bookmarksRefs) db.bookmarks,
                     if (bookCategoriesRefs) db.bookCategories,
@@ -11338,6 +11844,27 @@ class $$BooksTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (readingSessionsRefs)
+                        await $_getPrefetchedData<
+                          BookRow,
+                          $BooksTable,
+                          ReadingSessionRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$BooksTableReferences
+                              ._readingSessionsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$BooksTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).readingSessionsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.bookId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                       if (listeningSessionsRefs)
                         await $_getPrefetchedData<
                           BookRow,
@@ -11428,6 +11955,7 @@ typedef $$BooksTableProcessedTableManager =
         bool mediaFilesRefs,
         bool playbackStatesRefs,
         bool readingStatesRefs,
+        bool readingSessionsRefs,
         bool listeningSessionsRefs,
         bool bookmarksRefs,
         bool bookCategoriesRefs,
@@ -12152,6 +12680,27 @@ final class $$ChaptersTableReferences
     );
   }
 
+  static MultiTypedResultKey<$ReadingSessionsTable, List<ReadingSessionRow>>
+  _readingSessionsRefsTable(_$KikuyomiDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.readingSessions,
+        aliasName: 'chapters__id__reading_sessions__chapter_id',
+      );
+
+  $$ReadingSessionsTableProcessedTableManager get readingSessionsRefs {
+    final manager = $$ReadingSessionsTableTableManager(
+      $_db,
+      $_db.readingSessions,
+    ).filter((f) => f.chapterId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _readingSessionsRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
   static MultiTypedResultKey<$ListeningSessionsTable, List<ListeningSessionRow>>
   _listeningSessionsRefsTable(_$KikuyomiDatabase db) =>
       MultiTypedResultKey.fromTable(
@@ -12360,6 +12909,31 @@ class $$ChaptersTableFilterComposer
           }) => $$ReadingStatesTableFilterComposer(
             $db: $db,
             $table: $db.readingStates,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> readingSessionsRefs(
+    Expression<bool> Function($$ReadingSessionsTableFilterComposer f) f,
+  ) {
+    final $$ReadingSessionsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.readingSessions,
+      getReferencedColumn: (t) => t.chapterId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ReadingSessionsTableFilterComposer(
+            $db: $db,
+            $table: $db.readingSessions,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -12686,6 +13260,31 @@ class $$ChaptersTableAnnotationComposer
     return f(composer);
   }
 
+  Expression<T> readingSessionsRefs<T extends Object>(
+    Expression<T> Function($$ReadingSessionsTableAnnotationComposer a) f,
+  ) {
+    final $$ReadingSessionsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.readingSessions,
+      getReferencedColumn: (t) => t.chapterId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ReadingSessionsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.readingSessions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
   Expression<T> listeningSessionsRefs<T extends Object>(
     Expression<T> Function($$ListeningSessionsTableAnnotationComposer a) f,
   ) {
@@ -12756,6 +13355,7 @@ class $$ChaptersTableTableManager
             bool chapterSegmentsRefs,
             bool playbackStatesRefs,
             bool readingStatesRefs,
+            bool readingSessionsRefs,
             bool listeningSessionsRefs,
             bool bookmarksRefs,
           })
@@ -12853,6 +13453,7 @@ class $$ChaptersTableTableManager
                 chapterSegmentsRefs = false,
                 playbackStatesRefs = false,
                 readingStatesRefs = false,
+                readingSessionsRefs = false,
                 listeningSessionsRefs = false,
                 bookmarksRefs = false,
               }) {
@@ -12862,6 +13463,7 @@ class $$ChaptersTableTableManager
                     if (chapterSegmentsRefs) db.chapterSegments,
                     if (playbackStatesRefs) db.playbackStates,
                     if (readingStatesRefs) db.readingStates,
+                    if (readingSessionsRefs) db.readingSessions,
                     if (listeningSessionsRefs) db.listeningSessions,
                     if (bookmarksRefs) db.bookmarks,
                   ],
@@ -12960,6 +13562,27 @@ class $$ChaptersTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (readingSessionsRefs)
+                        await $_getPrefetchedData<
+                          ChapterRow,
+                          $ChaptersTable,
+                          ReadingSessionRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ChaptersTableReferences
+                              ._readingSessionsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ChaptersTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).readingSessionsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.chapterId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                       if (listeningSessionsRefs)
                         await $_getPrefetchedData<
                           ChapterRow,
@@ -13027,6 +13650,7 @@ typedef $$ChaptersTableProcessedTableManager =
         bool chapterSegmentsRefs,
         bool playbackStatesRefs,
         bool readingStatesRefs,
+        bool readingSessionsRefs,
         bool listeningSessionsRefs,
         bool bookmarksRefs,
       })
@@ -14869,6 +15493,429 @@ typedef $$ReadingStatesTableProcessedTableManager =
       $$ReadingStatesTableUpdateCompanionBuilder,
       (ReadingStateRow, $$ReadingStatesTableReferences),
       ReadingStateRow,
+      PrefetchHooks Function({bool bookId, bool chapterId})
+    >;
+typedef $$ReadingSessionsTableCreateCompanionBuilder =
+    ReadingSessionsCompanion Function({
+      Value<int> id,
+      required int bookId,
+      Value<int?> chapterId,
+      required DateTime startedAt,
+      required DateTime endedAt,
+      required String deviceId,
+    });
+typedef $$ReadingSessionsTableUpdateCompanionBuilder =
+    ReadingSessionsCompanion Function({
+      Value<int> id,
+      Value<int> bookId,
+      Value<int?> chapterId,
+      Value<DateTime> startedAt,
+      Value<DateTime> endedAt,
+      Value<String> deviceId,
+    });
+
+final class $$ReadingSessionsTableReferences
+    extends
+        BaseReferences<
+          _$KikuyomiDatabase,
+          $ReadingSessionsTable,
+          ReadingSessionRow
+        > {
+  $$ReadingSessionsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $BooksTable _bookIdTable(_$KikuyomiDatabase db) =>
+      db.books.createAlias('reading_sessions__book_id__books__id');
+
+  $$BooksTableProcessedTableManager get bookId {
+    final $_column = $_itemColumn<int>('book_id')!;
+
+    final manager = $$BooksTableTableManager(
+      $_db,
+      $_db.books,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_bookIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $ChaptersTable _chapterIdTable(_$KikuyomiDatabase db) =>
+      db.chapters.createAlias('reading_sessions__chapter_id__chapters__id');
+
+  $$ChaptersTableProcessedTableManager? get chapterId {
+    final $_column = $_itemColumn<int>('chapter_id');
+    if ($_column == null) return null;
+    final manager = $$ChaptersTableTableManager(
+      $_db,
+      $_db.chapters,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_chapterIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$ReadingSessionsTableFilterComposer
+    extends Composer<_$KikuyomiDatabase, $ReadingSessionsTable> {
+  $$ReadingSessionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get startedAt => $composableBuilder(
+    column: $table.startedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get endedAt => $composableBuilder(
+    column: $table.endedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get deviceId => $composableBuilder(
+    column: $table.deviceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$BooksTableFilterComposer get bookId {
+    final $$BooksTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.bookId,
+      referencedTable: $db.books,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BooksTableFilterComposer(
+            $db: $db,
+            $table: $db.books,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ChaptersTableFilterComposer get chapterId {
+    final $$ChaptersTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.chapterId,
+      referencedTable: $db.chapters,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ChaptersTableFilterComposer(
+            $db: $db,
+            $table: $db.chapters,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ReadingSessionsTableOrderingComposer
+    extends Composer<_$KikuyomiDatabase, $ReadingSessionsTable> {
+  $$ReadingSessionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get startedAt => $composableBuilder(
+    column: $table.startedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get endedAt => $composableBuilder(
+    column: $table.endedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get deviceId => $composableBuilder(
+    column: $table.deviceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$BooksTableOrderingComposer get bookId {
+    final $$BooksTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.bookId,
+      referencedTable: $db.books,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BooksTableOrderingComposer(
+            $db: $db,
+            $table: $db.books,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ChaptersTableOrderingComposer get chapterId {
+    final $$ChaptersTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.chapterId,
+      referencedTable: $db.chapters,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ChaptersTableOrderingComposer(
+            $db: $db,
+            $table: $db.chapters,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ReadingSessionsTableAnnotationComposer
+    extends Composer<_$KikuyomiDatabase, $ReadingSessionsTable> {
+  $$ReadingSessionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get startedAt =>
+      $composableBuilder(column: $table.startedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get endedAt =>
+      $composableBuilder(column: $table.endedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get deviceId =>
+      $composableBuilder(column: $table.deviceId, builder: (column) => column);
+
+  $$BooksTableAnnotationComposer get bookId {
+    final $$BooksTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.bookId,
+      referencedTable: $db.books,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BooksTableAnnotationComposer(
+            $db: $db,
+            $table: $db.books,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ChaptersTableAnnotationComposer get chapterId {
+    final $$ChaptersTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.chapterId,
+      referencedTable: $db.chapters,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ChaptersTableAnnotationComposer(
+            $db: $db,
+            $table: $db.chapters,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ReadingSessionsTableTableManager
+    extends
+        RootTableManager<
+          _$KikuyomiDatabase,
+          $ReadingSessionsTable,
+          ReadingSessionRow,
+          $$ReadingSessionsTableFilterComposer,
+          $$ReadingSessionsTableOrderingComposer,
+          $$ReadingSessionsTableAnnotationComposer,
+          $$ReadingSessionsTableCreateCompanionBuilder,
+          $$ReadingSessionsTableUpdateCompanionBuilder,
+          (ReadingSessionRow, $$ReadingSessionsTableReferences),
+          ReadingSessionRow,
+          PrefetchHooks Function({bool bookId, bool chapterId})
+        > {
+  $$ReadingSessionsTableTableManager(
+    _$KikuyomiDatabase db,
+    $ReadingSessionsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ReadingSessionsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ReadingSessionsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ReadingSessionsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> bookId = const Value.absent(),
+                Value<int?> chapterId = const Value.absent(),
+                Value<DateTime> startedAt = const Value.absent(),
+                Value<DateTime> endedAt = const Value.absent(),
+                Value<String> deviceId = const Value.absent(),
+              }) => ReadingSessionsCompanion(
+                id: id,
+                bookId: bookId,
+                chapterId: chapterId,
+                startedAt: startedAt,
+                endedAt: endedAt,
+                deviceId: deviceId,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int bookId,
+                Value<int?> chapterId = const Value.absent(),
+                required DateTime startedAt,
+                required DateTime endedAt,
+                required String deviceId,
+              }) => ReadingSessionsCompanion.insert(
+                id: id,
+                bookId: bookId,
+                chapterId: chapterId,
+                startedAt: startedAt,
+                endedAt: endedAt,
+                deviceId: deviceId,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$ReadingSessionsTable, ReadingSessionRow>(table),
+                  $$ReadingSessionsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({bookId = false, chapterId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (bookId) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.bookId,
+                        referencedTable: $$ReadingSessionsTableReferences
+                            ._bookIdTable(db),
+                        referencedColumn: $$ReadingSessionsTableReferences
+                            ._bookIdTable(db)
+                            .id,
+                      ) as T;
+                    }
+                    if (chapterId) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.chapterId,
+                        referencedTable: $$ReadingSessionsTableReferences
+                            ._chapterIdTable(db),
+                        referencedColumn: $$ReadingSessionsTableReferences
+                            ._chapterIdTable(db)
+                            .id,
+                      ) as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$ReadingSessionsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$KikuyomiDatabase,
+      $ReadingSessionsTable,
+      ReadingSessionRow,
+      $$ReadingSessionsTableFilterComposer,
+      $$ReadingSessionsTableOrderingComposer,
+      $$ReadingSessionsTableAnnotationComposer,
+      $$ReadingSessionsTableCreateCompanionBuilder,
+      $$ReadingSessionsTableUpdateCompanionBuilder,
+      (ReadingSessionRow, $$ReadingSessionsTableReferences),
+      ReadingSessionRow,
       PrefetchHooks Function({bool bookId, bool chapterId})
     >;
 typedef $$ListeningSessionsTableCreateCompanionBuilder =
@@ -17742,6 +18789,8 @@ class $KikuyomiDatabaseManager {
       $$PlaybackStatesTableTableManager(_db, _db.playbackStates);
   $$ReadingStatesTableTableManager get readingStates =>
       $$ReadingStatesTableTableManager(_db, _db.readingStates);
+  $$ReadingSessionsTableTableManager get readingSessions =>
+      $$ReadingSessionsTableTableManager(_db, _db.readingSessions);
   $$ListeningSessionsTableTableManager get listeningSessions =>
       $$ListeningSessionsTableTableManager(_db, _db.listeningSessions);
   $$BookmarksTableTableManager get bookmarks =>

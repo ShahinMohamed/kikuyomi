@@ -387,6 +387,14 @@ const Book$json = {
       '6': '.kikuyomi.backup.ReadingState',
       '10': 'readingState'
     },
+    {
+      '1': 'reading_sessions',
+      '3': 36,
+      '4': 3,
+      '5': 11,
+      '6': '.kikuyomi.backup.ReadingSession',
+      '10': 'readingSessions'
+    },
   ],
   '8': [
     {'1': '_subtitle'},
@@ -437,12 +445,13 @@ final $typed_data.Uint8List bookDescriptor = $convert.base64Decode(
     'JrcxggIAMoCzIZLmtpa3V5b21pLmJhY2t1cC5Cb29rbWFya1IJYm9va21hcmtzEh4KCmNhdGVn'
     'b3JpZXMYISADKAlSCmNhdGVnb3JpZXMSLQoEa2luZBgiIAEoDjIZLmtpa3V5b21pLmJhY2t1cC'
     '5Cb29rS2luZFIEa2luZBJCCg1yZWFkaW5nX3N0YXRlGCMgASgLMh0ua2lrdXlvbWkuYmFja3Vw'
-    'LlJlYWRpbmdTdGF0ZVIMcmVhZGluZ1N0YXRlQgsKCV9zdWJ0aXRsZUIOCgxfZGVzY3JpcHRpb2'
-    '5CDAoKX2NvdmVyX3VybEIOCgxfc2VyaWVzX25hbWVCDwoNX3Nlcmllc19pbmRleEILCglfbGFu'
-    'Z3VhZ2VCDAoKX3B1Ymxpc2hlckIRCg9fcHVibGlzaGVkX2RhdGVCBwoFX2lzYm5CCwoJX2Ficm'
-    'lkZ2VkQgkKB19zdGF0dXNCEQoPX2NvbnRlbnRfcmF0aW5nQhQKEl90b3RhbF9kdXJhdGlvbl9t'
-    'c0IKCghfd2ViX3VybEITChFfZGF0ZV9hZGRlZF9hdF9tc0IXChVfbGFzdF9yZWZyZXNoZWRfYX'
-    'RfbXNCEQoPX3BsYXliYWNrX3NwZWVk');
+    'LlJlYWRpbmdTdGF0ZVIMcmVhZGluZ1N0YXRlEkoKEHJlYWRpbmdfc2Vzc2lvbnMYJCADKAsyHy'
+    '5raWt1eW9taS5iYWNrdXAuUmVhZGluZ1Nlc3Npb25SD3JlYWRpbmdTZXNzaW9uc0ILCglfc3Vi'
+    'dGl0bGVCDgoMX2Rlc2NyaXB0aW9uQgwKCl9jb3Zlcl91cmxCDgoMX3Nlcmllc19uYW1lQg8KDV'
+    '9zZXJpZXNfaW5kZXhCCwoJX2xhbmd1YWdlQgwKCl9wdWJsaXNoZXJCEQoPX3B1Ymxpc2hlZF9k'
+    'YXRlQgcKBV9pc2JuQgsKCV9hYnJpZGdlZEIJCgdfc3RhdHVzQhEKD19jb250ZW50X3JhdGluZ0'
+    'IUChJfdG90YWxfZHVyYXRpb25fbXNCCgoIX3dlYl91cmxCEwoRX2RhdGVfYWRkZWRfYXRfbXNC'
+    'FwoVX2xhc3RfcmVmcmVzaGVkX2F0X21zQhEKD19wbGF5YmFja19zcGVlZA==');
 
 @$core.Deprecated('Use contributorDescriptor instead')
 const Contributor$json = {
@@ -727,6 +736,35 @@ const ReadingState$json = {
 final $typed_data.Uint8List readingStateDescriptor = $convert.base64Decode(
     'CgxSZWFkaW5nU3RhdGUSHwoLY2hhcHRlcl9rZXkYASABKAlSCmNoYXB0ZXJLZXkSGgoIcHJvZ3'
     'Jlc3MYAiABKAFSCHByb2dyZXNzEiIKDXVwZGF0ZWRfYXRfbXMYAyABKANSC3VwZGF0ZWRBdE1z');
+
+@$core.Deprecated('Use readingSessionDescriptor instead')
+const ReadingSession$json = {
+  '1': 'ReadingSession',
+  '2': [
+    {
+      '1': 'chapter_key',
+      '3': 1,
+      '4': 1,
+      '5': 9,
+      '9': 0,
+      '10': 'chapterKey',
+      '17': true
+    },
+    {'1': 'started_at_ms', '3': 2, '4': 1, '5': 3, '10': 'startedAtMs'},
+    {'1': 'ended_at_ms', '3': 3, '4': 1, '5': 3, '10': 'endedAtMs'},
+    {'1': 'device_id', '3': 4, '4': 1, '5': 9, '10': 'deviceId'},
+  ],
+  '8': [
+    {'1': '_chapter_key'},
+  ],
+};
+
+/// Descriptor for `ReadingSession`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List readingSessionDescriptor = $convert.base64Decode(
+    'Cg5SZWFkaW5nU2Vzc2lvbhIkCgtjaGFwdGVyX2tleRgBIAEoCUgAUgpjaGFwdGVyS2V5iAEBEi'
+    'IKDXN0YXJ0ZWRfYXRfbXMYAiABKANSC3N0YXJ0ZWRBdE1zEh4KC2VuZGVkX2F0X21zGAMgASgD'
+    'UgllbmRlZEF0TXMSGwoJZGV2aWNlX2lkGAQgASgJUghkZXZpY2VJZEIOCgxfY2hhcHRlcl9rZX'
+    'k=');
 
 @$core.Deprecated('Use listeningSessionDescriptor instead')
 const ListeningSession$json = {

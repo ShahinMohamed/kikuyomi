@@ -104,7 +104,7 @@ class HistoryScreen extends ConsumerWidget {
     final messenger = ScaffoldMessenger.of(context);
     switch (scope) {
       case _RemoveScope.entry:
-        await deleteHistoryEntry(database, entry.sessionId);
+        await deleteHistoryEntry(database, entry);
       case _RemoveScope.book:
         final gone = await deleteBookHistory(database, entry.bookId);
         tellInSnackBar(

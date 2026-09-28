@@ -123,6 +123,14 @@ LibrarySnapshot fullLibrary() => LibrarySnapshot(
         progress: 0.375,
         updatedAt: at(15),
       ),
+      readingSessions: [
+        ReadingSessionSnapshot(
+          chapterKey: 'one',
+          startedAt: at(16),
+          endedAt: at(17),
+          deviceId: 'this-pc',
+        ),
+      ],
       sessions: [
         SessionSnapshot(
           chapterKey: 'one',

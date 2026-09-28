@@ -59,6 +59,10 @@ message Backup {
   //    version 2 reader would restore a book to read as an audiobook, without a word, so a backup
   //    holding one has `min_reader_version` 3. A backup of audiobooks alone restores correctly on a
   //    version 2 reader and keeps `min_reader_version` at 1 (ADR-0020).
+  // 4: `Book.reading_sessions`, so History survives a restore for books that were read as well as
+  //    for books that were listened to. Additive: a version 3 reader skips them and restores
+  //    everything else, losing only reading history, which it has nowhere to put anyway, so
+  //    `min_reader_version` is unchanged.
   uint32 format_version = 1;
 
   // The oldest format version a reader can implement and still restore this backup correctly.
@@ -169,6 +173,9 @@ message Book {
   // Where the reader of a book to read is up to. Absent for a book never opened, and for every
   // audiobook, whose place is `playback_state`.
   ReadingState reading_state = 35;
+
+  // Stretches of reading, for History (format version 4).
+  repeated ReadingSession reading_sessions = 36;
 }
 
 enum BookKind {
@@ -298,6 +305,20 @@ message ReadingState {
   double progress = 2;
 
   int64 updated_at_ms = 3;
+}
+
+// One stretch of reading, for History (ADR-0019).
+//
+// `ListeningSession` without the parts that mean something only for a recording: no position in the
+// book, and no speed.
+message ReadingSession {
+  // A `Chapter.key` of the same book. Absent when the chapter was purged, since history outlives
+  // the chapters it covered.
+  optional string chapter_key = 1;
+
+  int64 started_at_ms = 2;
+  int64 ended_at_ms = 3;
+  string device_id = 4;
 }
 
 // One stretch of listening, for history and statistics.

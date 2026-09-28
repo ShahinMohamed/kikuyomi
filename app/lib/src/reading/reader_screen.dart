@@ -10,6 +10,7 @@ import '../providers.dart';
 import '../services.dart';
 import 'chapter_texts.dart';
 import 'reader_view.dart';
+import 'reading_sessions.dart';
 import 'reading_time.dart';
 
 /// Reading a book (ADR-0019), a chapter at a time. Reached through `ReaderRoute`.
@@ -29,7 +30,8 @@ class ReaderScreen extends ConsumerStatefulWidget {
   ConsumerState<ReaderScreen> createState() => _ReaderScreenState();
 }
 
-class _ReaderScreenState extends ConsumerState<ReaderScreen> {
+class _ReaderScreenState extends ConsumerState<ReaderScreen>
+    with WidgetsBindingObserver {
   /// Held from the start: the last place is saved when the screen goes, and by then `ref` may not
   /// be used.
   late final AppServices _services = ref.read(servicesProvider);
@@ -46,17 +48,60 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   /// not write again on every frame spent there.
   final _finished = <int>{};
 
+  /// When the reader has been reading, for History.
+  late final _sessions = ReadingSessionRecorder(clock: _services.clock);
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     unawaited(_openFirst());
+  }
+
+  /// Leaving the app ends the stretch of reading; coming back begins another.
+  ///
+  /// Without this, putting the phone in a pocket mid-chapter would go on being recorded as reading
+  /// until the app was next opened, which could be days.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    switch (state) {
+      case AppLifecycleState.resumed:
+        final chapterId = _chapterId;
+        if (chapterId != null && !_sessions.isRecording) {
+          _sessions.start(chapterId);
+        }
+      case AppLifecycleState.inactive:
+        break;
+      case AppLifecycleState.hidden:
+      case AppLifecycleState.paused:
+      case AppLifecycleState.detached:
+        _recordStretch(_sessions.stop());
+    }
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _saveSoon?.cancel();
     _saveNow();
+    _recordStretch(_sessions.stop());
     super.dispose();
+  }
+
+  /// Writes [stretch] to History, if there was one worth recording.
+  void _recordStretch(ReadingStretch? stretch) {
+    if (stretch == null) return;
+    unawaited(
+      _services
+          .recordReading(
+            bookId: widget.bookId,
+            chapterId: stretch.chapterId,
+            startedAt: stretch.startedAt,
+            endedAt: stretch.endedAt,
+          )
+          // History is worth keeping and not worth interrupting anyone over.
+          .catchError((Object _) {}),
+    );
   }
 
   Future<void> _openFirst() async {
@@ -89,6 +134,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     _saveSoon?.cancel();
     _saveNow();
     final loading = _services.chapterTexts.load(widget.bookId, chapterId);
+    // A chapter left behind is a stretch of reading finished, and the new one begins another.
+    _recordStretch(_sessions.start(chapterId));
     setState(() {
       _chapterId = chapterId;
       _openAt = at;
@@ -122,6 +169,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     final chapterId = _chapterId;
     if (chapterId == null) return;
     _pending = progress;
+    // Scrolling is the sign of life History counts: a chapter open and still is not being read.
+    _sessions.alive();
     _saveSoon?.cancel();
     _saveSoon = Timer(const Duration(milliseconds: 800), _saveNow);
     if (atEnd) _markFinished(chapterId);

@@ -105,6 +105,7 @@ BookSnapshot playedOn(
     deviceId: 'this-pc',
   ),
   reading: book.reading,
+  readingSessions: book.readingSessions,
   sessions: book.sessions,
   bookmarks: book.bookmarks,
   categories: book.categories,

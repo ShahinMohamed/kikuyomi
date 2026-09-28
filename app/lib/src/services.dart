@@ -49,6 +49,7 @@ final class AppServices {
     required this.streamCache,
     required this.downloads,
     required this.downloadFiles,
+    required this.deviceId,
   }) : covers = CoverFiles(locations.covers),
        _importFolder = ImportFolder(mediaRoot: locations.mediaRoot);
 
@@ -239,6 +240,7 @@ final class AppServices {
       streamCache: streamCache,
       downloads: downloads,
       downloadFiles: downloadFiles,
+      deviceId: deviceId,
     );
   }
 
@@ -283,6 +285,9 @@ final class AppServices {
   /// Where downloaded files live, and what they come to (§5.6).
   final DownloadedFiles downloadFiles;
 
+  /// This installation, as progress and history record it.
+  final String deviceId;
+
   /// The bytes of streamed books kept on this device, so that moving about in one is instant. Not
   /// a download (§5.2): it is bounded, it is emptied when it grows past its bound, and
   /// [StreamAudioCache.clear] throws all of it away.
@@ -295,6 +300,21 @@ final class AppServices {
     database,
     mediaRoot: locations.mediaRoot,
     openSource: openSource,
+  );
+
+  /// Records a stretch of reading for History.
+  Future<void> recordReading({
+    required int bookId,
+    required int chapterId,
+    required DateTime startedAt,
+    required DateTime endedAt,
+  }) => recordReadingSession(
+    database,
+    bookId: bookId,
+    chapterId: chapterId,
+    startedAt: startedAt,
+    endedAt: endedAt,
+    deviceId: deviceId,
   );
 
   /// Records how many words chapter [chapterId] holds, the first time its text is fetched.

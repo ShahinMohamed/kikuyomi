@@ -82,6 +82,7 @@ BookSnapshot _merge(BookSnapshot book, BookMerge merge) {
     progress: merge.progress ?? book.progress,
     reading: merge.reading ?? book.reading,
     sessions: [...book.sessions, ...merge.newSessions],
+    readingSessions: [...book.readingSessions, ...merge.newReadingSessions],
     bookmarks: [...book.bookmarks, ...merge.newBookmarks],
     categories: [...book.categories, ...merge.newCategories],
   );

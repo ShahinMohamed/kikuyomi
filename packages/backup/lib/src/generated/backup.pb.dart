@@ -108,6 +108,10 @@ class Backup extends $pb.GeneratedMessage {
   ///    version 2 reader would restore a book to read as an audiobook, without a word, so a backup
   ///    holding one has `min_reader_version` 3. A backup of audiobooks alone restores correctly on a
   ///    version 2 reader and keeps `min_reader_version` at 1 (ADR-0020).
+  /// 4: `Book.reading_sessions`, so History survives a restore for books that were read as well as
+  ///    for books that were listened to. Additive: a version 3 reader skips them and restores
+  ///    everything else, losing only reading history, which it has nowhere to put anyway, so
+  ///    `min_reader_version` is unchanged.
   @$pb.TagNumber(1)
   $core.int get formatVersion => $_getIZ(0);
   @$pb.TagNumber(1)
@@ -447,6 +451,7 @@ class Book extends $pb.GeneratedMessage {
     $core.Iterable<$core.String>? categories,
     BookKind? kind,
     ReadingState? readingState,
+    $core.Iterable<ReadingSession>? readingSessions,
   }) {
     final result = Book._();
     if (sourceId != null) result.sourceId = sourceId;
@@ -485,6 +490,7 @@ class Book extends $pb.GeneratedMessage {
     if (categories != null) result.categories.addAll(categories);
     if (kind != null) result.kind = kind;
     if (readingState != null) result.readingState = readingState;
+    if (readingSessions != null) result.readingSessions.addAll(readingSessions);
     return result;
   }
 
@@ -547,6 +553,8 @@ class Book extends $pb.GeneratedMessage {
         enumValues: BookKind.values)
     ..aOM<ReadingState>(35, _omitFieldNames ? '' : 'readingState',
         subBuilder: ReadingState.$_createMessage)
+    ..pPM<ReadingSession>(36, _omitFieldNames ? '' : 'readingSessions',
+        subBuilder: ReadingSession.$_createMessage)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -851,6 +859,10 @@ class Book extends $pb.GeneratedMessage {
   void clearReadingState() => $_clearField(35);
   @$pb.TagNumber(35)
   ReadingState ensureReadingState() => $_ensure(34);
+
+  /// Stretches of reading, for History (format version 4).
+  @$pb.TagNumber(36)
+  $pb.PbList<ReadingSession> get readingSessions => $_getList(35);
 }
 
 /// An author or narrator credit. §4.3 normalises people in the database; here a credit carries the
@@ -1694,6 +1706,106 @@ class ReadingState extends $pb.GeneratedMessage {
   $core.bool hasUpdatedAtMs() => $_has(2);
   @$pb.TagNumber(3)
   void clearUpdatedAtMs() => $_clearField(3);
+}
+
+/// One stretch of reading, for History (ADR-0019).
+///
+/// `ListeningSession` without the parts that mean something only for a recording: no position in the
+/// book, and no speed.
+class ReadingSession extends $pb.GeneratedMessage {
+  factory ReadingSession({
+    $core.String? chapterKey,
+    $fixnum.Int64? startedAtMs,
+    $fixnum.Int64? endedAtMs,
+    $core.String? deviceId,
+  }) {
+    final result = ReadingSession._();
+    if (chapterKey != null) result.chapterKey = chapterKey;
+    if (startedAtMs != null) result.startedAtMs = startedAtMs;
+    if (endedAtMs != null) result.endedAtMs = endedAtMs;
+    if (deviceId != null) result.deviceId = deviceId;
+    return result;
+  }
+
+  ReadingSession._();
+
+  factory ReadingSession.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ReadingSession()..mergeFromBuffer(data, registry);
+  factory ReadingSession.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ReadingSession()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ReadingSession',
+      package:
+          const $pb.PackageName(_omitMessageNames ? '' : 'kikuyomi.backup'),
+      createEmptyInstance: ReadingSession.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'chapterKey')
+    ..aInt64(2, _omitFieldNames ? '' : 'startedAtMs')
+    ..aInt64(3, _omitFieldNames ? '' : 'endedAtMs')
+    ..aOS(4, _omitFieldNames ? '' : 'deviceId')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ReadingSession clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ReadingSession copyWith(void Function(ReadingSession) updates) =>
+      super.copyWith((message) => updates(message as ReadingSession))
+          as ReadingSession;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use ReadingSession() / ReadingSession.new instead')
+  static ReadingSession create() => ReadingSession._();
+  static $pb.GeneratedMessage $_createMessage() => ReadingSession._();
+  @$core.override
+  ReadingSession createEmptyInstance() => ReadingSession._();
+  @$core.pragma('dart2js:noInline')
+  static ReadingSession getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ReadingSession>(
+          ReadingSession.$_createMessage);
+  static ReadingSession? _defaultInstance;
+
+  /// A `Chapter.key` of the same book. Absent when the chapter was purged, since history outlives
+  /// the chapters it covered.
+  @$pb.TagNumber(1)
+  $core.String get chapterKey => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set chapterKey($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasChapterKey() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearChapterKey() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $fixnum.Int64 get startedAtMs => $_getI64(1);
+  @$pb.TagNumber(2)
+  set startedAtMs($fixnum.Int64 value) => $_setInt64(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasStartedAtMs() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearStartedAtMs() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $fixnum.Int64 get endedAtMs => $_getI64(2);
+  @$pb.TagNumber(3)
+  set endedAtMs($fixnum.Int64 value) => $_setInt64(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasEndedAtMs() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearEndedAtMs() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.String get deviceId => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set deviceId($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasDeviceId() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearDeviceId() => $_clearField(4);
 }
 
 /// One stretch of listening, for history and statistics.

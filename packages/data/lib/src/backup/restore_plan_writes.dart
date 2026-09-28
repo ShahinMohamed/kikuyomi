@@ -106,6 +106,7 @@ Future<Iterable<int>> _insertBook(
     await _saveReading(db, bookId, reading, chapterIds);
   }
   await _addSessions(db, bookId, book.sessions, chapterIds);
+  await _addReadingSessions(db, bookId, book.readingSessions, chapterIds);
   await _addBookmarks(db, bookId, book.bookmarks, chapterIds);
   await _join(db, bookId, book.categories, categoryIds);
   return chapterIds.values;
@@ -182,6 +183,7 @@ Future<Set<int>> _mergeBook(
     await _saveReading(db, book.id, reading, chapterIds);
   }
   await _addSessions(db, book.id, merge.newSessions, chapterIds);
+  await _addReadingSessions(db, book.id, merge.newReadingSessions, chapterIds);
   await _addBookmarks(db, book.id, merge.newBookmarks, chapterIds);
   await _join(db, book.id, merge.newCategories, categoryIds);
   return written;
@@ -374,6 +376,30 @@ Future<void> _addSessions(
             endGlobalMs: Value(session.endGlobalMs),
             speed: Value(session.speed),
             deviceId: Value(session.deviceId),
+          ),
+        );
+  }
+}
+
+Future<void> _addReadingSessions(
+  KikuyomiDatabase db,
+  int bookId,
+  List<ReadingSessionSnapshot> sessions,
+  Map<String, int> chapterIds,
+) async {
+  for (final session in sessions) {
+    await db
+        .into(db.readingSessions)
+        .insert(
+          ReadingSessionsCompanion.insert(
+            bookId: bookId,
+            chapterId: Value(switch (session.chapterKey) {
+              final key? => _idOf(chapterIds, key, 'chapter'),
+              null => null,
+            }),
+            startedAt: session.startedAt,
+            endedAt: session.endedAt,
+            deviceId: session.deviceId,
           ),
         );
   }

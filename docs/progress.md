@@ -237,6 +237,8 @@ changes, and the list is a sliver that builds a row as it comes into view.
         chapter list, place saved and restored, chapters finished by reading to the end
   - [x] Browse split into audio and ebook sources and extensions; Standard Ebooks as the first
         source of books to read, shipped and run on the real engine by the probe
+  - [x] What the first run on an iPhone found: the ebook side still said "mark as listened" and drew
+        a waveform; History and categories did not cover reading; the back swipe was unusable
   - [ ] Not yet: paged layout, themes and fonts for reading, and reading chapters offline
 - [ ] **Link Up**: link an audiobook and an ebook of the same book, and carry the place between
       them. Discussed, not started. The decisions so far:
