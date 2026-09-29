@@ -242,6 +242,14 @@ changes, and the list is a sliver that builds a row as it comes into view.
         source of books to read, shipped and run on the real engine by the probe
   - [x] What the first run on an iPhone found: the ebook side still said "mark as listened" and drew
         a waveform; History and categories did not cover reading; the back swipe was unusable
+  - [x] SourceAPI 1.2: `resolveBook` and the `bookFile` capability (ADR-0021), because most ebook
+        sites publish an EPUB to download rather than a page per chapter. Schema version 8's
+        `book.file_path` is where the downloaded file lives, and Project Gutenberg is the second
+        shipped source of books to read
+  - [x] An arrow to turn a chapter list round, remembered per book (schema version 9's
+        `book.chapters_reversed`, nullable so a restore cannot overwrite a choice made since)
+  - [x] Tabs the listener arranges: six is more than fits, and which matter depends on whether
+        somebody mostly reads or mostly listens
   - [ ] Not yet: paged layout, themes and fonts for reading, and reading chapters offline
 - [ ] **Link Up**: link an audiobook and an ebook of the same book, and carry the place between
       them. Discussed, not started. The decisions so far:
