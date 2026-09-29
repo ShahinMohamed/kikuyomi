@@ -1,0 +1,279 @@
+# The release pipeline (ADR-0010).
+#
+# There is no store, so this is the whole distribution mechanism: a tag produces a GitHub Release
+# carrying an Android APK, a Windows zip and an unsigned iOS IPA, and the in-app update checker
+# reads what this publishes. That makes the job's failure mode worth stating — a release that half
+# succeeds leaves a tag with no downloads behind it, so the three builds all have to finish before
+# anything is published, and the Release is created in one step at the end rather than grown
+# artifact by artifact.
+#
+# It deliberately does not reuse ci.yml. CI proves a commit compiles on three platforms and may be
+# cancelled the moment a newer push arrives; a release must never be cancelled halfway and must
+# build the exact tagged tree. Sharing them would mean one file answering to both, and the cheaper
+# mistake is a little duplication.
+name: Release
+
+run-name: >-
+  ${{ github.event_name == 'workflow_dispatch'
+   && format('Release {0} (dry run)', inputs.tag)
+   || format('Release {0}', github.ref_name) }}
+
+on:
+  push:
+    tags: ['v*']
+  # A dry run builds everything and publishes nothing, which is the only way to find out that a
+  # release build is broken without spending a tag on the discovery. Tags are cheap but a published
+  # release that has to be deleted is not: the update checker may already have seen it.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to build as a dry run (nothing is published)'
+        required: false
+        default: 'dry-run'
+
+# Never cancel a release in flight. This is the opposite of ci.yml's setting and is the reason the
+# two files are separate: cancelling CI wastes a macOS runner, cancelling a release can leave a tag
+# with no downloads.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  # Kept in step with ci.yml deliberately rather than shared. A release must build with the SDK the
+  # tag was tested against, so bumping one file and not the other is a warning worth having.
+  FLUTTER_VERSION: "3.47.3"
+  JAVA_VERSION: "21"
+
+jobs:
+  android:
+    name: Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      # The keystore arrives base64 in a secret because a secret holds text. Missing secrets are
+      # not an error: the Gradle config falls back to the debug keys, and the release notes say so.
+      # That keeps the pipeline usable from the first tag rather than from whenever a keystore
+      # exists, and a debug-signed APK is honest as long as nobody pretends otherwise.
+      - name: Write the signing keystore
+        id: signing
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [ -z "${KEYSTORE_BASE64:-}" ]; then
+            echo "No ANDROID_KEYSTORE_BASE64 secret; the APK will be debug-signed."
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          for name in KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD; do
+            if [ -z "${!name:-}" ]; then
+              echo "::error::ANDROID_KEYSTORE_BASE64 is set but ANDROID_${name} is not." \
+                   "Set all four together or none, or the APK signs with keys nobody holds."
+              exit 1
+            fi
+          done
+          echo "${KEYSTORE_BASE64}" | base64 -d > "${RUNNER_TEMP}/kikuyomi-release.jks"
+          cat > app/android/key.properties <<PROPS
+          storeFile=${RUNNER_TEMP}/kikuyomi-release.jks
+          storePassword=${KEYSTORE_PASSWORD}
+          keyAlias=${KEY_ALIAS}
+          keyPassword=${KEY_PASSWORD}
+          PROPS
+          echo "signed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve workspace
+        run: flutter pub get
+
+      - name: Build APK
+        run: flutter build apk --release
+        working-directory: app
+
+      # Named for a human reading a downloads list, since this is the file somebody sideloads. The
+      # version comes from pubspec.yaml, which is also what the in-app checker compares against.
+      - name: Name the APK
+        id: apk
+        run: |
+          set -euo pipefail
+          version="$(grep '^version:' app/pubspec.yaml | sed 's/^version: *//' | cut -d+ -f1)"
+          suffix=""
+          if [ "${{ steps.signing.outputs.signed }}" != "true" ]; then
+            suffix="-debug-signed"
+          fi
+          name="kikuyomi-${version}-android${suffix}.apk"
+          mv app/build/app/outputs/flutter-apk/app-release.apk "${RUNNER_TEMP}/${name}"
+          echo "path=${RUNNER_TEMP}/${name}" >> "$GITHUB_OUTPUT"
+          echo "signed=${{ steps.signing.outputs.signed }}" >> "$GITHUB_OUTPUT"
+
+      # The keystore is deleted with the runner, but not leaving it lying about mid-job is free.
+      - name: Remove the keystore
+        if: always()
+        run: rm -f "${RUNNER_TEMP}/kikuyomi-release.jks" app/android/key.properties
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-android
+          path: ${{ steps.apk.outputs.path }}
+          if-no-files-found: error
+
+  windows:
+    name: Windows build
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Resolve workspace
+        run: flutter pub get
+
+      - name: Build Windows
+        run: flutter build windows --release
+        working-directory: app
+
+      # A Flutter Windows build is a directory, not a file: the exe needs the DLLs and the data
+      # folder beside it. Zipping the directory is what makes it something a person can download,
+      # unpack anywhere and run, which is what sideload-first means on this platform.
+      - name: Package the Windows build
+        id: zip
+        shell: pwsh
+        run: |
+          $version = (Select-String -Path app/pubspec.yaml -Pattern '^version:').Line -replace '^version:\s*', ''
+          $version = $version.Split('+')[0]
+          $name = "kikuyomi-$version-windows-x64.zip"
+          $dest = Join-Path $env:RUNNER_TEMP $name
+          Compress-Archive -Path app/build/windows/x64/runner/Release/* -DestinationPath $dest
+          "path=$dest" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-windows
+          path: ${{ steps.zip.outputs.path }}
+          if-no-files-found: error
+
+  ios:
+    name: iOS (unsigned IPA)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Resolve workspace
+        run: flutter pub get
+
+      - name: Build iOS without code signing
+        run: flutter build ios --release --no-codesign
+        working-directory: app
+
+      # There is no Apple developer team, so `flutter build ipa` has no identity to sign with and no
+      # export plist to follow. An IPA is a zip with the .app inside Payload/, so it is packaged by
+      # hand and the sideloading tool re-signs it on the way in (ADR-0010). Never an enterprise
+      # certificate service: those get revoked in waves.
+      - name: Package the unsigned IPA
+        id: ipa
+        run: |
+          set -euo pipefail
+          version="$(grep '^version:' app/pubspec.yaml | sed 's/^version: *//' | cut -d+ -f1)"
+          name="kikuyomi-${version}-ios-unsigned.ipa"
+          cd app/build/ios/iphoneos
+          mkdir -p Payload
+          mv Runner.app Payload/
+          zip -qr "${RUNNER_TEMP}/${name}" Payload
+          echo "path=${RUNNER_TEMP}/${name}" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-ios
+          path: ${{ steps.ipa.outputs.path }}
+          if-no-files-found: error
+
+  publish:
+    name: Publish the release
+    # All three, so a tag never ends up with a partial set of downloads.
+    needs: [android, windows, ios]
+    # A dry run stops here, having proved the three builds work.
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          path: artifacts
+          merge-multiple: true
+
+      - name: List what is being published
+        run: ls -lh artifacts
+
+      # A pre-release until the project says otherwise. The tag decides: v1.2.3 is a full release,
+      # anything with a suffix (v1.2.3-beta.1) is marked pre-release, which is the only signal a
+      # GitHub Release gives for "this is not the one to recommend yet".
+      - name: Decide whether this is a pre-release
+        id: kind
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+          if [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # `gh` rather than a third-party publishing action. This is the one job in the repository that
+      # holds `contents: write`, and a project whose extension repository pins an Ed25519 key before
+      # it will run anyone's code should not hand that permission to an action it does not control.
+      # gh is preinstalled on every runner, so the dependency costs nothing to drop.
+      #
+      # The notes are composed here rather than left to --generate-notes, because the preamble has
+      # to come first: the "what to expect" warnings are the part a person needs before they
+      # download, and a changelog above them buries it.
+      - name: Compose the release notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          cp .github/release-preamble.md "${RUNNER_TEMP}/notes.md"
+          gh api "repos/${GITHUB_REPOSITORY}/releases/generate-notes" \
+            -f tag_name="${GITHUB_REF_NAME}" \
+            --jq .body >> "${RUNNER_TEMP}/notes.md"
+          cat "${RUNNER_TEMP}/notes.md"
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          args=(--title "${GITHUB_REF_NAME}" --notes-file "${RUNNER_TEMP}/notes.md")
+          if [ "${{ steps.kind.outputs.prerelease }}" = "true" ]; then
+            args+=(--prerelease)
+          fi
+          gh release create "${GITHUB_REF_NAME}" "${args[@]}" artifacts/*

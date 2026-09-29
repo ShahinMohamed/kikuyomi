@@ -559,6 +559,31 @@ What is left is an **arm64 device**: the probe has run on x86_64 emulators and o
 `.github/workflows/ci.yml` builds an Android APK, a Windows build and an unsigned iOS IPA on every
 push, and runs the tests in every package that has them.
 
+### Releasing
+
+`.github/workflows/release.yml`, started by a `v*` tag, is the whole distribution mechanism: there is
+no store and will not be one (ADR-0010), so a GitHub Release is not one channel among several. It
+builds the same three targets and publishes them together — all three finish before anything is
+created, because a tag with a partial set of downloads behind it is worse than a tag with none.
+Running it by hand from the Actions tab builds everything and publishes nothing, which is how a
+broken release build gets found without spending a tag on the discovery.
+
+It is kept separate from `ci.yml` rather than folded into it, for one reason worth stating: CI
+cancels itself when a newer push arrives, and a release must never be cancelled halfway.
+
+Signing reads four repository secrets. While they are unset the APK is built with the debug keys and
+named `-debug-signed`, because Android refuses to install one over a properly signed build and the
+difference has to be visible before somebody downloads it. That fallback is also what lets a
+contributor's clone build `--release` at all. The keystore itself is a once-only act with no
+recovery — lose it and no installed copy can ever be updated — so `docs/releasing.md` covers
+creating it, backing it up twice and putting it into CI.
+
+One constraint shapes the version number and is easy to trip over: every bundled extension and every
+entry in the official repository declares `"minAppVersion": "1.0.0"`, so an app version below that
+makes the compatibility check refuse **every** extension, which looks on a first run like an app with
+no sources. The version can rise freely and cannot fall. Saying "this is early" is therefore the tag
+suffix's job and the release notes', not the version's.
+
 ## Step A, done
 
 All six parts, recorded in ADR-0017: a package read from a real folder as strictly as the asset is;
