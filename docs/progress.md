@@ -93,8 +93,13 @@ Not met — the app has never been run on Android at all.
       package carries one, the install writes it beside the code, and both lists draw it from disk
 - [x] Browse in two halves, Sources and Extensions, with sources grouped by last used, pinned and
       language
-- [ ] GitHub Releases for Android and Windows
-- [ ] In-app update checker
+- [x] GitHub Releases for Android and Windows — `.github/workflows/release.yml`, started by a `v*`
+      tag: an Android APK, a Windows zip and an unsigned iOS IPA, all three built before anything is
+      published so a tag never ends up with a partial set of downloads. Signing reads four secrets
+      and falls back to the debug keys when they are absent, so the pipeline worked from the first
+      tag rather than from whenever a keystore existed. `docs/releasing.md` is how to cut one
+- [ ] In-app update checker — the only update mechanism there is (ADR-0010), and the reason the
+      release notes matter: without a store, nothing else tells somebody their build is old
 - [ ] Android developer account
 
 **Exit (M2, the MVP): browse → details → stream from an installed extension, end to end, installed
@@ -102,10 +107,15 @@ by a tester from a public release.** The end-to-end path works; nothing has ever
 
 The extension system itself is finished: the contract, the runtime, both doors in, signatures,
 updates, rollback, and four extensions in a signed repository. What is left of this phase is not
-extension work at all. The TypeScript SDK and CLI is a project of its own, and the last three items
-are release engineering, which needs a signing keystore created once and backed up in two safe
-places (§5.1) and a Play-independent release pipeline — and, for the last of them, an Android
-developer account only the project's owner can open.
+extension work at all. The TypeScript SDK and CLI is a project of its own; the update checker is a
+feature of the app; and the developer account is an errand only the project's owner can run.
+
+The release pipeline exists and the keystore is the one thing it still wants. Until the four secrets
+are set it publishes a debug-signed APK, named `-debug-signed` so nobody mistakes it for the real
+thing — Android will not install one over the other, and a release that quietly mixed them would
+strand whoever downloaded first. Creating the keystore is a once-only act with no undo:
+`docs/releasing.md` says how, and says twice that losing it means no installed copy can ever be
+updated again.
 
 ---
 
