@@ -291,7 +291,17 @@ the one thing that could not see one, and the book downloaded exactly as many fi
 started and then stopped for ever. A green suite of a hundred tests did not catch it, because every
 test of the queue asked for fewer files than the caps allow. There are now two that do not.
 
-Playing a downloaded book with the network off is still unconfirmed.
+**Playing a downloaded book with the network off is confirmed**, on iOS: a full book downloaded and
+finished with the network off, which is Phase 3's exit criterion and the first time the offline path
+has been proved end to end rather than argued from green tests. Not repeated on Windows or Android.
+
+That pass turned up a performance fault worth keeping, since neither half of it was a bug in the
+queue. Downloading a chapter made the page it was downloaded from crawl, for two reasons: every
+`bytes_done` write — many a second — became a fresh reading of every chapter's state and a rebuild of
+the list, though none of those writes moves a chapter between states; and the list was a `Column` of
+every row inside a `ListView`, so a four-hundred-chapter podcast built all four hundred rows each
+time. The stream now emits only when something actually changes, and the list is a sliver that builds
+a row as it comes into view.
 
 ### History (§6.4)
 
@@ -509,10 +519,14 @@ the host frees at the end of a call. All three are fixed. None was visible from 
   Installing an extension from the Files-visible `Extensions` folder, the Extensions screen,
   removing one, installing it again, the extension console, browsing a source, and a book's details
   and chapters. And **LibriVox: browse, resolve and play** — the first time the streaming path has
-  run anywhere outside a test.
+  run anywhere outside a test. And **a full book downloaded and finished with the network off**,
+  which is Phase 3's exit criterion; the reader has also been used here, which is where its first
+  run found the four faults [reading](#reading) records.
 - **Android**: still nothing, on an emulator or a device, outside the probe in CI. It now carries the
   most untested new code of any platform: the Storage Access Framework is the install door there,
-  and no real folder has been through it.
+  no real folder has been through it, and `background_downloader` needs a foreground service that
+  neither a test nor a build will miss. The emulator on the development machine cannot start until
+  hardware acceleration is installed, which is an administrator step on that machine.
 - **LibriVox**: browsing, resolving and streaming work on iOS. Untried on Windows and Android.
 
 ### The probe
@@ -575,12 +589,11 @@ The queue is wired and has fetched real files on Windows, from a book's details 
 is listed under [`downloads`](#downloads) and in schema version 3's `download_task` table; what is
 left, in order:
 
-0. **Playing a downloaded book with the network off** — the exit criterion, now believed reachable and
-   not yet confirmed on any device. A downloaded file was unplayable until recently: the queue records
-   a path relative to the downloads folder and `LocalMediaResolver` read every relative path as
-   relative to the media root, which is a different folder and, on iOS, a different branch entirely.
-   `downloaded_at` now says which root a path belongs to. Verified against the real rows and files of
-   a part-downloaded book, where all four resolved to nothing before and to the right file after.
+0. ~~**Playing a downloaded book with the network off**~~ — **the exit criterion, met on iOS.** A
+   downloaded file was unplayable until shortly before: the queue records a path relative to the
+   downloads folder and `LocalMediaResolver` read every relative path as relative to the media root,
+   which is a different folder and, on iOS, a different branch entirely. `downloaded_at` now says
+   which root a path belongs to. Not repeated on Windows or Android.
 1. **The automatic policies** (§5.6): deleting finished chapters, keeping the next few chapters
    downloaded while listening, and fetching new chapters of library books on an unmetered connection.
    Nothing of this exists; every download is asked for by hand. The Downloads screen itself is built —
@@ -612,8 +625,11 @@ left, in order:
    than as a stream. `MediaResolver` has no `purpose`, so a download currently resolves as if it were
    about to be played, which is right for LibriVox and will not be for every source.
 
-The exit criterion is the roadmap's: a full book downloaded and finished with no network. Everything it
-needs is now built; nothing has confirmed it.
+The exit criterion is the roadmap's — a full book downloaded and finished with no network — and it is
+**met**, on iOS. What is left of Phase 3 is therefore not the criterion but the polish above it: the
+automatic policies, Android, and the four smaller items. Android is the one that could still reopen
+the question, because `WorkManager` there needs a foreground service that no test and no build will
+miss.
 
 ### Step B — the repository door
 
