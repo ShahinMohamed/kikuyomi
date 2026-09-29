@@ -21,9 +21,10 @@ that purpose and is kept — see [the probe](#the-probe) below.
 books to read are the same books, with a kind, a reading place instead of a playback one, and a
 reader instead of a player. See [reading](#reading).
 
-All fifteen decisions in §9 of the architecture document have ADRs, and all fifteen are Accepted. Two
-more decisions have been made since: ADR-0016, the contract, and ADR-0017, installing an extension
-from a folder.
+All fifteen decisions in §9 of the architecture document have ADRs, and all fifteen are Accepted. Six
+more decisions have been made since: ADR-0016, the contract; ADR-0017, installing an extension from a
+folder; ADR-0018, the repository index format; ADR-0019, reading alongside listening; ADR-0020,
+backups that hold books to read; and ADR-0021, a book that is one file.
 
 ## The packages
 
@@ -31,8 +32,11 @@ Fourteen under `packages/`, all unit tested. Pure-Dart unless noted.
 
 ### `source_api` — the extension contract
 
-The Dart mirror of SourceAPI 1.0 (ADR-0016, `docs/source-api-1.0.md`). Treat it as a versioned
-public API: changes need asking first, and minor versions are additive only.
+The Dart mirror of SourceAPI, now at **1.2** (ADR-0016, `docs/source-api-1.0.md`). Treat it as a
+versioned public API: minor versions are additive only, so every 1.0 extension still runs. 1.1 added
+text sources — `"kind": "text"` and `getChapterContent` (ADR-0019). 1.2 added `resolveBook` and the
+`bookFile` capability (ADR-0021), for a source whose book is one file to download rather than
+chapters to fetch, which is how most ebook sites actually publish.
 
 - `apiVersion`, and the check that says whether an extension targeting a version is supported, needs
   a newer app, or is obsolete.
@@ -112,10 +116,23 @@ A queue item may arrive unresolved, for the engine to resolve when it first open
 
 ### `data`
 
-Drift schema version 2. Version 2 adds the two tables installing an extension needs — `extension` and
-`extension_preference` (§4.3) — and touches nothing version 1 wrote. `sources.extension_id`
-deliberately stays a plain id rather than becoming a foreign key, because §3.9 has a source outlive
-the extension it came from (ADR-0017).
+Drift schema **version 9**. Every step is additive — a column with a default, or a table that starts
+empty — so no migration has yet had to rewrite what an earlier version wrote, and each has a
+migration test against a generated snapshot in `packages/data/drift_schemas/`:
+
+| Version | What it adds |
+| --- | --- |
+| 2 | `extension` and `extension_preference`, the two tables installing an extension needs (§4.3) |
+| 3 | `download_task`, the download queue |
+| 4 | `repository`, the repositories the listener has added (ADR-0018) |
+| 5 | `book.kind` and `reading_state` — room for reading (ADR-0019) |
+| 6 | `chapter.word_count`, so a chapter of a book to read can say how long it takes |
+| 7 | `reading_session`, because a stretch of reading is not a listening one with the audio left empty |
+| 8 | `book.file_path`, for a book that is one file (ADR-0021), backfilled from the key of local ebooks |
+| 9 | `book.chapters_reversed`, which end of a chapter list is the top. Nullable, so "never chosen" stays distinct from "chosen to read in order" |
+
+`sources.extension_id` deliberately stays a plain id rather than becoming a foreign key, because §3.9
+has a source outlive the extension it came from (ADR-0017).
 
 - The §4.4 chapter-sync, book-details and credits merges. Chapter sync carries a chapter's release
   time and group heading as well as its title and duration.
@@ -358,6 +375,11 @@ decided, rather than a second set of tables.
   list items, preformatted text, images, scene breaks) with bold and italic, and never rendered as
   HTML. Images are held to the manifest's domains like every other URL. Audio extensions still
   target 1.0.
+- **A book that is one file.** SourceAPI 1.2 adds `resolveBook` and the `bookFile` capability
+  (ADR-0021). Most ebook sites do not publish a page per chapter at all — they publish an EPUB to
+  download — so a text source may answer with a `BookFile` instead, and the app reads it with the
+  same EPUB reader a local book uses. A manifest that declares `bookFile` below 1.2 is refused, and
+  the capability is discovered by probing for the method, as the other optional ones are.
 - **The data.** Schema version 5 gives `book` a `kind` and adds `reading_state`: a chapter and a
   fraction through it, which survives a different text size or screen. A chapter finished by
   reading sets the same `is_listened` a listened chapter does. Backups carry both from format
@@ -370,10 +392,18 @@ decided, rather than a second set of tables.
 - **The Read tab and the reader.** Listen and Read are side by side in the shell, six tabs in all.
   The reader scrolls one chapter at a time, saves the place a moment after scrolling stops, and
   marks a chapter finished when its end is reached or the next is opened.
-- **Browse** has four tabs: audio sources, ebook sources, audio extensions, ebook extensions.
-  Standard Ebooks is the first source of books to read, shipped from the official repository.
-  Shipping records which extensions were offered, so one added by a later version arrives on the
-  next start and one the listener removed stays removed.
+- **Browse** has four tabs: audio sources, ebook sources, audio extensions, ebook extensions. Two
+  sources of books to read ship with the app: **Standard Ebooks** and **Project Gutenberg**, both on
+  1.2's EPUB path. Shipping records which extensions were offered, so one added by a later version
+  arrives on the next start and one the listener removed stays removed.
+- **Turning a chapter list round.** A four-hundred-chapter serial is easiest to use from the newest
+  end, so a book to read has an arrow beside its chapter count, remembered per book in version 9's
+  `book.chapters_reversed` — which end is useful is a fact about the book, not a preference about the
+  app. Only the list is turned round: the reader still goes forward from whichever chapter it opens
+  at. Audiobooks are not offered it.
+- **Tabs the listener arranges.** Six tabs is more than fits comfortably, and which matter depends on
+  whether somebody mostly reads or mostly listens, so the order is theirs to set — a reorderable list
+  in Settings, applying to the bottom bar on a narrow window and the rail on a wide one.
 
 - **Its own words.** A chapter of a book to read is marked read rather than listened, and says how
   long it takes in the only unit that means anything for text: `chapter.word_count` (version 6) over

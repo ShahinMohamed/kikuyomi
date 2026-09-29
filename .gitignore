@@ -14,6 +14,11 @@ build/
 *.iws
 .idea/
 
+# Editor and assistant settings that belong to one machine, not to the project.
+.vscode/
+.claude/settings.local.json
+.claude/worktrees/
+
 # Misc
 *.log
 .DS_Store
