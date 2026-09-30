@@ -267,13 +267,36 @@ jobs:
             --jq .body >> "${RUNNER_TEMP}/notes.md"
           cat "${RUNNER_TEMP}/notes.md"
 
+      # Creating or updating, because a tag can legitimately be built twice: something was wrong
+      # with the first attempt, or the tag was moved to pick up a fix that belongs in the release
+      # people have already been pointed at. `gh release create` fails outright on an existing
+      # release, which would leave a re-run red for a reason that is not a problem, so an existing
+      # release has its notes rewritten and its files replaced instead. `--clobber` is what makes
+      # the second publish replace rather than refuse.
       - name: Publish
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          PRERELEASE: ${{ steps.kind.outputs.prerelease }}
         run: |
           set -euo pipefail
-          args=(--title "${GITHUB_REF_NAME}" --notes-file "${RUNNER_TEMP}/notes.md")
-          if [ "${{ steps.kind.outputs.prerelease }}" = "true" ]; then
-            args+=(--prerelease)
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG exists; replacing its notes and files."
+            edit=(--notes-file "${RUNNER_TEMP}/notes.md")
+            if [ "$PRERELEASE" = "true" ]; then edit+=(--prerelease); else edit+=(--prerelease=false); fi
+            gh release edit "$TAG" "${edit[@]}"
+            # An asset the new build no longer produces would otherwise linger beside the new ones,
+            # so anything not in this build is removed before the upload rather than left behind.
+            keep="$(cd artifacts && ls)"
+            gh release view "$TAG" --json assets --jq '.assets[].name' | while read -r old; do
+              if ! grep -Fxq "$old" <<<"$keep"; then
+                echo "removing stale asset $old"
+                gh release delete-asset "$TAG" "$old" --yes
+              fi
+            done
+            gh release upload "$TAG" artifacts/* --clobber
+          else
+            create=(--title "$TAG" --notes-file "${RUNNER_TEMP}/notes.md")
+            if [ "$PRERELEASE" = "true" ]; then create+=(--prerelease); fi
+            gh release create "$TAG" "${create[@]}" artifacts/*
           fi
-          gh release create "${GITHUB_REF_NAME}" "${args[@]}" artifacts/*
