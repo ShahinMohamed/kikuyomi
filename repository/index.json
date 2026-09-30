@@ -102,8 +102,8 @@
     {
       "id": "org.kikuyomi.podcasts",
       "name": "Podcasts",
-      "version": "1.0.3",
-      "versionCode": 4,
+      "version": "1.0.4",
+      "versionCode": 5,
       "apiVersion": "1.0",
       "minAppVersion": "1.0.0",
       "author": "Kikuyomi",
@@ -114,6 +114,8 @@
         "*.mzstatic.com",
         "open.spotify.com",
         "podcasters.spotify.com",
+        "i.scdn.co",
+        "*.scdn.co",
         "anchor.fm",
         "*.anchor.fm",
         "*.cloudfront.net",
@@ -183,11 +185,11 @@
         }
       ],
       "package": {
-        "url": "https://raw.githubusercontent.com/kikuyomiapp/kikuyomi/HEAD/repository/packages/org.kikuyomi.podcasts-4.zip",
-        "sha256": "ddc9ab52c3122cacf2eedfdc0a474fa75971493ddf7d998e7cf92556d2e4b578",
-        "size": 16139
+        "url": "https://raw.githubusercontent.com/kikuyomiapp/kikuyomi/HEAD/repository/packages/org.kikuyomi.podcasts-5.zip",
+        "sha256": "f91d0d3a588f4633004b0a474786fb5d64012b685a53f8aee963096f3a090025",
+        "size": 16682
       },
-      "signature": "LNcYby18DS1WpXDrho7OVvtsmEoUg6ES0RNYPwUp38YkUdC8q/sWoCfOaZ2Lo9OaQC7f9Pls/vkM50Ihb2x1AQ==",
+      "signature": "NaCuuysghceFrDc1wInjIgz8fntnMDLJ7R3MsJR/6aVpDKj81GSVjZAvKxvlpESrkSQTB+H6HCE2/Zyo2BiwAg==",
       "revoked": false
     },
     {

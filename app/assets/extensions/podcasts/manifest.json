@@ -1,8 +1,8 @@
 {
   "id": "org.kikuyomi.podcasts",
   "name": "Podcasts",
-  "version": "1.0.3",
-  "versionCode": 4,
+  "version": "1.0.4",
+  "versionCode": 5,
   "apiVersion": "1.0",
   "minAppVersion": "1.0.0",
   "author": "Kikuyomi",
@@ -13,6 +13,8 @@
     "*.mzstatic.com",
     "open.spotify.com",
     "podcasters.spotify.com",
+    "i.scdn.co",
+    "*.scdn.co",
     "anchor.fm",
     "*.anchor.fm",
     "*.cloudfront.net",
@@ -74,7 +76,7 @@
   ],
   "capabilities": [],
   "files": {
-    "main.js": "sha256-MBWp217hSDErS1cXysqkeBFyN0RryfNqMWEDO69Azfw=",
+    "main.js": "sha256-qMgjpSYWcAyBZsiv3gRyptBFAmNP+77fHLaN8IDwUkQ=",
     "icon.png": "sha256-8+Y39rH5m1c4mYfnLsVDls/zectKeY+fF2USyhUFn5k="
   },
   "sources": [

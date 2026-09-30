@@ -93,6 +93,10 @@ void main() {
       'https://is1-ssl.mzstatic.com/image/thumb/artwork.jpg/600x600bb.jpg',
       // A Spotify show page, read for the show's name and nothing else.
       'https://open.spotify.com/show/7sRS4Y7wK8gS4Emp7qXskL',
+      // And the artwork of a show published through Spotify, which is on a CDN of its own. Without
+      // it such a show keeps its cover while it is being browsed, where the index supplies one, and
+      // loses it the moment it is opened by its feed.
+      'https://i.scdn.co/image/ab6765630000ba8a0000000000000000000000ff',
       // The other large hosts.
       'https://rss.libsyn.com/a-show',
       'https://feeds.megaphone.fm/a-show',
