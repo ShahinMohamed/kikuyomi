@@ -1,35 +1,43 @@
-Kikuyomi is an audiobook player and ebook reader whose content comes from installable JavaScript
-extensions. It is not in any app store and will not be: a store holds a developer answerable for
-everything a plug-in does, and this app cannot make promises about extensions it does not write
-(ADR-0010). Downloading it here is the intended way to get it.
+> ## ⚠️ Testing build. Expect it to break.
+>
+> This is early. There are bugs, features are missing, and some of it has never run outside CI.
+>
+> Android especially: nobody has run this on an actual phone yet. If you install the APK, you're the
+> first. It might not even start.
+>
+> Turn backups on (Settings → Backup) and expect to reinstall at some point. Bug reports welcome.
+
+Kikuyomi is an audiobook player and ebook reader. Where the books come from is up to you: you
+install extensions for the sites you want.
+
+It's not on Google Play or the App Store and won't be. Stores hold the developer responsible for
+whatever a plugin does, and that's not a promise this app can make. So you download it here.
 
 ## Which file
 
 | Platform | File | How to install |
 | --- | --- | --- |
-| Android | `kikuyomi-<version>-android.apk` | Open the APK and allow installation from this source when asked |
-| Windows | `kikuyomi-<version>-windows-x64.zip` | Unpack anywhere and run `kikuyomi.exe`; keep the DLLs and the `data` folder beside it |
-| iOS | `kikuyomi-<version>-ios-unsigned.ipa` | Sideload with AltStore or SideStore, which re-signs it for you |
+| Android | `kikuyomi-<version>-android.apk` | Open it and allow installs from this source |
+| Windows | `kikuyomi-<version>-windows-x64.zip` | Unpack it and run `kikuyomi.exe`. Keep the DLLs and the `data` folder next to it |
+| iOS | `kikuyomi-<version>-ios-unsigned.ipa` | Sideload with AltStore or SideStore |
 
-## What to expect
+## Things you'll run into
 
-**Windows will warn you.** The executable is unsigned, so SmartScreen shows "Windows protected your
-PC" until the build accumulates reputation. That is the honest cost of shipping outside a store, and
-the source is here to read.
+**Windows will flag it.** The exe isn't code-signed, so SmartScreen throws up "Windows protected
+your PC". Click "More info" then "Run anyway", or don't. The source is right here if you'd rather
+build it yourself.
 
-**The iOS build is unsigned on purpose.** A free Apple ID signs it for seven days at a time and
-allows three sideloaded apps at once. Enterprise-certificate signing services are deliberately not
-used: their shared certificates get revoked in waves, taking every app signed with them offline
-together.
+**iOS builds are unsigned.** AltStore and SideStore re-sign them for you. On a free Apple ID that
+lasts 7 days before it needs redoing, and you can only have 3 sideloaded apps at once. We don't use
+enterprise certificates. Those get revoked in batches and take every app signed with them down at
+once.
 
-**An APK named `-debug-signed` is exactly that** — built without the release keystore, so Android
-will not install it over a properly signed build and the two cannot be mixed. Uninstall before
-switching between them.
+**If an APK is named `-debug-signed`**, it wasn't built with the real key. Android won't install it
+over a properly signed build, so uninstall first if you're switching between them.
 
-## Reporting something broken
+## Something broken?
 
-Open an issue with what you did, what happened, and the platform. If an extension misbehaved, go to
-**More → Extension console**: it copies everything the extensions have logged in one tap, which is
-worth far more than a description.
+Open an issue: what you did, what happened, which platform. If an extension was involved, go to
+**More → Extension console** and hit copy. That log is far more useful than a description.
 
 ---
