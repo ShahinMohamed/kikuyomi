@@ -1,6 +1,9 @@
+import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:flutter/gestures.dart' show kPrimaryButton, kTouchSlop;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:kikuyomi_source_api/kikuyomi_source_api.dart' as api;
 
 /// The widest a line of text runs. About seventy characters at the body size, the measure book
@@ -22,6 +25,8 @@ class ReaderView extends StatefulWidget {
     this.onProgress,
     this.onPrevious,
     this.onNext,
+    this.onTap,
+    this.onUserScroll,
   });
 
   final List<api.ContentBlock> blocks;
@@ -46,6 +51,14 @@ class ReaderView extends StatefulWidget {
   /// Goes to the chapter after, or null at the last.
   final VoidCallback? onNext;
 
+  /// The reader tapped the page — not a long press to select, not a drag, not one of the chapter
+  /// buttons at the end. What the reading screen shows or hides its bar on.
+  final VoidCallback? onTap;
+
+  /// The reader scrolled. Only the reader: jumping to where the chapter was left is not them
+  /// starting to read, and must not hide a bar that has only just appeared.
+  final VoidCallback? onUserScroll;
+
   @override
   State<ReaderView> createState() => _ReaderViewState();
 }
@@ -68,6 +81,7 @@ class _ReaderViewState extends State<ReaderView> {
 
   @override
   void dispose() {
+    _heldTooLong?.cancel();
     _scroll.dispose();
     super.dispose();
   }
@@ -82,7 +96,47 @@ class _ReaderViewState extends State<ReaderView> {
     });
   }
 
+  // A tap is told apart from everything else a finger does on a page by hand, rather than with a
+  // gesture detector. The text is selectable, and a detector would compete with selection for the
+  // tap and lose it; a [Listener] is told about every pointer without taking part in that contest.
+  Offset? _downAt;
+  bool _downOnControl = false;
+  bool _tapAllowed = false;
+
+  /// A finger held down this long is selecting a word, not tapping. Timed rather than worked out
+  /// from the events' own timestamps, which are not real time in a test and would let a long press
+  /// through there unnoticed.
+  Timer? _heldTooLong;
+
+  void _onPointerDown(PointerDownEvent event) {
+    // Listeners are told deepest first, so a press on a chapter button has already been noted by
+    // the time this runs.
+    _tapAllowed = !_downOnControl && event.buttons == kPrimaryButton;
+    _downOnControl = false;
+    _downAt = event.position;
+    _heldTooLong?.cancel();
+    _heldTooLong = Timer(
+      const Duration(milliseconds: 400),
+      () => _tapAllowed = false,
+    );
+  }
+
+  void _onPointerUp(PointerUpEvent event) {
+    _heldTooLong?.cancel();
+    final at = _downAt;
+    _downAt = null;
+    if (!_tapAllowed || at == null) return;
+    // Moved: that was a scroll, not a tap.
+    if ((event.position - at).distance > kTouchSlop) return;
+    widget.onTap?.call();
+  }
+
   bool _onScroll(ScrollNotification notification) {
+    if (notification is UserScrollNotification &&
+        notification.direction != ScrollDirection.idle) {
+      widget.onUserScroll?.call();
+      return false;
+    }
     if (notification is! ScrollUpdateNotification &&
         notification is! ScrollEndNotification) {
       return false;
@@ -102,45 +156,63 @@ class _ReaderViewState extends State<ReaderView> {
       fontSize: (theme.textTheme.bodyLarge?.fontSize ?? 16) * widget.textScale,
       height: 1.6,
     );
-    return NotificationListener<ScrollNotification>(
-      onNotification: _onScroll,
-      child: Scrollbar(
-        controller: _scroll,
-        child: SingleChildScrollView(
-          // One column rather than a lazy list. A lazy list only guesses at the length of what it
-          // has not built, and a fraction of a guess is not a place anyone could come back to.
+    // Whatever sits over the page — the reading screen's bar, a phone's notch and home indicator —
+    // is room the first and last lines have to clear. Zero where there is none, as in a test.
+    final insets = MediaQuery.paddingOf(context);
+    return Listener(
+      onPointerDown: _onPointerDown,
+      onPointerUp: _onPointerUp,
+      onPointerCancel: (_) => _downAt = null,
+      child: NotificationListener<ScrollNotification>(
+        onNotification: _onScroll,
+        child: Scrollbar(
           controller: _scroll,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: readerMaxWidth),
-              child: SelectionArea(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (widget.blocks.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 48),
-                        child: Text(
-                          'This chapter has nothing in it to read.',
-                          textAlign: TextAlign.center,
-                          style: body.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
+          child: SingleChildScrollView(
+            // One column rather than a lazy list. A lazy list only guesses at the length of what it
+            // has not built, and a fraction of a guess is not a place anyone could come back to.
+            controller: _scroll,
+            padding: EdgeInsets.fromLTRB(
+              20,
+              24 + insets.top,
+              20,
+              24 + insets.bottom,
+            ),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: readerMaxWidth),
+                child: SelectionArea(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (widget.blocks.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 48),
+                          child: Text(
+                            'This chapter has nothing in it to read.',
+                            textAlign: TextAlign.center,
+                            style: body.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
                           ),
                         ),
+                      for (final block in widget.blocks)
+                        _Block(
+                          block: block,
+                          body: body,
+                          pictures: widget.pictures,
+                        ),
+                      const SizedBox(height: 32),
+                      // A press here is a press on a button, never a tap on the page: going on to the
+                      // next chapter should not also toggle the bar.
+                      Listener(
+                        onPointerDown: (_) => _downOnControl = true,
+                        child: _ChapterEnd(
+                          onPrevious: widget.onPrevious,
+                          onNext: widget.onNext,
+                        ),
                       ),
-                    for (final block in widget.blocks)
-                      _Block(
-                        block: block,
-                        body: body,
-                        pictures: widget.pictures,
-                      ),
-                    const SizedBox(height: 32),
-                    _ChapterEnd(
-                      onPrevious: widget.onPrevious,
-                      onNext: widget.onNext,
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),

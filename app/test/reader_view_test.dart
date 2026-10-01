@@ -174,4 +174,108 @@ void main() {
         .position;
     expect(position.pixels, closeTo(position.maxScrollExtent / 2, 1));
   });
+  group('telling the reading screen when to get out of the way', () {
+    testWidgets('a tap on the page is a tap', (tester) async {
+      var taps = 0;
+      await tester.pumpWidget(
+        reader(ReaderView(blocks: paragraphs(3), onTap: () => taps++)),
+      );
+      await tester.tap(find.textContaining('Paragraph 1', findRichText: true));
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(taps, 1);
+    });
+
+    testWidgets('scrolling is not a tap, and says the reader is reading', (
+      tester,
+    ) async {
+      var taps = 0;
+      var scrolls = 0;
+      await tester.pumpWidget(
+        reader(
+          ReaderView(
+            blocks: paragraphs(40),
+            onTap: () => taps++,
+            onUserScroll: () => scrolls++,
+          ),
+        ),
+      );
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -300));
+      await tester.pumpAndSettle();
+      expect(taps, 0);
+      expect(scrolls, greaterThan(0));
+    });
+
+    testWidgets('holding a finger down to select is not a tap', (tester) async {
+      var taps = 0;
+      await tester.pumpWidget(
+        reader(ReaderView(blocks: paragraphs(3), onTap: () => taps++)),
+      );
+      await tester.longPress(
+        find.textContaining('Paragraph 1', findRichText: true),
+      );
+      await tester.pumpAndSettle();
+      expect(taps, 0);
+    });
+
+    testWidgets('going on to the next chapter is not a tap on the page', (
+      tester,
+    ) async {
+      // Otherwise pressing Next would also toggle the bar, which the new chapter has just shown.
+      var taps = 0;
+      var went = 0;
+      await tester.pumpWidget(
+        reader(
+          ReaderView(
+            blocks: const [
+              ParagraphBlock([TextRun('Short.')]),
+            ],
+            onNext: () => went++,
+            onTap: () => taps++,
+          ),
+        ),
+      );
+      await tester.tap(find.text('Next chapter'));
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(went, 1);
+      expect(taps, 0);
+    });
+
+    testWidgets('opening at the place left off is not the reader scrolling', (
+      tester,
+    ) async {
+      // The jump to a saved place happens before the reader has done anything. Taking it for
+      // reading would hide the bar the moment a chapter opened, before anyone saw which one.
+      var scrolls = 0;
+      await tester.pumpWidget(
+        reader(
+          ReaderView(
+            blocks: paragraphs(40),
+            initialProgress: 0.5,
+            onUserScroll: () => scrolls++,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(scrolls, 0);
+    });
+
+    testWidgets('the first and last lines clear whatever sits over the page', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: MediaQuery(
+            data: const MediaQueryData(
+              padding: EdgeInsets.only(top: 80, bottom: 30),
+            ),
+            child: Scaffold(body: ReaderView(blocks: paragraphs(1))),
+          ),
+        ),
+      );
+      final first = tester.getTopLeft(
+        find.textContaining('Paragraph 0', findRichText: true),
+      );
+      expect(first.dy, greaterThanOrEqualTo(80 + 24));
+    });
+  });
 }
