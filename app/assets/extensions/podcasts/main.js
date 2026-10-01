@@ -149,6 +149,10 @@ var HOSTS = [
   '*.mzstatic.com',
   'open.spotify.com',
   'podcasters.spotify.com',
+  // Where a show published through Spotify keeps its artwork. Images only: no audio is served from
+  // here, and none could be played if it were.
+  'i.scdn.co',
+  '*.scdn.co',
   'anchor.fm',
   '*.anchor.fm',
   '*.cloudfront.net',
@@ -571,6 +575,27 @@ async function remember(entry) {
   }
 }
 
+/**
+ * The cover for [found], falling back to one already remembered for the same show.
+ *
+ * A show is found through the podcast index, whose artwork is somewhere this extension declared,
+ * and is then opened by its feed, whose artwork is wherever its publisher put it. When those differ
+ * and the feed's host was never declared, `offerable` drops it and the show loses the cover it
+ * visibly had a moment earlier -- which is what happens to shows published through Spotify, whose
+ * images sit on a CDN of its own.
+ *
+ * The index's cover is already on the shelf by then, so it is used rather than nothing. It is the
+ * same artwork: the index took it from this feed.
+ */
+async function coverFor(found) {
+  if (found.coverUrl) return found.coverUrl;
+  var kept = await shelf();
+  for (var i = 0; i < kept.length; i++) {
+    if (kept[i] && kept[i].key === found.key && kept[i].coverUrl) return kept[i].coverUrl;
+  }
+  return undefined;
+}
+
 // ------------------------------------------------------------------------------- finding one
 
 /** Whether what was typed is an address rather than words to search for. */
@@ -827,7 +852,15 @@ var podcasts = {
 
   async getBookDetails(bookKey) {
     var found = await show(bookKey);
-    await remember(summaryOf(found));
+    // Worked out before the shelf is written, or opening a show would replace the cover the index
+    // gave it with the nothing its own feed offered, and the thumbnail would be gone for good.
+    var cover = await coverFor(found);
+    await remember({
+      key: found.key,
+      title: found.title,
+      authors: found.author ? [found.author] : [],
+      coverUrl: cover
+    });
     return {
       key: found.key,
       title: found.title,
@@ -838,7 +871,7 @@ var podcasts = {
       narrators: [],
       genres: found.genres,
       description: found.description,
-      coverUrl: found.coverUrl,
+      coverUrl: cover,
       language: languageOf(found.language),
       publisher: found.publisher,
       publishedDate: found.publishedDate,

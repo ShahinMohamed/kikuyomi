@@ -8,6 +8,17 @@ the app is a reader and a player, and where the books come from is up to you. Ki
 listens side by side — one library, with each book knowing whether it is something to hear or
 something to read.
 
+<p align="center">
+  <img src="docs/screenshots/listen.jpg" width="260" alt="The Listen shelf, with a Continue listening card above the library">
+  <img src="docs/screenshots/read.jpg" width="260" alt="The Read shelf, with two books in progress above the library">
+  <img src="docs/screenshots/browse.jpg" width="260" alt="Browse, listing the installed audio sources grouped by language">
+</p>
+<p align="center">
+  <img src="docs/screenshots/source.jpg" width="260" alt="Browsing LibriVox, a grid of covers with titles, authors and running times">
+  <img src="docs/screenshots/book.jpg" width="260" alt="A book's details: cover, author, length, description, tags and its chapters">
+  <img src="docs/screenshots/downloads.jpg" width="260" alt="The Downloads screen, with one book part-downloaded file by file">
+</p>
+
 ## Status
 
 **Early, and honest about it.** The app works: you can add local books or browse a source, see a

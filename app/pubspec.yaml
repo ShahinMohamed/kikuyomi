@@ -82,6 +82,10 @@ dev_dependencies:
   # does. The app only ever verifies; signing is a test's job here, which is why this is a dev
   # dependency. Gohilla, Apache-2.0, pure Dart.
   cryptography: ^2.7.0
+  # Writes the launcher icons for every platform from one master image, so the twenty-odd sizes
+  # Android, iOS and Windows each want are generated rather than maintained. Run by hand after
+  # changing the icon, never during a build; the results are committed. fluttercommunity, MIT.
+  flutter_launcher_icons: ^0.14.4
   # Zips, so the EPUB tests can build a book in memory. The app reads EPUBs through
   # kikuyomi_sources_builtin, which depends on it for real. Pure Dart.
   archive: ^4.0.0
@@ -148,3 +152,24 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+# Regenerate with `dart run flutter_launcher_icons` from app/, after regenerating the two source
+# images with `python ../tool/make_icon.py icon`. The generated files are committed, because CI does
+# not run code generation and a build must not depend on Python being present.
+#
+# It sits at the end of the file on purpose: it is a top-level key, and putting it between two
+# dependencies silently swallows every dependency after it into this map.
+flutter_launcher_icons:
+  image_path: "icon/icon_master.png"
+  android: true
+  # Android crops an adaptive icon to whatever shape the launcher likes, so the foreground is the
+  # mark alone, drawn smaller to stay inside the safe zone, over the navy the master uses.
+  adaptive_icon_background: "#232439"
+  adaptive_icon_foreground: "icon/icon_foreground.png"
+  ios: true
+  # The App Store refuses an icon with an alpha channel, and the master has none to lose.
+  remove_alpha_ios: true
+  windows:
+    generate: true
+    image_path: "icon/icon_master.png"
+    icon_size: 256
