@@ -244,12 +244,15 @@ void main() {
     test('finishes a book whose progress reached its last chapter, which leaves Continue Listening', () async {
       final id = await addFolderBook(db, clock);
       await listenedBefore(id, 2, 270000);
-      expect(await watchContinueListening(db).first, hasLength(1));
+      expect(
+        await watchContinueListening(db, clock: clock).first,
+        hasLength(1),
+      );
 
       await backfillListenedChapters(db);
 
       expect((await overview(id)).finished, isTrue);
-      expect(await watchContinueListening(db).first, isEmpty);
+      expect(await watchContinueListening(db, clock: clock).first, isEmpty);
     });
 
     test('records a single file only once it is near its end', () async {

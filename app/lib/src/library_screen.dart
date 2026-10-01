@@ -14,6 +14,7 @@ import 'book_files.dart';
 import 'dropped_books.dart';
 import 'home_view.dart';
 import 'library/category_bar.dart';
+import 'library/hide_from_continue.dart';
 import 'library/library_shelf.dart';
 import 'open_book.dart';
 import 'providers.dart';
@@ -223,6 +224,13 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                   onResume: (bookId) => openBookInPlayer(context, ref, bookId),
                   onShowDetails: (bookId) =>
                       BookRoute(bookId: bookId).push<void>(context),
+                  onHideFromContinue: (bookId) => hideFromContinue(
+                    context,
+                    services,
+                    bookId,
+                    shelf: 'Continue listening',
+                    usingIt: 'play',
+                  ),
                   header: remindToBackUp
                       ? BackupReminderCard(
                           onChooseFolder: () => chooseBackupFolder(

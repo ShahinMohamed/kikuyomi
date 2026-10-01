@@ -1,7 +1,9 @@
 import 'dart:io';
 
 import 'package:kikuyomi_source_api/kikuyomi_source_api.dart' show SourceKind;
+import 'package:flutter/gestures.dart' show kSecondaryButton;
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart' show SemanticsAction;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kikuyomi/src/home_view.dart';
 import 'package:kikuyomi_data/kikuyomi_data.dart'
@@ -51,6 +53,7 @@ Widget home({
   List<BookRow> library = const [],
   List<String>? tapped,
   Widget? header,
+  ValueChanged<int>? onHide,
 }) => MaterialApp(
   home: Scaffold(
     body: HomeView(
@@ -60,6 +63,7 @@ Widget home({
       emptyMessage: 'No books yet.',
       onResume: (bookId) => tapped?.add('resume $bookId'),
       onShowDetails: (bookId) => tapped?.add('details $bookId'),
+      onHideFromContinue: onHide,
       header: header,
     ),
   ),
@@ -255,12 +259,125 @@ void main() {
       );
     });
 
-    testWidgets('stack one above the other on a phone', (tester) async {
+    testWidgets('sit in one row on a phone, swiped along', (tester) async {
+      // They used to stack one above another, at least three of them, which was a third of a
+      // phone's screen spent on a list the listener was scrolling past to reach their library.
       await showTwo(tester, const Size(400, 800));
-      expect(
-        tester.getTopLeft(find.text('Two')).dy,
-        greaterThan(tester.getTopLeft(find.text('One')).dy),
+      final one = tester.getTopLeft(find.text('One'));
+      final two = tester.getTopLeft(find.text('Two'));
+      expect(two.dy, one.dy);
+      expect(two.dx, greaterThan(one.dx));
+    });
+
+    testWidgets('the next one shows at the edge, so there is plainly more', (
+      tester,
+    ) async {
+      await showTwo(tester, const Size(400, 800));
+      final secondCard = tester.getTopLeft(
+        find.ancestor(of: find.text('Two'), matching: find.byType(Card)),
       );
+      expect(secondCard.dx, lessThan(400), reason: 'visible at the edge');
+      expect(secondCard.dx, greaterThan(200), reason: 'but only just');
+    });
+
+    testWidgets('swiping brings the next one into view', (tester) async {
+      await showTwo(tester, const Size(400, 800));
+      await tester.drag(find.text('One'), const Offset(-300, 0));
+      await tester.pumpAndSettle();
+      final second = tester.getRect(
+        find.ancestor(of: find.text('Two'), matching: find.byType(Card)),
+      );
+      expect(second.left, greaterThanOrEqualTo(0));
+      expect(second.right, lessThanOrEqualTo(400), reason: 'all of it in view');
+    });
+
+    testWidgets('one alone on a phone is simply the width of the screen', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(400, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(home(continueListening: [started(1, 'One')]));
+      final card = tester.getSize(
+        find.ancestor(of: find.text('One'), matching: find.byType(Card)),
+      );
+      expect(card.width, 400 - 32);
+    });
+  });
+
+  group('taking a book off the shelf', () {
+    Future<List<int>> showAndHide(
+      WidgetTester tester,
+      Future<void> Function(Finder card) open,
+    ) async {
+      final hidden = <int>[];
+      tester.view.physicalSize = const Size(1280, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        home(
+          continueListening: [started(1, 'One'), started(2, 'Two')],
+          onHide: hidden.add,
+        ),
+      );
+      await open(find.text('Two'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Remove from Continue listening'));
+      await tester.pumpAndSettle();
+      return hidden;
+    }
+
+    testWidgets('a long press offers it', (tester) async {
+      final hidden = await showAndHide(tester, tester.longPress);
+      expect(hidden, [2]);
+    });
+
+    testWidgets('so does a right click', (tester) async {
+      final hidden = await showAndHide(
+        tester,
+        (card) => tester.tap(card, buttons: kSecondaryButton),
+      );
+      expect(hidden, [2]);
+    });
+
+    testWidgets('and a screen reader can do it by name', (tester) async {
+      // Someone who cannot see the card cannot long-press the right one, so the action has a name.
+      final semantics = tester.ensureSemantics();
+      final hidden = <int>[];
+      await tester.pumpWidget(
+        home(continueListening: [started(1, 'One')], onHide: hidden.add),
+      );
+      // The node a screen reader lands on when it reaches the card.
+      final node = tester.getSemantics(find.text('One'));
+      final actions = node.getSemanticsData().customSemanticsActionIds ?? [];
+      expect(actions, hasLength(1), reason: 'on the card the reader focuses');
+      final action = actions.single;
+      node.owner!.performAction(node.id, SemanticsAction.customAction, action);
+      await tester.pump();
+      expect(hidden, [1]);
+      semantics.dispose();
+    });
+
+    testWidgets('a tap still just continues the book', (tester) async {
+      final tapped = <String>[];
+      await tester.pumpWidget(
+        home(
+          continueListening: [started(1, 'One')],
+          tapped: tapped,
+          onHide: (_) {},
+        ),
+      );
+      await tester.tap(find.text('One'));
+      await tester.pumpAndSettle();
+      expect(tapped, ['resume 1']);
+      expect(find.text('Remove from Continue listening'), findsNothing);
+    });
+
+    testWidgets('is not offered where nothing would do it', (tester) async {
+      await tester.pumpWidget(home(continueListening: [started(1, 'One')]));
+      await tester.longPress(find.text('One'));
+      await tester.pumpAndSettle();
+      expect(find.text('Remove from Continue listening'), findsNothing);
     });
   });
 }

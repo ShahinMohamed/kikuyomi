@@ -3,6 +3,7 @@ import 'package:kikuyomi_domain/kikuyomi_domain.dart';
 
 import '../database/database.dart';
 import 'book_queries.dart';
+import 'continue_shelf.dart';
 import 'watch_tables.dart';
 
 /// A started book, as Continue Listening shows it.
@@ -53,10 +54,17 @@ final class ContinueListeningBook {
 /// its listener was, and one whose listener only moves back through it stays off. A finished book
 /// started again comes back, because starting it again records its last chapter as not listened.
 ///
+/// Only books played within [continueShelfRecency] are on it, and not one its listener has taken off
+/// by hand since it was last played ([belongsOnContinueShelf]). Without that the shelf held every
+/// book ever started and not finished, and only grew.
+///
 /// The stream emits again whenever anything it shows changes, including every progress save.
+/// [clock] says when now is, for the month a book stays; time passing on its own does not make the
+/// stream emit, so a book ages off the next time anything on the shelf changes.
 Stream<List<ContinueListeningBook>> watchContinueListening(
-  KikuyomiDatabase db,
-) => watchTables(db, [
+  KikuyomiDatabase db, {
+  required Clock clock,
+}) => watchTables(db, [
   db.playbackStates,
   db.books,
   db.chapters,
@@ -64,10 +72,11 @@ Stream<List<ContinueListeningBook>> watchContinueListening(
   db.mediaFiles,
   db.bookPeople,
   db.people,
-], () => _loadContinueListening(db));
+], () => _loadContinueListening(db, clock.now()));
 
 Future<List<ContinueListeningBook>> _loadContinueListening(
   KikuyomiDatabase db,
+  DateTime now,
 ) async {
   final isLast = noOtherPlayableChapter(db, after: true);
   final isFirst = noOtherPlayableChapter(db, after: false);
@@ -92,7 +101,13 @@ Future<List<ContinueListeningBook>> _loadContinueListening(
   });
   final rows = [
     for (final row in started)
-      if (!(lastChapters[row.readTable(db.books).id]?.isListened ?? false)) row,
+      if (!(lastChapters[row.readTable(db.books).id]?.isListened ?? false) &&
+          belongsOnContinueShelf(
+            lastActive: row.readTable(db.playbackStates).updatedAt,
+            hiddenAt: row.readTable(db.books).continueHiddenAt,
+            now: now,
+          ))
+        row,
   ];
   if (rows.isEmpty) return const [];
 

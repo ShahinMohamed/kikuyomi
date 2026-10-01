@@ -8,6 +8,7 @@ import '../app_shell.dart';
 import '../book_files.dart';
 import '../home_view.dart';
 import '../library/category_bar.dart';
+import '../library/hide_from_continue.dart';
 import '../library/library_shelf.dart';
 import '../providers.dart';
 import '../routes.dart';
@@ -130,6 +131,13 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
                     ReaderRoute(bookId: bookId).push<void>(context),
                 onShowDetails: (bookId) =>
                     BookRoute(bookId: bookId).push<void>(context),
+                onHideFromContinue: (bookId) => hideFromContinue(
+                  context,
+                  services,
+                  bookId,
+                  shelf: 'Continue reading',
+                  usingIt: 'open',
+                ),
               ),
             ),
           ],

@@ -109,7 +109,7 @@ void main() {
       expect(overview.chapters.first.current, isTrue);
       expect(overview.finished, isFalse);
 
-      final shelf = await watchContinueListening(db).first;
+      final shelf = await watchContinueListening(db, clock: clock).first;
       expect(shelf.single.bookId, bookId);
       expect(shelf.single.chapterTitle, 'Hayden');
     },
@@ -140,7 +140,7 @@ void main() {
     await markBookFinished(db, bookId, clock: clock);
 
     expect((await watchBookOverview(db, bookId).first)!.finished, isTrue);
-    expect(await watchContinueListening(db).first, isEmpty);
+    expect(await watchContinueListening(db, clock: clock).first, isEmpty);
   });
 
   test('a duration learned from the engine refines the estimate', () async {

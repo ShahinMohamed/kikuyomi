@@ -55,7 +55,10 @@ void main() {
       ),
     );
     expect(
-      [for (final book in await watchContinueListening(db).first) book.bookId],
+      [
+        for (final book in await watchContinueListening(db, clock: clock).first)
+          book.bookId,
+      ],
       [id],
     );
   });

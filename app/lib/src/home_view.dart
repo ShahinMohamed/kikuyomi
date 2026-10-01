@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 
+import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart' show CustomSemanticsAction;
 import 'package:kikuyomi_data/kikuyomi_data.dart'
     show BookRow, ContinueListeningBook, ContinueReadingBook, CoverFiles;
 import 'package:kikuyomi_design_system/kikuyomi_design_system.dart';
@@ -24,6 +26,7 @@ class HomeView extends StatelessWidget {
     required this.emptyMessage,
     required this.onResume,
     required this.onShowDetails,
+    this.onHideFromContinue,
     this.header,
     this.searchQuery = '',
   });
@@ -46,6 +49,10 @@ class HomeView extends StatelessWidget {
 
   /// A book in the library was tapped: show its details.
   final ValueChanged<int> onShowDetails;
+
+  /// The listener asked to take a book off the Continue shelf, or null where that is not offered.
+  /// It keeps its place, and comes back when it is next played or read.
+  final ValueChanged<int>? onHideFromContinue;
 
   /// Shown above everything else, books or none, such as the reminder to choose a backup folder.
   final Widget? header;
@@ -101,7 +108,14 @@ class HomeView extends StatelessWidget {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _Shelf(books: continuing, onResume: onResume),
+              child: _Shelf(
+                books: continuing,
+                onResume: onResume,
+                onHide: onHideFromContinue,
+                hideLabel: continueReading.isNotEmpty
+                    ? 'Remove from Continue reading'
+                    : 'Remove from Continue listening',
+              ),
             ),
           ),
         ],
@@ -296,19 +310,34 @@ class ContinueReadingCard extends StatelessWidget {
   }
 }
 
-/// The books to continue, one to a row on a phone and several to a row on a wide window, so the
-/// shelf never needs scrolling sideways, which a mouse cannot do by dragging.
-/// Continue listening, one row of it.
+/// The books to continue.
 ///
-/// Stateful only to remember whether it has been opened up, which nothing above it needs to know --
-/// the same reason the chapter list holds its own selection. `HomeView` stays a pure function of
-/// the library.
+/// On a wide window, one row of cards, with the rest a press away — never a sideways scroll, which
+/// a mouse cannot do by dragging. On a phone, where a row is one card, a row the reader swipes
+/// along instead, with the next card showing at the edge so it is plain there is more. That used to
+/// be a stack of three cards with a button for the rest: a third of a phone's screen spent on a list
+/// someone was scrolling past to reach their library.
+///
+/// Stateful only to remember whether the wide row has been opened up, which nothing above it needs
+/// to know -- the same reason the chapter list holds its own selection. `HomeView` stays a pure
+/// function of the library.
 class _Shelf extends StatefulWidget {
-  const _Shelf({required this.books, required this.onResume});
+  const _Shelf({
+    required this.books,
+    required this.onResume,
+    required this.onHide,
+    required this.hideLabel,
+  });
 
   /// Each book on the go, with how to draw its card: a listening card or a reading one.
   final List<({int bookId, Widget Function(VoidCallback onTap) card})> books;
   final ValueChanged<int> onResume;
+
+  /// Takes a book off the shelf, or null where that is not offered.
+  final ValueChanged<int>? onHide;
+
+  /// What taking a book off is called here: "Remove from Continue listening", or reading.
+  final String hideLabel;
 
   @override
   State<_Shelf> createState() => _ShelfState();
@@ -321,6 +350,41 @@ class _ShelfState extends State<_Shelf> {
   static const _minCardWidth = 320.0;
   static const _gap = 8.0;
 
+  /// [card] for book [bookId], with the way to take it off the shelf: a long press on a phone, a
+  /// right click on a desktop, and a named action for a screen reader, which can do neither.
+  Widget _removable(int bookId, Widget card) {
+    final onHide = widget.onHide;
+    if (onHide == null) return card;
+    Future<void> menuAt(Offset at) async {
+      final overlay =
+          Overlay.of(context).context.findRenderObject()! as RenderBox;
+      final chosen = await showMenu<bool>(
+        context: context,
+        position: RelativeRect.fromRect(
+          at & const Size(1, 1),
+          Offset.zero & overlay.size,
+        ),
+        items: [PopupMenuItem(value: true, child: Text(widget.hideLabel))],
+      );
+      if (chosen ?? false) onHide(bookId);
+    }
+
+    // Merged, so the action is on the node a screen reader actually focuses — the card itself. Left
+    // on a node of its own around the card, it would be somewhere nobody using one ever arrives.
+    return MergeSemantics(
+      child: Semantics(
+        customSemanticsActions: {
+          CustomSemanticsAction(label: widget.hideLabel): () => onHide(bookId),
+        },
+        child: GestureDetector(
+          onLongPressStart: (details) => menuAt(details.globalPosition),
+          onSecondaryTapUp: (details) => menuAt(details.globalPosition),
+          child: card,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
@@ -329,19 +393,17 @@ class _ShelfState extends State<_Shelf> {
         1,
         ((width + _gap) / (_minCardWidth + _gap)).floor(),
       );
+      final books = widget.books;
+      if (columns == 1 && books.length > 1) {
+        return _swipeAlong(width, books);
+      }
       // Rounded down, so rounding never pushes the last card of a row onto the next.
       final cardWidth = ((width - _gap * (columns - 1)) / columns)
           .floorToDouble();
       // One row unless asked otherwise. A listener with ten books on the go had three rows of
       // cards above their library, which is most of a window spent on a list they were scrolling
       // past. How many fit is not known until here, so the decision is made here too.
-      final books = widget.books;
-      // One row, but never fewer than three cards. On a wide window a row is five and the cap does
-      // nothing; on a phone a row is one, and collapsing ten books to a single card would hide two
-      // that used to be in plain sight for no gain worth having.
-      final shown = _expanded
-          ? books.length
-          : math.min(math.max(columns, 3), books.length);
+      final shown = _expanded ? books.length : math.min(columns, books.length);
       final hidden = books.length - shown;
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -353,7 +415,10 @@ class _ShelfState extends State<_Shelf> {
               for (final book in books.take(shown))
                 SizedBox(
                   width: cardWidth,
-                  child: book.card(() => widget.onResume(book.bookId)),
+                  child: _removable(
+                    book.bookId,
+                    book.card(() => widget.onResume(book.bookId)),
+                  ),
                 ),
             ],
           ),
@@ -371,6 +436,45 @@ class _ShelfState extends State<_Shelf> {
       );
     },
   );
+
+  /// One card's height whatever the number of books, swiped along.
+  ///
+  /// Each card is a little narrower than the screen, so the next one shows at the edge: a row that
+  /// fitted exactly would give no sign there was anything to swipe to. Not a lazy list, because a
+  /// row of cards whose heights follow the text size cannot be given one fixed height, and the books
+  /// someone is in the middle of are a handful, not hundreds.
+  Widget _swipeAlong(
+    double width,
+    List<({int bookId, Widget Function(VoidCallback onTap) card})> books,
+  ) {
+    final cardWidth = (width * 0.86).floorToDouble();
+    return ScrollConfiguration(
+      // A narrow desktop window gets this row too, and a mouse has to be able to drag it.
+      behavior: ScrollConfiguration.of(context)
+          .copyWith(dragDevices: PointerDeviceKind.values.toSet()),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        clipBehavior: Clip.none,
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (final (index, book) in books.indexed) ...[
+                if (index > 0) const SizedBox(width: _gap),
+                SizedBox(
+                  width: cardWidth,
+                  child: _removable(
+                    book.bookId,
+                    book.card(() => widget.onResume(book.bookId)),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _SectionHeading extends StatelessWidget {

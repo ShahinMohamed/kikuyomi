@@ -23,6 +23,7 @@ export 'src/library/reading.dart';
 export 'src/library/book_overview.dart';
 export 'src/library/bookmarks.dart';
 export 'src/library/continue_listening.dart';
+export 'src/library/continue_shelf.dart';
 export 'src/library/listened_chapters.dart';
 export 'src/library/listening_history.dart';
 export 'src/library/remove_from_library.dart';

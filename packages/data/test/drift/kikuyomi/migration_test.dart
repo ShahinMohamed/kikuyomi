@@ -24,6 +24,7 @@ import 'generated/schema_v6.dart' as v6;
 import 'generated/schema_v7.dart' as v7;
 import 'generated/schema_v8.dart' as v8;
 import 'generated/schema_v9.dart' as v9;
+import 'generated/schema_v10.dart' as v10;
 
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -430,6 +431,56 @@ void main() {
           expect(migrated.wordCount, null);
           expect(migrated.title, 'Chapter One');
           expect(migrated.isListened, 1);
+        },
+      );
+    },
+  );
+
+  test(
+    'upgrading to version 10 leaves every book on its Continue shelf',
+    () async {
+      // Version 10 adds `book.continue_hidden_at`, and nobody has taken anything off a shelf yet, so
+      // it arrives null everywhere and each shelf shows what it showed before the upgrade.
+      final source = v9.SourcesData(
+        id: 9,
+        key: 'novels',
+        name: 'Novels',
+        lang: 'en',
+        isEnabled: 1,
+        isPinned: 0,
+      );
+      final novel = v9.BooksData(
+        id: 1,
+        sourceId: 9,
+        key: 'a-novel',
+        title: 'A Novel',
+        kind: 'text',
+        genres: '[]',
+        inLibrary: 1,
+        detailsFetched: 1,
+        userOverrides: '[]',
+        createdAt: _at,
+        updatedAt: _at,
+        chaptersReversed: 1,
+      );
+
+      await verifier.testWithDataIntegrity(
+        oldVersion: 9,
+        newVersion: 10,
+        createOld: v9.DatabaseAtV9.new,
+        createNew: v10.DatabaseAtV10.new,
+        openTestedDatabase: KikuyomiDatabase.new,
+        createItems: (batch, db) {
+          batch.insert(db.sources, source);
+          batch.insert(db.books, novel);
+        },
+        validateItems: (db) async {
+          final migrated = await db.select(db.books).getSingle();
+          expect(migrated.continueHiddenAt, null);
+          // And what version 9 wrote is untouched. Read back through the version-10 snapshot,
+          // where a boolean is the integer SQLite stores.
+          expect(migrated.chaptersReversed, 1);
+          expect(migrated.title, 'A Novel');
         },
       );
     },

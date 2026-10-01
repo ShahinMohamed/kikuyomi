@@ -112,7 +112,7 @@ void main() {
     await restoreBackup(file, library: DriftBackupStore(restored));
 
     expect(await flags(restored), [true, false, true]);
-    expect(await watchContinueListening(restored).first, isEmpty);
+    expect(await watchContinueListening(restored, clock: clock).first, isEmpty);
   });
 
   test('a backup that records listened state keeps a chapter marked not listened so', () async {
@@ -133,7 +133,7 @@ void main() {
     await restoreBackup(file, library: DriftBackupStore(restored));
 
     expect(await flags(restored), [false, false, false]);
-    final shelf = await watchContinueListening(restored).first;
+    final shelf = await watchContinueListening(restored, clock: clock).first;
     expect(shelf.single.chapterTitle, 'Middle');
   });
 }

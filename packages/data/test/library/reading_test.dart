@@ -213,7 +213,7 @@ void main() {
         clock: clock,
       );
 
-      final shelf = await watchContinueReading(db).first;
+      final shelf = await watchContinueReading(db, clock: clock).first;
 
       final card = shelf.single;
       expect(card.bookId, book);
@@ -228,7 +228,7 @@ void main() {
       final book = await addBook();
       await addChapters(book, 2);
 
-      expect(await watchContinueReading(db).first, isEmpty);
+      expect(await watchContinueReading(db, clock: clock).first, isEmpty);
     });
 
     test('lets a book go once its last chapter is finished', () async {
@@ -246,7 +246,7 @@ void main() {
       await (db.update(db.chapters)..where((c) => c.id.equals(chapters[1])))
           .write(const ChaptersCompanion(isListened: Value(true)));
 
-      expect(await watchContinueReading(db).first, isEmpty);
+      expect(await watchContinueReading(db, clock: clock).first, isEmpty);
     });
 
     test('never shows an audiobook', () async {
@@ -262,7 +262,7 @@ void main() {
         clock: clock,
       );
 
-      expect(await watchContinueReading(db).first, isEmpty);
+      expect(await watchContinueReading(db, clock: clock).first, isEmpty);
     });
 
     test('puts the book read most recently first', () async {
@@ -286,7 +286,7 @@ void main() {
         clock: clock,
       );
 
-      final shelf = await watchContinueReading(db).first;
+      final shelf = await watchContinueReading(db, clock: clock).first;
       expect([for (final c in shelf) c.bookId], [second, first]);
     });
   });

@@ -118,14 +118,20 @@ final playerStateProvider = StreamProvider<PlayerState>((ref) {
 /// Continue Listening, straight from the database: the started, unfinished books in the library,
 /// most recently played first. It emits again on every progress save, so a book's place on the
 /// shelf keeps up while it plays.
-final continueListeningProvider = StreamProvider<List<ContinueListeningBook>>(
-  (ref) => watchContinueListening(ref.watch(servicesProvider).database),
-);
+final continueListeningProvider = StreamProvider<List<ContinueListeningBook>>((
+  ref,
+) {
+  final services = ref.watch(servicesProvider);
+  return watchContinueListening(services.database, clock: services.clock);
+});
 
 /// Continue Reading: the books to read that are open and not finished, most recently read first.
-final continueReadingProvider = StreamProvider<List<ContinueReadingBook>>(
-  (ref) => watchContinueReading(ref.watch(servicesProvider).database),
-);
+final continueReadingProvider = StreamProvider<List<ContinueReadingBook>>((
+  ref,
+) {
+  final services = ref.watch(servicesProvider);
+  return watchContinueReading(services.database, clock: services.clock);
+});
 
 /// Where the reader of a book is, or null for a book never opened.
 final readingPositionProvider = StreamProvider.autoDispose

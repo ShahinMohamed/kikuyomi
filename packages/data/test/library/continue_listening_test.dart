@@ -21,7 +21,7 @@ void main() {
   tearDown(() => db.close());
 
   Future<List<ContinueListeningBook>> shelf() =>
-      watchContinueListening(db).first;
+      watchContinueListening(db, clock: clock).first;
 
   test('holds no book that has not been started', () async {
     await addFolderBook(db, clock);
@@ -194,7 +194,7 @@ void main() {
     test('when progress is saved', () async {
       final id = await addFolderBook(db, clock);
       final shown = expectLater(
-        watchContinueListening(db).map(titles),
+        watchContinueListening(db, clock: clock).map(titles),
         emitsThrough(['A Book']),
       );
       await listen(db, clock, id, 0, 1000);
@@ -205,8 +205,10 @@ void main() {
       final id = await addFolderBook(db, clock);
       await listen(db, clock, id, 0, 1000);
       final shown = expectLater(
-        watchContinueListening(db)
-            .map((books) => [for (final book in books) book.author]),
+        watchContinueListening(
+          db,
+          clock: clock,
+        ).map((books) => [for (final book in books) book.author]),
         emitsThrough(['A. N. Author']),
       );
       await (db.update(db.people)..where((p) => p.name.equals('An Author')))
