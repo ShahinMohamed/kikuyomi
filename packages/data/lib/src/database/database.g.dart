@@ -897,6 +897,18 @@ class $BooksTable extends Books with TableInfo<$BooksTable, BookRow> {
       'CHECK ("chapters_reversed" IN (0, 1))',
     ),
   );
+  static const VerificationMeta _continueHiddenAtMeta = const VerificationMeta(
+    'continueHiddenAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> continueHiddenAt =
+      GeneratedColumn<DateTime>(
+        'continue_hidden_at',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _filePathMeta = const VerificationMeta(
     'filePath',
   );
@@ -970,6 +982,7 @@ class $BooksTable extends Books with TableInfo<$BooksTable, BookRow> {
     userOverrides,
     playbackSpeed,
     chaptersReversed,
+    continueHiddenAt,
     filePath,
     kind,
     createdAt,
@@ -1179,6 +1192,15 @@ class $BooksTable extends Books with TableInfo<$BooksTable, BookRow> {
         ),
       );
     }
+    if (data.containsKey('continue_hidden_at')) {
+      context.handle(
+        _continueHiddenAtMeta,
+        continueHiddenAt.isAcceptableOrUnknown(
+          data['continue_hidden_at']!,
+          _continueHiddenAtMeta,
+        ),
+      );
+    }
     if (data.containsKey('file_path')) {
       context.handle(
         _filePathMeta,
@@ -1330,6 +1352,10 @@ class $BooksTable extends Books with TableInfo<$BooksTable, BookRow> {
         DriftSqlType.bool,
         data['${effectivePrefix}chapters_reversed'],
       ),
+      continueHiddenAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}continue_hidden_at'],
+      ),
       filePath: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}file_path'],
@@ -1406,6 +1432,18 @@ class BookRow extends DataClass implements Insertable<BookRow> {
   /// speed does.
   final bool? chaptersReversed;
 
+  /// When the listener took this book off Continue Listening or Continue Reading by hand
+  /// (version 10).
+  ///
+  /// A moment rather than a flag, because taking a book off the shelf is about the book as it stood
+  /// then: once it is played or read again, its activity is newer than this and it comes back on its
+  /// own. A flag would need something to clear it, and forgetting to would hide a book someone is
+  /// in the middle of for good.
+  ///
+  /// Not carried by backups. It is a tidy-up of one screen, not part of anyone's library, and a
+  /// restore that brought back a book taken off the shelf would cost one long-press to undo.
+  final DateTime? continueHiddenAt;
+
   /// Where the book's own file is, for a book that is one file rather than chapters to fetch
   /// (version 8, ADR-0021).
   ///
@@ -1452,6 +1490,7 @@ class BookRow extends DataClass implements Insertable<BookRow> {
     required this.userOverrides,
     this.playbackSpeed,
     this.chaptersReversed,
+    this.continueHiddenAt,
     this.filePath,
     required this.kind,
     required this.createdAt,
@@ -1536,6 +1575,9 @@ class BookRow extends DataClass implements Insertable<BookRow> {
     if (!nullToAbsent || chaptersReversed != null) {
       map['chapters_reversed'] = Variable<bool>(chaptersReversed);
     }
+    if (!nullToAbsent || continueHiddenAt != null) {
+      map['continue_hidden_at'] = Variable<DateTime>(continueHiddenAt);
+    }
     if (!nullToAbsent || filePath != null) {
       map['file_path'] = Variable<String>(filePath);
     }
@@ -1615,6 +1657,9 @@ class BookRow extends DataClass implements Insertable<BookRow> {
       chaptersReversed: chaptersReversed == null && nullToAbsent
           ? const Value.absent()
           : Value(chaptersReversed),
+      continueHiddenAt: continueHiddenAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(continueHiddenAt),
       filePath: filePath == null && nullToAbsent
           ? const Value.absent()
           : Value(filePath),
@@ -1658,6 +1703,9 @@ class BookRow extends DataClass implements Insertable<BookRow> {
       userOverrides: serializer.fromJson<Set<BookField>>(json['userOverrides']),
       playbackSpeed: serializer.fromJson<double?>(json['playbackSpeed']),
       chaptersReversed: serializer.fromJson<bool?>(json['chaptersReversed']),
+      continueHiddenAt: serializer.fromJson<DateTime?>(
+        json['continueHiddenAt'],
+      ),
       filePath: serializer.fromJson<String?>(json['filePath']),
       kind: $BooksTable.$converterkind.fromJson(
         serializer.fromJson<String>(json['kind']),
@@ -1698,6 +1746,7 @@ class BookRow extends DataClass implements Insertable<BookRow> {
       'userOverrides': serializer.toJson<Set<BookField>>(userOverrides),
       'playbackSpeed': serializer.toJson<double?>(playbackSpeed),
       'chaptersReversed': serializer.toJson<bool?>(chaptersReversed),
+      'continueHiddenAt': serializer.toJson<DateTime?>(continueHiddenAt),
       'filePath': serializer.toJson<String?>(filePath),
       'kind': serializer.toJson<String>(
         $BooksTable.$converterkind.toJson(kind),
@@ -1736,6 +1785,7 @@ class BookRow extends DataClass implements Insertable<BookRow> {
     Set<BookField>? userOverrides,
     Value<double?> playbackSpeed = const Value.absent(),
     Value<bool?> chaptersReversed = const Value.absent(),
+    Value<DateTime?> continueHiddenAt = const Value.absent(),
     Value<String?> filePath = const Value.absent(),
     SourceKind? kind,
     DateTime? createdAt,
@@ -1785,6 +1835,9 @@ class BookRow extends DataClass implements Insertable<BookRow> {
     chaptersReversed: chaptersReversed.present
         ? chaptersReversed.value
         : this.chaptersReversed,
+    continueHiddenAt: continueHiddenAt.present
+        ? continueHiddenAt.value
+        : this.continueHiddenAt,
     filePath: filePath.present ? filePath.value : this.filePath,
     kind: kind ?? this.kind,
     createdAt: createdAt ?? this.createdAt,
@@ -1846,6 +1899,9 @@ class BookRow extends DataClass implements Insertable<BookRow> {
       chaptersReversed: data.chaptersReversed.present
           ? data.chaptersReversed.value
           : this.chaptersReversed,
+      continueHiddenAt: data.continueHiddenAt.present
+          ? data.continueHiddenAt.value
+          : this.continueHiddenAt,
       filePath: data.filePath.present ? data.filePath.value : this.filePath,
       kind: data.kind.present ? data.kind.value : this.kind,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
@@ -1884,6 +1940,7 @@ class BookRow extends DataClass implements Insertable<BookRow> {
           ..write('userOverrides: $userOverrides, ')
           ..write('playbackSpeed: $playbackSpeed, ')
           ..write('chaptersReversed: $chaptersReversed, ')
+          ..write('continueHiddenAt: $continueHiddenAt, ')
           ..write('filePath: $filePath, ')
           ..write('kind: $kind, ')
           ..write('createdAt: $createdAt, ')
@@ -1922,6 +1979,7 @@ class BookRow extends DataClass implements Insertable<BookRow> {
     userOverrides,
     playbackSpeed,
     chaptersReversed,
+    continueHiddenAt,
     filePath,
     kind,
     createdAt,
@@ -1959,6 +2017,7 @@ class BookRow extends DataClass implements Insertable<BookRow> {
           other.userOverrides == this.userOverrides &&
           other.playbackSpeed == this.playbackSpeed &&
           other.chaptersReversed == this.chaptersReversed &&
+          other.continueHiddenAt == this.continueHiddenAt &&
           other.filePath == this.filePath &&
           other.kind == this.kind &&
           other.createdAt == this.createdAt &&
@@ -1994,6 +2053,7 @@ class BooksCompanion extends UpdateCompanion<BookRow> {
   final Value<Set<BookField>> userOverrides;
   final Value<double?> playbackSpeed;
   final Value<bool?> chaptersReversed;
+  final Value<DateTime?> continueHiddenAt;
   final Value<String?> filePath;
   final Value<SourceKind> kind;
   final Value<DateTime> createdAt;
@@ -2027,6 +2087,7 @@ class BooksCompanion extends UpdateCompanion<BookRow> {
     this.userOverrides = const Value.absent(),
     this.playbackSpeed = const Value.absent(),
     this.chaptersReversed = const Value.absent(),
+    this.continueHiddenAt = const Value.absent(),
     this.filePath = const Value.absent(),
     this.kind = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -2061,6 +2122,7 @@ class BooksCompanion extends UpdateCompanion<BookRow> {
     this.userOverrides = const Value.absent(),
     this.playbackSpeed = const Value.absent(),
     this.chaptersReversed = const Value.absent(),
+    this.continueHiddenAt = const Value.absent(),
     this.filePath = const Value.absent(),
     this.kind = const Value.absent(),
     required DateTime createdAt,
@@ -2099,6 +2161,7 @@ class BooksCompanion extends UpdateCompanion<BookRow> {
     Expression<String>? userOverrides,
     Expression<double>? playbackSpeed,
     Expression<bool>? chaptersReversed,
+    Expression<DateTime>? continueHiddenAt,
     Expression<String>? filePath,
     Expression<String>? kind,
     Expression<DateTime>? createdAt,
@@ -2133,6 +2196,7 @@ class BooksCompanion extends UpdateCompanion<BookRow> {
       if (userOverrides != null) 'user_overrides': userOverrides,
       if (playbackSpeed != null) 'playback_speed': playbackSpeed,
       if (chaptersReversed != null) 'chapters_reversed': chaptersReversed,
+      if (continueHiddenAt != null) 'continue_hidden_at': continueHiddenAt,
       if (filePath != null) 'file_path': filePath,
       if (kind != null) 'kind': kind,
       if (createdAt != null) 'created_at': createdAt,
@@ -2169,6 +2233,7 @@ class BooksCompanion extends UpdateCompanion<BookRow> {
     Value<Set<BookField>>? userOverrides,
     Value<double?>? playbackSpeed,
     Value<bool?>? chaptersReversed,
+    Value<DateTime?>? continueHiddenAt,
     Value<String?>? filePath,
     Value<SourceKind>? kind,
     Value<DateTime>? createdAt,
@@ -2203,6 +2268,7 @@ class BooksCompanion extends UpdateCompanion<BookRow> {
       userOverrides: userOverrides ?? this.userOverrides,
       playbackSpeed: playbackSpeed ?? this.playbackSpeed,
       chaptersReversed: chaptersReversed ?? this.chaptersReversed,
+      continueHiddenAt: continueHiddenAt ?? this.continueHiddenAt,
       filePath: filePath ?? this.filePath,
       kind: kind ?? this.kind,
       createdAt: createdAt ?? this.createdAt,
@@ -2301,6 +2367,9 @@ class BooksCompanion extends UpdateCompanion<BookRow> {
     if (chaptersReversed.present) {
       map['chapters_reversed'] = Variable<bool>(chaptersReversed.value);
     }
+    if (continueHiddenAt.present) {
+      map['continue_hidden_at'] = Variable<DateTime>(continueHiddenAt.value);
+    }
     if (filePath.present) {
       map['file_path'] = Variable<String>(filePath.value);
     }
@@ -2349,6 +2418,7 @@ class BooksCompanion extends UpdateCompanion<BookRow> {
           ..write('userOverrides: $userOverrides, ')
           ..write('playbackSpeed: $playbackSpeed, ')
           ..write('chaptersReversed: $chaptersReversed, ')
+          ..write('continueHiddenAt: $continueHiddenAt, ')
           ..write('filePath: $filePath, ')
           ..write('kind: $kind, ')
           ..write('createdAt: $createdAt, ')
@@ -10449,6 +10519,7 @@ typedef $$BooksTableCreateCompanionBuilder = BooksCompanion Function({
   Value<Set<BookField>> userOverrides,
   Value<double?> playbackSpeed,
   Value<bool?> chaptersReversed,
+  Value<DateTime?> continueHiddenAt,
   Value<String?> filePath,
   Value<SourceKind> kind,
   required DateTime createdAt,
@@ -10483,6 +10554,7 @@ typedef $$BooksTableUpdateCompanionBuilder = BooksCompanion Function({
   Value<Set<BookField>> userOverrides,
   Value<double?> playbackSpeed,
   Value<bool?> chaptersReversed,
+  Value<DateTime?> continueHiddenAt,
   Value<String?> filePath,
   Value<SourceKind> kind,
   Value<DateTime> createdAt,
@@ -10825,6 +10897,11 @@ class $$BooksTableFilterComposer
 
   ColumnFilters<bool> get chaptersReversed => $composableBuilder(
     column: $table.chaptersReversed,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get continueHiddenAt => $composableBuilder(
+    column: $table.continueHiddenAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -11242,6 +11319,11 @@ class $$BooksTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<DateTime> get continueHiddenAt => $composableBuilder(
+    column: $table.continueHiddenAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get filePath => $composableBuilder(
     column: $table.filePath,
     builder: (column) => ColumnOrderings(column),
@@ -11400,6 +11482,11 @@ class $$BooksTableAnnotationComposer
 
   GeneratedColumn<bool> get chaptersReversed => $composableBuilder(
     column: $table.chaptersReversed,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get continueHiddenAt => $composableBuilder(
+    column: $table.continueHiddenAt,
     builder: (column) => column,
   );
 
@@ -11732,6 +11819,7 @@ class $$BooksTableTableManager
                 Value<Set<BookField>> userOverrides = const Value.absent(),
                 Value<double?> playbackSpeed = const Value.absent(),
                 Value<bool?> chaptersReversed = const Value.absent(),
+                Value<DateTime?> continueHiddenAt = const Value.absent(),
                 Value<String?> filePath = const Value.absent(),
                 Value<SourceKind> kind = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
@@ -11765,6 +11853,7 @@ class $$BooksTableTableManager
                 userOverrides: userOverrides,
                 playbackSpeed: playbackSpeed,
                 chaptersReversed: chaptersReversed,
+                continueHiddenAt: continueHiddenAt,
                 filePath: filePath,
                 kind: kind,
                 createdAt: createdAt,
@@ -11800,6 +11889,7 @@ class $$BooksTableTableManager
                 Value<Set<BookField>> userOverrides = const Value.absent(),
                 Value<double?> playbackSpeed = const Value.absent(),
                 Value<bool?> chaptersReversed = const Value.absent(),
+                Value<DateTime?> continueHiddenAt = const Value.absent(),
                 Value<String?> filePath = const Value.absent(),
                 Value<SourceKind> kind = const Value.absent(),
                 required DateTime createdAt,
@@ -11833,6 +11923,7 @@ class $$BooksTableTableManager
                 userOverrides: userOverrides,
                 playbackSpeed: playbackSpeed,
                 chaptersReversed: chaptersReversed,
+                continueHiddenAt: continueHiddenAt,
                 filePath: filePath,
                 kind: kind,
                 createdAt: createdAt,

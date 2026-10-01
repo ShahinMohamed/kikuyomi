@@ -37,7 +37,7 @@ class KikuyomiDatabase extends _$KikuyomiDatabase {
   KikuyomiDatabase(super.executor);
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -73,6 +73,11 @@ class KikuyomiDatabase extends _$KikuyomiDatabase {
         await m.addColumn(schema.books, schema.books.kind);
         await m.createTable(schema.readingStates);
         await m.createIndex(schema.readingStatesRecent);
+      },
+      // Version 10: when a book was taken off the Continue shelf by hand. Nothing has been yet, so
+      // the column arrives null everywhere and every shelf shows what it showed before.
+      from9To10: (m, schema) async {
+        await m.addColumn(schema.books, schema.books.continueHiddenAt);
       },
       // Version 9: which end of a book's chapter list is the top. Nobody has chosen yet, so the
       // column arrives null everywhere and every list stays in reading order.

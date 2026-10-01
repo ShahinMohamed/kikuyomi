@@ -110,6 +110,18 @@ class Books extends Table {
   /// speed does.
   BoolColumn get chaptersReversed => boolean().nullable()();
 
+  /// When the listener took this book off Continue Listening or Continue Reading by hand
+  /// (version 10).
+  ///
+  /// A moment rather than a flag, because taking a book off the shelf is about the book as it stood
+  /// then: once it is played or read again, its activity is newer than this and it comes back on its
+  /// own. A flag would need something to clear it, and forgetting to would hide a book someone is
+  /// in the middle of for good.
+  ///
+  /// Not carried by backups. It is a tidy-up of one screen, not part of anyone's library, and a
+  /// restore that brought back a book taken off the shelf would cost one long-press to undo.
+  DateTimeColumn get continueHiddenAt => dateTime().nullable()();
+
   /// Where the book's own file is, for a book that is one file rather than chapters to fetch
   /// (version 8, ADR-0021).
   ///

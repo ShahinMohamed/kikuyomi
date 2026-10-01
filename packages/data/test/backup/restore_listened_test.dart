@@ -68,7 +68,7 @@ void main() {
       await DriftBackupStore(restored)
           .restore((_) => everything(backup, listenedFromPositions: true));
 
-      final shelf = await watchContinueListening(restored).first;
+      final shelf = await watchContinueListening(restored, clock: clock).first;
       expect([for (final book in shelf) book.title], ['Half']);
       final book = await (restored.select(
         restored.books,
@@ -88,7 +88,10 @@ void main() {
       await DriftBackupStore(restored)
           .restore((_) => everything(backup, listenedFromPositions: false));
 
-      expect(await watchContinueListening(restored).first, hasLength(1));
+      expect(
+        await watchContinueListening(restored, clock: clock).first,
+        hasLength(1),
+      );
     });
 
     test('leaves alone chapters the restore did not write, so one marked not listened here stays so', () async {
@@ -156,7 +159,10 @@ void main() {
       );
 
       expect(await flags(restored, id), [false, false, true]);
-      expect(await watchContinueListening(restored).first, isEmpty);
+      expect(
+        await watchContinueListening(restored, clock: clock).first,
+        isEmpty,
+      );
     });
   });
 

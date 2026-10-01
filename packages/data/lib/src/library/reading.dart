@@ -17,6 +17,7 @@ import 'package:kikuyomi_domain/kikuyomi_domain.dart';
 import 'package:kikuyomi_source_api/kikuyomi_source_api.dart' show SourceKind;
 
 import '../database/database.dart';
+import 'continue_shelf.dart';
 import 'watch_tables.dart';
 
 /// A book being read, as Continue Reading shows it.
@@ -143,17 +144,23 @@ Stream<List<BookRow>> watchShelf(KikuyomiDatabase db, SourceKind kind) =>
 /// A book is being read when it has a reading position. It is finished when its last chapter is
 /// recorded as listened — `is_listened` meaning finished however it was consumed, which ADR-0019
 /// chose over a second column meaning the same thing.
-Stream<List<ContinueReadingBook>> watchContinueReading(KikuyomiDatabase db) =>
-    watchTables(db, [
-      db.readingStates,
-      db.books,
-      db.chapters,
-      db.bookPeople,
-      db.people,
-    ], () => _loadContinueReading(db));
+///
+/// The same shelf rule as Continue Listening: read within [continueShelfRecency], and not taken off
+/// by hand since ([belongsOnContinueShelf]).
+Stream<List<ContinueReadingBook>> watchContinueReading(
+  KikuyomiDatabase db, {
+  required Clock clock,
+}) => watchTables(db, [
+  db.readingStates,
+  db.books,
+  db.chapters,
+  db.bookPeople,
+  db.people,
+], () => _loadContinueReading(db, clock.now()));
 
 Future<List<ContinueReadingBook>> _loadContinueReading(
   KikuyomiDatabase db,
+  DateTime now,
 ) async {
   final rows =
       await (db.select(db.readingStates).join([
@@ -178,6 +185,14 @@ Future<List<ContinueReadingBook>> _loadContinueReading(
     final book = row.readTable(db.books);
     final state = row.readTable(db.readingStates);
     final chapter = row.readTable(db.chapters);
+    // Asked before the chapters are read, because it is the cheaper question.
+    if (!belongsOnContinueShelf(
+      lastActive: state.updatedAt,
+      hiddenAt: book.continueHiddenAt,
+      now: now,
+    )) {
+      continue;
+    }
 
     final chapters =
         await (db.select(db.chapters)
