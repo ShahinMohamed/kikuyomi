@@ -140,9 +140,20 @@ final class FakeStore implements PlaybackStore {
     ));
   }
 
+  /// Behaves as the real store does: a session already saved, recognised by its book and the moment
+  /// it began, is replaced by the later save rather than added beside it. A fake that appended would
+  /// let a test pass on a coordinator that wrote a checkpoint the real store then duplicated.
   @override
-  Future<void> saveSession(ListeningSession session) async =>
+  Future<void> saveSession(ListeningSession session) async {
+    final index = sessions.indexWhere(
+      (s) => s.bookId == session.bookId && s.startedAt == session.startedAt,
+    );
+    if (index < 0) {
       sessions.add(session);
+    } else {
+      sessions[index] = session;
+    }
+  }
 
   @override
   Future<void> saveSpeed({required int bookId, required double speed}) async =>

@@ -34,7 +34,13 @@ abstract interface class PlaybackStore {
     required bool listened,
   });
 
-  /// A finished stretch of listening, for history and statistics.
+  /// A stretch of listening, for history and statistics.
+  ///
+  /// Saved more than once while it is still going on, each time with a later end: a session is
+  /// identified by its book and the moment it began, and saving one that is already stored moves its
+  /// end rather than adding a second row. That is what lets a stretch be written while it is being
+  /// listened to, so a process killed mid-chapter loses the last few seconds of history rather than
+  /// the whole evening.
   Future<void> saveSession(ListeningSession session);
 
   /// §4.3: playback speed is remembered per book.

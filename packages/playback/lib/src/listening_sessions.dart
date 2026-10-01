@@ -129,6 +129,22 @@ final class ListeningSessionRecorder {
     );
   }
 
+  /// The session under way, as it stands at [globalMs], without ending it.
+  ///
+  /// A session used to reach the store only when it ended, so a process killed while playing — iOS
+  /// reaping a backgrounded app, a listener swiping it away, a crash — took the whole stretch with
+  /// it, however long it had been. Saving this as playback goes on means it loses only the time
+  /// since the last checkpoint. The store recognises the session by when it began, so each
+  /// checkpoint moves the same row forward rather than adding another.
+  ///
+  /// Null while nothing is open or the session is still shorter than [minimumLength], for the same
+  /// reason a session that short is never recorded at all.
+  ListeningSession? checkpoint(int globalMs) {
+    final open = _open;
+    if (open == null) return null;
+    return _close(open, globalMs, _clock.now());
+  }
+
   /// Playback stopped at [globalMs], whatever stopped it: a pause, an interruption, completion, or
   /// the sleep timer.
   ListeningSession? onStop(int globalMs) {

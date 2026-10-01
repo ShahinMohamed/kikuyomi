@@ -188,6 +188,11 @@ HistoryEntry _read(
 /// A stretch too short to be reading is not recorded: opening a chapter and going straight back is
 /// something everyone does while looking for their place, and a history full of eight-second rows
 /// would bury the evening someone actually read.
+///
+/// Recording the same stretch again — same book, same moment it began, same device — moves its end
+/// instead of adding a row. The reader saves a stretch while it is still going on, so an app the
+/// system ends without warning keeps the reading it had done; without this, every one of those
+/// saves would be another entry in History.
 Future<void> recordReadingSession(
   KikuyomiDatabase db, {
   required int bookId,
@@ -198,17 +203,35 @@ Future<void> recordReadingSession(
   Duration shortest = const Duration(seconds: 20),
 }) async {
   if (endedAt.difference(startedAt) < shortest) return;
-  await db
-      .into(db.readingSessions)
-      .insert(
-        ReadingSessionsCompanion.insert(
-          bookId: bookId,
-          chapterId: Value(chapterId),
-          startedAt: startedAt,
-          endedAt: endedAt,
-          deviceId: deviceId,
-        ),
-      );
+  await db.transaction(() async {
+    final existing =
+        await (db.select(db.readingSessions)
+              ..where(
+                (s) =>
+                    s.bookId.equals(bookId) &
+                    s.startedAt.equals(startedAt) &
+                    s.deviceId.equals(deviceId),
+              )
+              ..limit(1))
+            .getSingleOrNull();
+    if (existing != null) {
+      await (db.update(db.readingSessions)
+            ..where((s) => s.id.equals(existing.id)))
+          .write(ReadingSessionsCompanion(endedAt: Value(endedAt)));
+      return;
+    }
+    await db
+        .into(db.readingSessions)
+        .insert(
+          ReadingSessionsCompanion.insert(
+            bookId: bookId,
+            chapterId: Value(chapterId),
+            startedAt: startedAt,
+            endedAt: endedAt,
+            deviceId: deviceId,
+          ),
+        );
+  });
 }
 
 /// Forgets one entry, from whichever table it came from.

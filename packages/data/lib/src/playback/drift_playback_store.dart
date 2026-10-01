@@ -84,22 +84,47 @@ final class DriftPlaybackStore implements PlaybackStore {
   }
 
   @override
-  Future<void> saveSession(ListeningSession session) async {
-    await _db
-        .into(_db.listeningSessions)
-        .insert(
-          ListeningSessionsCompanion(
-            bookId: Value(session.bookId),
-            chapterId: Value(session.chapterId),
-            startedAt: Value(session.startedAt),
-            endedAt: Value(session.endedAt),
-            startGlobalMs: Value(session.startGlobalMs),
-            endGlobalMs: Value(session.endGlobalMs),
-            speed: Value(session.speed),
-            deviceId: Value(deviceId),
-          ),
-        );
-  }
+  Future<void> saveSession(ListeningSession session) =>
+      _db.transaction(() async {
+        // A session is saved while it is still under way and again as it moves on, so the row for one
+        // that began at this moment on this device is the same session, moved forward. No index is
+        // needed to find it: the same book cannot begin twice in the same microsecond on one device.
+        final existing =
+            await (_db.select(_db.listeningSessions)
+                  ..where(
+                    (s) =>
+                        s.bookId.equals(session.bookId) &
+                        s.startedAt.equals(session.startedAt) &
+                        s.deviceId.equals(deviceId),
+                  )
+                  ..limit(1))
+                .getSingleOrNull();
+        if (existing != null) {
+          await (_db.update(
+            _db.listeningSessions,
+          )..where((s) => s.id.equals(existing.id))).write(
+            ListeningSessionsCompanion(
+              endedAt: Value(session.endedAt),
+              endGlobalMs: Value(session.endGlobalMs),
+            ),
+          );
+          return;
+        }
+        await _db
+            .into(_db.listeningSessions)
+            .insert(
+              ListeningSessionsCompanion(
+                bookId: Value(session.bookId),
+                chapterId: Value(session.chapterId),
+                startedAt: Value(session.startedAt),
+                endedAt: Value(session.endedAt),
+                startGlobalMs: Value(session.startGlobalMs),
+                endGlobalMs: Value(session.endGlobalMs),
+                speed: Value(session.speed),
+                deviceId: Value(deviceId),
+              ),
+            );
+      });
 
   @override
   Future<void> saveSpeed({required int bookId, required double speed}) async {
