@@ -29,6 +29,31 @@ void main() {
     expect(stretch.endedAt, DateTime.utc(2026, 9, 28, 21, 20));
   });
 
+  test('a checkpoint is the stretch so far, and the stretch goes on', () {
+    recorder.start(7);
+    clock.advance(const Duration(minutes: 5));
+    recorder.alive();
+
+    final sofar = recorder.checkpoint()!;
+    expect(sofar.endedAt, DateTime.utc(2026, 9, 28, 21, 5));
+    expect(recorder.isRecording, isTrue);
+
+    // And it names the same beginning the stop will, so the store moves one entry forward.
+    clock.advance(const Duration(minutes: 5));
+    recorder.alive();
+    final last = recorder.stop()!;
+    expect(last.startedAt, sofar.startedAt);
+    expect(last.endedAt, DateTime.utc(2026, 9, 28, 21, 10));
+  });
+
+  test('a checkpoint does not count a book left open either', () {
+    // The same line a stop holds: twenty minutes after the last scroll is three minutes of
+    // reading and seventeen of dinner, whether it is saved now or later.
+    recorder.start(7);
+    clock.advance(const Duration(minutes: 20));
+    expect(recorder.checkpoint()!.endedAt, DateTime.utc(2026, 9, 28, 21, 3));
+  });
+
   test('a chapter still on the screen keeps being read, within reason', () {
     // Someone reading a page without scrolling is still reading.
     recorder.start(7);

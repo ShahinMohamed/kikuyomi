@@ -321,6 +321,45 @@ void main() {
       },
     );
 
+    test(
+      'listening is saved while it goes on, so a killed app keeps its history',
+      () async {
+        // The reported bug: History showed nothing for books that had plainly been listened to.
+        // A session reached the store only when it ended, and an app the system reaps in the
+        // background, or that its listener swipes away, never ends one.
+        await openBook();
+        await coordinator.play();
+        for (var i = 1; i <= 30; i++) {
+          clock.advance(sec(1));
+          await emit(EnginePositionChanged(q(0, i * s)));
+        }
+
+        // Nothing has paused, nothing has stopped, and the stretch is already there.
+        expect(store.sessions, hasLength(1));
+        expect(store.sessions.single.listened, greaterThanOrEqualTo(sec(25)));
+
+        // And ending it moves that same entry forward rather than adding a second.
+        clock.advance(sec(5));
+        await emit(EnginePositionChanged(q(0, 35 * s)));
+        await coordinator.pause();
+        expect(store.sessions, hasLength(1));
+        expect(store.sessions.single.listened, sec(35));
+        expect(store.sessions.single.endGlobalMs, 35 * s);
+      },
+    );
+
+    test('going to the background saves the listening under way', () async {
+      await openBook();
+      await coordinator.play();
+      clock.advance(sec(8));
+      await emit(EnginePositionChanged(q(0, 8 * s)));
+      store.sessions.clear();
+
+      await coordinator.onBackgrounded();
+
+      expect(store.sessions.single.listened, sec(8));
+    });
+
     test('progress writes are throttled during playback', () async {
       await openBook();
       await coordinator.play();

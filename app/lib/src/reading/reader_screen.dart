@@ -188,6 +188,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
         progress: progress,
       ),
     );
+    // The stretch of reading is saved whenever the place is, so the two agree after the app is
+    // ended without warning. Recording it again later moves the same entry forward.
+    _recordStretch(_sessions.checkpoint());
   }
 
   void _markFinished(int chapterId) {

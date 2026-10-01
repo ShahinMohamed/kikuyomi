@@ -170,6 +170,55 @@ void main() {
     expect(row.endGlobalMs, 60000);
   });
 
+  test(
+    'saving a session again moves it forward instead of adding a row',
+    () async {
+      // The coordinator saves a stretch while it is still going on, so a killed app keeps it. That
+      // only works if the store treats the second save as the same session: otherwise every
+      // checkpoint is another row in History and an hour of listening reads as twelve.
+      final began = clock.now();
+      ListeningSession upTo(int seconds) => ListeningSession(
+        bookId: book.book,
+        chapterId: book.c1,
+        startedAt: began,
+        endedAt: began.add(Duration(seconds: seconds)),
+        startGlobalMs: 0,
+        endGlobalMs: seconds * 1000,
+        speed: 1.0,
+      );
+
+      await store.saveSession(upTo(30));
+      await store.saveSession(upTo(60));
+      await store.saveSession(upTo(95));
+
+      final row = await db.select(db.listeningSessions).getSingle();
+      expect(row.endGlobalMs, 95000);
+      expect(row.endedAt, began.add(const Duration(seconds: 95)));
+      // The beginning is the session's identity and is never moved.
+      expect(row.startGlobalMs, 0);
+      expect(row.startedAt, began);
+    },
+  );
+
+  test('a session that began at another moment is another row', () async {
+    final first = clock.now();
+    final second = first.add(const Duration(minutes: 10));
+    for (final began in [first, second]) {
+      await store.saveSession(
+        ListeningSession(
+          bookId: book.book,
+          chapterId: book.c1,
+          startedAt: began,
+          endedAt: began.add(const Duration(minutes: 1)),
+          startGlobalMs: 0,
+          endGlobalMs: 60000,
+          speed: 1.0,
+        ),
+      );
+    }
+    expect(await db.select(db.listeningSessions).get(), hasLength(2));
+  });
+
   test('speed is remembered on the book', () async {
     await store.saveSpeed(bookId: book.book, speed: 1.75);
     final stored = await loadStoredPlayback(db, book.book);

@@ -53,6 +53,50 @@ void main() {
     expect(recorder.isRecording, isFalse);
   });
 
+  group('checkpoint', () {
+    test('reports the session under way without ending it', () {
+      final started = clock.now();
+      recorder.onPlay(globalMs: 0, speed: 1.0);
+      clock.advance(const Duration(minutes: 2));
+
+      final sofar = recorder.checkpoint(120 * s)!;
+      expect(sofar.startedAt, started);
+      expect(sofar.endGlobalMs, 120 * s);
+      expect(sofar.listened, const Duration(minutes: 2));
+      // Still going: a checkpoint is a look, not a pause.
+      expect(recorder.isRecording, isTrue);
+    });
+
+    test('names the same session the stop does, so the store moves one row forward', () {
+      // This is what makes a checkpoint safe to write. The store recognises a session by its book
+      // and the moment it began; if the stop began somewhere else, the checkpoint and the stop
+      // would be two rows for one stretch of listening, and History would count it twice.
+      recorder.onPlay(globalMs: 0, speed: 1.0);
+      clock.advance(const Duration(minutes: 1));
+      final early = recorder.checkpoint(60 * s)!;
+      clock.advance(const Duration(minutes: 1));
+      final later = recorder.checkpoint(120 * s)!;
+      clock.advance(const Duration(minutes: 1));
+      final last = recorder.onStop(180 * s)!;
+
+      expect(later.startedAt, early.startedAt);
+      expect(last.startedAt, early.startedAt);
+      expect(last.endGlobalMs, 180 * s);
+    });
+
+    test('says nothing for a session too short to keep', () {
+      // A checkpoint written for a three-second scrub would be a row the stop then refuses to
+      // keep, and nothing would ever take it away again.
+      recorder.onPlay(globalMs: 0, speed: 1.0);
+      clock.advance(const Duration(seconds: 3));
+      expect(recorder.checkpoint(3 * s), isNull);
+    });
+
+    test('says nothing while nothing is playing', () {
+      expect(recorder.checkpoint(10 * s), isNull);
+    });
+  });
+
   test('nothing is recorded without playback', () {
     expect(recorder.onStop(10 * s), isNull);
     expect(recorder.onPosition(10 * s), isNull);

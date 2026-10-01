@@ -63,16 +63,26 @@ final class ReadingSessionRecorder {
   /// It ends at the last sign of life plus the grace, or now, whichever is sooner: the minutes
   /// after someone stopped turning pages are not reading, however long the chapter stayed open.
   ReadingStretch? stop() {
+    final stretch = checkpoint();
+    _chapterId = null;
+    _startedAt = null;
+    _lastAlive = null;
+    return stretch;
+  }
+
+  /// The stretch under way as it stands now, without ending it.
+  ///
+  /// A stretch used to be written only when it ended — leaving the chapter, the app, or the reader.
+  /// An app the system ends without warning does none of those, and the whole stretch went with
+  /// it. Saving this as the reader goes keeps everything up to the last save. It names the same
+  /// beginning [stop] will, so the store moves one entry forward rather than adding another.
+  ReadingStretch? checkpoint() {
     final chapterId = _chapterId;
     final startedAt = _startedAt;
     final lastAlive = _lastAlive;
     if (chapterId == null || startedAt == null || lastAlive == null) {
       return null;
     }
-    _chapterId = null;
-    _startedAt = null;
-    _lastAlive = null;
-
     final now = clock.now();
     final lapsed = lastAlive.add(grace);
     final endedAt = lapsed.isBefore(now) ? lapsed : now;

@@ -387,10 +387,14 @@ final class PlaybackCoordinator {
   });
 
   /// The app moved to the background. §6.4 saves progress immediately; playback continues.
+  ///
+  /// So does the stretch of listening under way: a backgrounded app is the one the system is most
+  /// likely to end without warning, and whatever has not been saved by then is gone.
   Future<void> onBackgrounded() => _serial(() async {
     final session = _session;
     if (session == null) return;
     await _saveProgress(session, session.tracker.onBackgrounded());
+    await _saveSession(session.recorder.checkpoint(session.globalMs));
   });
 
   /// Stops the open book, saving its progress and listening, and stops listening to the engine.
@@ -411,11 +415,17 @@ final class PlaybackCoordinator {
         // Spike (b): after completion the engine reports position zero. It is not a position.
         if (session.completed) return;
         session.position = _settle(session, position);
-        await _saveProgress(
-          session,
-          session.tracker.onPosition(session.position),
-        );
-        await _saveSession(session.recorder.onPosition(session.globalMs));
+        final progress = session.tracker.onPosition(session.position);
+        await _saveProgress(session, progress);
+        final crossed = session.recorder.onPosition(session.globalMs);
+        if (crossed != null) {
+          await _saveSession(crossed);
+        } else if (progress != null) {
+          // Whenever progress is written, the stretch under way is written with it, so the two
+          // agree after a crash about where listening got to. On the progress tracker's throttle
+          // rather than a clock of its own, because it is the same question asked at the same time.
+          await _saveSession(session.recorder.checkpoint(session.globalMs));
+        }
         await _applySleepTimer(session);
         _publish();
       case EngineItemChanged():

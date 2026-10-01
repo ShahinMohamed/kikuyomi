@@ -326,6 +326,19 @@ void _reading() {
       },
     );
 
+    test('recorded again as it goes on, it is still one entry', () async {
+      // The reader saves a stretch while it is under way so that an app ended without warning keeps
+      // it, which means the same stretch arrives several times. History has to show it once.
+      final book = await addNovel();
+      final chapter = await addChapter(book);
+      for (final minutes in [2, 5, 9]) {
+        await read(book, chapter, length: Duration(minutes: minutes));
+      }
+
+      final entry = (await watchListeningHistory(db).first).single;
+      expect(entry.spent, const Duration(minutes: 9));
+    });
+
     test('is not recorded for a glance at a chapter', () async {
       // Opening a chapter while hunting for your place is not an entry in anyone's history.
       final book = await addNovel();
