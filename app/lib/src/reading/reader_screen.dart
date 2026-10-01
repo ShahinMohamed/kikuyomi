@@ -9,6 +9,7 @@ import 'package:kikuyomi_domain/kikuyomi_domain.dart' show AppSettings;
 import '../providers.dart';
 import '../services.dart';
 import 'chapter_texts.dart';
+import 'reader_chrome.dart';
 import 'reader_view.dart';
 import 'reading_sessions.dart';
 import 'reading_time.dart';
@@ -223,7 +224,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
         ? chapters[index + 1]
         : null;
     final theme = Theme.of(context);
-    return Scaffold(
+    return ReaderChrome(
+      // A new chapter brings the bar back, so the reader is told where they now are.
+      revealKey: _chapterId,
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -265,7 +268,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
             ),
         ],
       ),
-      body: FutureBuilder<ChapterText>(
+      builder: (context, chrome) => FutureBuilder<ChapterText>(
         future: _text,
         builder: (context, snapshot) {
           if (snapshot.hasError) {
@@ -292,6 +295,8 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
                 ? null
                 : () => _open(previous.chapterId, at: 0),
             onNext: next == null ? null : () => _goOn(next),
+            onTap: chrome.toggle,
+            onUserScroll: chrome.hide,
           );
         },
       ),
