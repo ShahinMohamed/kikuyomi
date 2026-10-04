@@ -19,6 +19,15 @@ enum BackupSetup {
 /// says "about".
 const defaultReadingWordsPerMinute = 250;
 
+/// How a chapter moves through the reader.
+enum ReaderMode {
+  /// One continuous column moved up and down.
+  verticalScroll,
+
+  /// Screen-sized pages moved from right to left.
+  horizontalPages,
+}
+
 /// Every setting the app keeps, in one place, as §4.3 asks.
 ///
 /// §4.3 also says that preferences which should survive a restore are included in backups
@@ -148,6 +157,14 @@ abstract final class AppSettings {
     decode: _decodeScale,
   );
 
+  /// How chapters move through the reader. Not set means [ReaderMode.verticalScroll], preserving
+  /// the reader's original behaviour for existing installations.
+  static const readerMode = Setting<ReaderMode>(
+    'reader.mode',
+    encode: _encodeReaderMode,
+    decode: _decodeReaderMode,
+  );
+
   /// How fast the reader reads, in words a minute, for the time shown beside a chapter of a book
   /// to read. Zero means they would rather not be told.
   ///
@@ -193,6 +210,7 @@ abstract final class AppSettings {
     recentSources,
     listenedBackfilled,
     readerTextScale,
+    readerMode,
     tabOrder,
     readingWordsPerMinute,
   ];
@@ -235,6 +253,11 @@ BackupSetup? _decodeSetup(String stored) =>
 String _encodeSort(LibrarySort sort) => sort.name;
 
 String _encodeNumber(double value) => '$value';
+
+String _encodeReaderMode(ReaderMode mode) => mode.name;
+
+ReaderMode? _decodeReaderMode(String stored) =>
+    ReaderMode.values.asNameMap()[stored];
 
 String _encodeCount(int value) => '$value';
 

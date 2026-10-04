@@ -400,8 +400,9 @@ decided, rather than a second set of tables.
   is refused and the lock named; obfuscated fonts are not a lock. The text stays in the EPUB and is
   read a chapter at a time, off the interface's isolate.
 - **The Read tab and the reader.** Listen and Read are side by side in the shell, six tabs in all.
-  The reader scrolls one chapter at a time, saves the place a moment after scrolling stops, and
-  marks a chapter finished when its end is reached or the next is opened.
+  The reader can either scroll a chapter vertically or flip through measured, screen-sized pages
+  horizontally; the choice is kept in Settings. It saves the place a moment after movement stops,
+  and marks a chapter finished when its end is reached or the next is opened.
 - **Browse** has four tabs: audio sources, ebook sources, audio extensions, ebook extensions. Two
   sources of books to read ship with the app: **Standard Ebooks** and **Project Gutenberg**, both on
   1.2's EPUB path. Shipping records which extensions were offered, so one added by a later version

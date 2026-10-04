@@ -159,6 +159,15 @@ final readerTextScaleProvider = StreamProvider<double>(
       .map((scale) => scale ?? 1.0),
 );
 
+/// Whether the reader moves continuously down a chapter or flips horizontal pages.
+final readerModeProvider = StreamProvider<ReaderMode>(
+  (ref) => ref
+      .watch(servicesProvider)
+      .settings
+      .watch(AppSettings.readerMode)
+      .map((mode) => mode ?? ReaderMode.verticalScroll),
+);
+
 /// Whether backup setup is offered at start. The router redirects by it.
 final setupGateProvider = Provider<SetupGate>((ref) {
   final gate = SetupGate();

@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Extensions and their repositories fetch catalogue and media data from remote hosts. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <!-- Background playback through audio_service's foreground service (§6.5). -->
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
