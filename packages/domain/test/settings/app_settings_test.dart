@@ -63,6 +63,10 @@ void main() {
     expect(roundTrip(AppSettings.backupDue, true), isTrue);
     expect(roundTrip(AppSettings.backupDue, false), isFalse);
     expect(
+      roundTrip(AppSettings.readerMode, ReaderMode.horizontalPages),
+      ReaderMode.horizontalPages,
+    );
+    expect(
       roundTrip(AppSettings.backupSetup, BackupSetup.skipped),
       BackupSetup.skipped,
     );
@@ -81,5 +85,6 @@ void main() {
     expect(AppSettings.lastBackupAt.decode('99999999999999999'), isNull);
     expect(AppSettings.backupDue.decode('yes'), isNull);
     expect(AppSettings.backupSetup.decode('postponed'), isNull);
+    expect(AppSettings.readerMode.decode('diagonal'), isNull);
   });
 }

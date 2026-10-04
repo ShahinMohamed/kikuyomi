@@ -6,6 +6,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kikuyomi/src/reading/reader_view.dart';
+import 'package:kikuyomi_domain/kikuyomi_domain.dart' show ReaderMode;
 import 'package:kikuyomi_source_api/kikuyomi_source_api.dart';
 
 /// A PNG of one transparent pixel.
@@ -174,6 +175,88 @@ void main() {
         .position;
     expect(position.pixels, closeTo(position.maxScrollExtent / 2, 1));
   });
+
+  group('horizontal pages', () {
+    testWidgets('swipes smoothly by whole pages and reports progress', (
+      tester,
+    ) async {
+      final reported = <(double, bool)>[];
+      var turns = 0;
+      await tester.pumpWidget(
+        reader(
+          ReaderView(
+            blocks: paragraphs(80),
+            mode: ReaderMode.horizontalPages,
+            onProgress: (progress, atEnd) => reported.add((progress, atEnd)),
+            onUserScroll: () => turns++,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(PageView), findsOneWidget);
+      final scrollable = find.descendant(
+        of: find.byType(PageView),
+        matching: find.byType(Scrollable),
+      );
+      final position = tester.state<ScrollableState>(scrollable).position;
+      expect(position.maxScrollExtent, greaterThan(0));
+
+      await tester.fling(find.byType(PageView), const Offset(-700, 0), 1200);
+      await tester.pumpAndSettle();
+      expect(position.pixels, closeTo(position.viewportDimension, 1));
+      expect(reported.last.$1, greaterThan(0));
+      expect(reported.last.$2, isFalse);
+      expect(turns, greaterThan(0));
+    });
+
+    testWidgets('opens on the horizontal page nearest the saved place', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        reader(
+          ReaderView(
+            blocks: paragraphs(80),
+            mode: ReaderMode.horizontalPages,
+            initialProgress: 0.5,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final position = tester
+          .state<ScrollableState>(
+            find.descendant(
+              of: find.byType(PageView),
+              matching: find.byType(Scrollable),
+            ),
+          )
+          .position;
+      expect(position.pixels, closeTo(position.maxScrollExtent / 2, 800));
+    });
+
+    testWidgets('does not finish a one-page chapter merely by showing it', (
+      tester,
+    ) async {
+      final reported = <(double, bool)>[];
+      await tester.pumpWidget(
+        reader(
+          ReaderView(
+            blocks: const [
+              ParagraphBlock([TextRun('Short.')]),
+            ],
+            mode: ReaderMode.horizontalPages,
+            onProgress: (progress, atEnd) => reported.add((progress, atEnd)),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(PageView), findsOneWidget);
+      expect(reported.where((value) => value.$2), isEmpty);
+    });
+  });
+
   group('telling the reading screen when to get out of the way', () {
     testWidgets('a tap on the page is a tap', (tester) async {
       var taps = 0;

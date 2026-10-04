@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kikuyomi/src/reading/reading_settings_section.dart';
 import 'package:kikuyomi/src/reading/reading_time.dart';
 import 'package:kikuyomi_domain/kikuyomi_domain.dart'
-    show defaultReadingWordsPerMinute;
+    show ReaderMode, defaultReadingWordsPerMinute;
 
 void main() {
   group('counting words', () {
@@ -62,7 +62,9 @@ void main() {
     Widget section(int rate, List<int> chosen) => MaterialApp(
       home: Scaffold(
         body: ReadingSettingsSection(
+          readerMode: ReaderMode.verticalScroll,
           wordsPerMinute: rate,
+          onReaderModeChanged: (_) {},
           onChanged: chosen.add,
         ),
       ),
@@ -100,6 +102,35 @@ void main() {
       final slider = tester.widget<Slider>(find.byType(Slider));
       expect(slider.min, slowestReading.toDouble());
       expect(slider.max, fastestReading.toDouble());
+    });
+
+    testWidgets('offers vertical scrolling and horizontal pages', (
+      tester,
+    ) async {
+      final chosen = <ReaderMode>[];
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ReadingSettingsSection(
+              readerMode: ReaderMode.verticalScroll,
+              wordsPerMinute: 250,
+              onReaderModeChanged: chosen.add,
+              onChanged: (_) {},
+            ),
+          ),
+        ),
+      );
+
+      expect(
+        tester
+            .widget<SegmentedButton<ReaderMode>>(
+              find.byType(SegmentedButton<ReaderMode>),
+            )
+            .selected,
+        {ReaderMode.verticalScroll},
+      );
+      await tester.tap(find.text('Horizontal'));
+      expect(chosen, [ReaderMode.horizontalPages]);
     });
   });
 }

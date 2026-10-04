@@ -67,9 +67,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         onRestore: () => const RestoreRoute().push<void>(context),
         sections: [
           ReadingSettingsSection(
+            readerMode:
+                ref.watch(readerModeProvider).value ??
+                ReaderMode.verticalScroll,
             wordsPerMinute:
                 ref.watch(readingWordsPerMinuteProvider).value ??
                 defaultReadingWordsPerMinute,
+            onReaderModeChanged: (mode) => ref
+                .read(servicesProvider)
+                .settings
+                .write(AppSettings.readerMode, mode),
             onChanged: (rate) => ref
                 .read(servicesProvider)
                 .settings

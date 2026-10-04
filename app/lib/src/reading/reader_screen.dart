@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kikuyomi_data/kikuyomi_data.dart'
     show BookOverview, ChapterOverview, readReadingPosition;
-import 'package:kikuyomi_domain/kikuyomi_domain.dart' show AppSettings;
+import 'package:kikuyomi_domain/kikuyomi_domain.dart'
+    show AppSettings, ReaderMode;
 
 import '../providers.dart';
 import '../services.dart';
@@ -215,10 +216,15 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
     double.parse(scale.clamp(0.7, 2.0).toStringAsFixed(1)),
   );
 
+  Future<void> _setReaderMode(ReaderMode mode) =>
+      _services.settings.write(AppSettings.readerMode, mode);
+
   @override
   Widget build(BuildContext context) {
     final book = ref.watch(bookOverviewProvider(widget.bookId)).value;
     final textScale = ref.watch(readerTextScaleProvider).value ?? 1.0;
+    final readerMode =
+        ref.watch(readerModeProvider).value ?? ReaderMode.verticalScroll;
     final chapters = book?.chapters ?? const <ChapterOverview>[];
     final index = chapters.indexWhere((c) => c.chapterId == _chapterId);
     final chapter = index < 0 ? null : chapters[index];
@@ -249,6 +255,21 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
           ],
         ),
         actions: [
+          IconButton(
+            tooltip: readerMode == ReaderMode.horizontalPages
+                ? 'Use vertical scrolling'
+                : 'Use horizontal pages',
+            icon: Icon(
+              readerMode == ReaderMode.horizontalPages
+                  ? Icons.view_carousel_outlined
+                  : Icons.view_stream_outlined,
+            ),
+            onPressed: () => _setReaderMode(
+              readerMode == ReaderMode.horizontalPages
+                  ? ReaderMode.verticalScroll
+                  : ReaderMode.horizontalPages,
+            ),
+          ),
           IconButton(
             tooltip: 'Smaller text',
             icon: const Icon(Icons.text_decrease),
@@ -291,12 +312,16 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen>
             key: ValueKey(_chapterId),
             blocks: text.content.blocks,
             pictures: text.pictures,
+            mode: readerMode,
             textScale: textScale,
             initialProgress: _openAt,
             onProgress: _onProgress,
             onPrevious: previous == null
                 ? null
-                : () => _open(previous.chapterId, at: 0),
+                : () => _open(
+                    previous.chapterId,
+                    at: readerMode == ReaderMode.horizontalPages ? 1 : 0,
+                  ),
             onNext: next == null ? null : () => _goOn(next),
             onTap: chrome.toggle,
             onUserScroll: chrome.hide,

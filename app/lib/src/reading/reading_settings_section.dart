@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kikuyomi_domain/kikuyomi_domain.dart'
-    show defaultReadingWordsPerMinute;
+    show ReaderMode, defaultReadingWordsPerMinute;
 
 import 'reading_time.dart';
 
@@ -22,12 +22,20 @@ const _exampleChapter = 4000;
 class ReadingSettingsSection extends StatelessWidget {
   const ReadingSettingsSection({
     super.key,
+    required this.readerMode,
     required this.wordsPerMinute,
+    required this.onReaderModeChanged,
     required this.onChanged,
   });
 
+  /// How chapters move through the reader.
+  final ReaderMode readerMode;
+
   /// The reader's pace, or zero for one who would rather not be told how long a chapter takes.
   final int wordsPerMinute;
+
+  /// A new way to move through a chapter.
+  final ValueChanged<ReaderMode> onReaderModeChanged;
 
   /// A new pace, or zero to stop showing the estimate.
   final ValueChanged<int> onChanged;
@@ -60,6 +68,31 @@ class ReadingSettingsSection extends StatelessWidget {
             'book to read is as long as it takes you, so Kikuyomi works it out '
             'from how many words it holds and how fast you read.',
             style: theme.textTheme.bodyMedium,
+          ),
+        ),
+        const ListTile(
+          title: Text('Page movement'),
+          subtitle: Text('Scroll vertically or swipe between horizontal pages'),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: SegmentedButton<ReaderMode>(
+            segments: const [
+              ButtonSegment(
+                value: ReaderMode.verticalScroll,
+                icon: Icon(Icons.swap_vert),
+                label: Text('Vertical'),
+              ),
+              ButtonSegment(
+                value: ReaderMode.horizontalPages,
+                icon: Icon(Icons.swap_horiz),
+                label: Text('Horizontal'),
+              ),
+            ],
+            selected: {readerMode},
+            showSelectedIcon: false,
+            onSelectionChanged: (selected) =>
+                onReaderModeChanged(selected.single),
           ),
         ),
         SwitchListTile(
